@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Bell, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { markNotificationsAsRead } from "@/app/actions";
 
 export default function NotificationBell() {
     const [unreadCount, setUnreadCount] = useState(0);
@@ -21,7 +22,7 @@ export default function NotificationBell() {
 
             if (!error && data) {
                 setNotifications(data);
-                setUnreadCount(data.filter(n => !n.is_read).length);
+                setUnreadCount(data.filter((n: any) => !n.is_read).length);
             }
         };
 
@@ -30,7 +31,7 @@ export default function NotificationBell() {
         // Subscribe to new candidate real-time inserts for a real notification feel
         const subscription = supabase
             .channel('any')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'candidates' }, payload => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'candidates' }, (payload: any) => {
                 const newNotif = {
                     id: Math.random(),
                     title: "New Application",
@@ -49,10 +50,11 @@ export default function NotificationBell() {
     }, []);
 
     const markAllAsRead = async () => {
-        // In a full implementation, we'd update the DB here
-        // For now, let's keep it persistent in the session
-        setUnreadCount(0);
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        const result = await markNotificationsAsRead();
+        if (result.success) {
+            setUnreadCount(0);
+            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        }
     };
 
     return (

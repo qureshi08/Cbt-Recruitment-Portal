@@ -225,6 +225,11 @@ export async function completeAssessment(candidateId: string) {
 
 export async function deleteCandidate(candidateId: string) {
     try {
+        // 1. Delete dependent records first (since we don't have CASCADE set up in DB yet)
+        await supabase.from("assessment_slots").delete().eq("candidate_id", candidateId);
+        await supabase.from("interviews").delete().eq("candidate_id", candidateId);
+
+        // 2. Delete the candidate
         const { error } = await supabase
             .from("candidates")
             .delete()
@@ -233,6 +238,25 @@ export async function deleteCandidate(candidateId: string) {
         if (error) throw error;
 
         revalidatePath("/admin/applications");
+        revalidatePath("/admin/slots");
+        revalidatePath("/admin/interviews");
+        revalidatePath("/admin");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Delete error:", error);
+        return { error: error.message };
+    }
+}
+
+export async function markNotificationsAsRead() {
+    try {
+        const { error } = await supabase
+            .from("notifications")
+            .update({ is_read: true })
+            .eq("is_read", false);
+
+        if (error) throw error;
+
         revalidatePath("/admin");
         return { success: true };
     } catch (error: any) {

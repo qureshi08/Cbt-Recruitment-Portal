@@ -124,3 +124,19 @@ create policy "Admins can update interviews" on public.interviews
 -- NOTIFICATIONS INSERT PERMISSIONS
 create policy "Admins can insert notifications" on public.notifications
   for insert with check (true);
+
+-- DELETE PERMISSIONS (Cleanup)
+create policy "Admins can delete candidates" on public.candidates
+  for delete using (true);
+
+create policy "Admins can delete interviews" on public.interviews
+  for delete using (true);
+
+create policy "Admins can delete slots" on public.assessment_slots
+  for delete using (true);
+
+create policy "Admins can delete notifications" on public.notifications
+  for delete using (true);
+
+create policy "Admins can update notifications" on public.notifications
+  for update using (true);
