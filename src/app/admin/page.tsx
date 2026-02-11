@@ -58,102 +58,110 @@ export default async function AdminDashboard() {
     ];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center bg-white p-8 rounded-2xl border border-border shadow-sm">
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-                        Welcome, {user?.full_name?.split(' ')[0] || 'User'}!
-                    </h2>
-                    <p className="text-gray-500 font-medium text-sm mt-1">
-                        Signed in as <span className="text-primary font-semibold">{user?.email}</span>
-                    </p>
+                    <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+                    <p className="text-gray-500">Welcome back, {user?.full_name?.split(' ')[0] || 'User'}. Here's what's happening today.</p>
                 </div>
                 <div className="flex gap-2">
                     {user?.roles?.map(role => (
-                        <div key={role} className="px-3 py-1 bg-gray-50 text-gray-600 text-[11px] font-bold uppercase rounded-lg border border-gray-200">
+                        <span key={role} className="px-3 py-1 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-full shadow-sm">
                             {role}
-                        </div>
+                        </span>
                     ))}
                 </div>
             </div>
 
+            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat) => (
-                    <div key={stat.name} className="card group flex items-center justify-between p-6 hover:shadow-md transition-all cursor-default overflow-hidden border-none shadow-sm outline outline-1 outline-border">
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{stat.name}</p>
-                            <p className="text-3xl font-bold text-gray-900 leading-none">{stat.value}</p>
+                    <div key={stat.name} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">{stat.name}</p>
+                            <h3 className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</h3>
                         </div>
-                        <div className={`p-4 rounded-xl transition-all group-hover:bg-opacity-80 ${stat.bg}`}>
-                            <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                        <div className={`p-3 rounded-lg ${stat.bg}`}>
+                            <stat.icon className={`w-5 h-5 ${stat.color}`} />
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="card space-y-4 p-6 shadow-sm border-none outline outline-1 outline-border">
-                    <div className="flex justify-between items-center pb-4 border-b border-gray-50">
-                        <h3 className="font-bold text-gray-900 text-lg">Recent Candidates</h3>
-                        <button className="text-xs font-bold text-primary hover:text-primary-600 transition-colors">
-                            View all
-                        </button>
+            {/* Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Recent Candidates (2/3 width) */}
+                <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col h-full">
+                    <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+                        <h3 className="font-bold text-gray-900">Recent Applications</h3>
+                        <a href="/admin/applications" className="text-sm font-medium text-primary hover:text-primary-600">View All</a>
                     </div>
-                    <div className="divide-y divide-gray-50">
-                        {recentCandidates && recentCandidates.length > 0 ? (
-                            recentCandidates.map((candidate: any) => (
-                                <div key={candidate.id} className="py-4 flex justify-between items-center hover:bg-gray-50/50 transition-colors rounded-xl px-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                            {candidate.name?.charAt(0)}
+                    <div className="p-6">
+                        <div className="space-y-4">
+                            {recentCandidates && recentCandidates.length > 0 ? (
+                                recentCandidates.map((candidate: any) => (
+                                    <div key={candidate.id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-100">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-bold text-sm">
+                                                {candidate.name?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900">{candidate.name}</p>
+                                                <p className="text-xs text-gray-500">{candidate.email} • {new Date(candidate.created_at).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-gray-900 leading-none mb-1">{candidate.name}</p>
-                                            <p className="text-[11px] text-gray-400 font-medium">{new Date(candidate.created_at).toLocaleDateString()}</p>
-                                        </div>
+                                        <span className={cn(
+                                            "status-badge",
+                                            candidate.status === 'Recommended' ? "status-approved" :
+                                                candidate.status === 'Rejected' ? "status-rejected" : "status-pending"
+                                        )}>
+                                            {candidate.status}
+                                        </span>
                                     </div>
-                                    <span className={cn(
-                                        "status-badge text-[10px] font-bold uppercase tracking-wider px-3",
-                                        candidate.status === 'Recommended' ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-600 border border-gray-200"
-                                    )}>
-                                        {candidate.status}
-                                    </span>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-sm text-gray-500 italic p-4">No recent applications found.</p>
-                        )}
+                                ))
+                            ) : (
+                                <p className="text-center text-gray-500 py-8 italic">No recent applications found.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="card space-y-4 p-6 shadow-sm border-none outline outline-1 outline-border">
-                    <div className="flex justify-between items-center pb-4 border-b border-gray-50">
-                        <h3 className="font-bold text-gray-900 text-lg">Upcoming Assessments</h3>
-                        <Shield className="w-5 h-5 text-gray-200" />
+                {/* Upcoming Assessments (1/3 width) */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col h-full">
+                    <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+                        <h3 className="font-bold text-gray-900">Upcoming Assessments</h3>
+                        <Shield className="w-4 h-4 text-gray-400" />
                     </div>
-                    <div className="divide-y divide-gray-50">
-                        {upcomingAssessments && upcomingAssessments.length > 0 ? (
-                            upcomingAssessments.map((slot: any) => (
-                                <div key={slot.id} className="py-4 flex justify-between items-center hover:bg-gray-50/50 transition-colors rounded-xl px-2">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Calendar className="w-5 h-5 text-primary" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-gray-900 leading-none mb-1">{slot.candidates?.name}</p>
-                                            <p className="text-[11px] font-medium text-gray-400">
-                                                {new Date(slot.start_time).toLocaleDateString()} at {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </p>
+                    <div className="p-6 flex-1">
+                        <div className="space-y-4 h-full">
+                            {upcomingAssessments && upcomingAssessments.length > 0 ? (
+                                upcomingAssessments.map((slot: any) => (
+                                    <div key={slot.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-1">
+                                                <Calendar className="w-4 h-4 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900 text-sm">{slot.candidates?.name}</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {new Date(slot.start_time).toLocaleDateString()}
+                                                    <br />
+                                                    {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
+                                ))
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center opacity-60 min-h-[200px]">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                                        <Calendar className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-500">No upcoming assessments</p>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="py-12 flex flex-col items-center justify-center opacity-50">
-                                <Calendar className="w-10 h-10 mb-2 text-gray-300" />
-                                <p className="text-xs font-semibold text-gray-400">Nothing scheduled for today</p>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

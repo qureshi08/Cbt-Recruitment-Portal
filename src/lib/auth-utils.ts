@@ -23,10 +23,12 @@ export async function getCurrentUser(): Promise<AppUser | null> {
 
     const roles = await getUserRoles(user.id);
 
+    const displayName = profile?.full_name || user.user_metadata?.full_name || 'System User';
+
     return {
         id: user.id,
         email: user.email!,
-        full_name: profile?.full_name || 'System User',
+        full_name: displayName,
         roles: roles
     };
 }
