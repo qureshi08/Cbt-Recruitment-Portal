@@ -101,10 +101,10 @@ export async function updateCandidateStatus(candidateId: string, status: string)
                 }
             } catch (emailError: any) {
                 console.error("Email delivery failed, but status was updated:", emailError.message);
-                // We return a success with a note so the admin knows the status changed but email didn't
+                // Return success but with the SPECIFIC error message so we can debug it
                 return {
                     success: true,
-                    note: "Status updated, but email delivery failed. Please check your Gmail App Password."
+                    note: `Status updated, but email failed: ${emailError.message}`
                 };
             }
         }
