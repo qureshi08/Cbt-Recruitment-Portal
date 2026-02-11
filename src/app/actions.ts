@@ -2,7 +2,10 @@
 
 import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import {
     sendAssessmentEmail,
     sendRecommendedEmail,
@@ -10,6 +13,52 @@ import {
 } from "@/lib/email";
 
 export type UserRole = 'Master' | 'Approver' | 'HR' | 'Interviewer';
+
+export async function login(formData: FormData) {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const supabaseClient = await createClient();
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+    });
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    revalidatePath("/admin", "layout");
+    redirect("/admin");
+}
+
+export async function logout() {
+    console.log("LOGOUT INITIATED");
+    const supabaseClient = await createClient();
+    await supabaseClient.auth.signOut();
+
+    const cookieStore = await cookies();
+    // Manual aggressive cookie clearing
+    const allCookies = cookieStore.getAll();
+    allCookies.forEach(cookie => {
+        // Clear all Supabase related cookies
+        if (
+            cookie.name.includes('auth') ||
+            cookie.name.includes('supabase') ||
+            cookie.name.includes('sb-') ||
+            cookie.name.includes('session')
+        ) {
+            cookieStore.delete(cookie.name);
+        }
+    });
+
+    // Clear the path cache
+    revalidatePath("/", "layout");
+    revalidatePath("/admin", "layout");
+
+    // Use a hard redirect to the home page first to break any cycles
+    redirect("/login");
+}
 
 export async function getUserRoles(userId: string): Promise<UserRole[]> {
     const { data, error } = await supabase
@@ -50,12 +99,13 @@ export async function fetchAllUsers() {
     }));
 }
 
-export async function createAdminUser(email: string, fullName: string, roleNames: string[]) {
+export async function createAdminUser(email: string, fullName: string, roleNames: string[], password?: string) {
     try {
+        console.log("Creating user:", email);
         // 1. Create user in Supabase Auth
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
-            password: 'Cbt@123456', // Direct password for immediate access
+            password: password || 'Cbt@123456',
             email_confirm: true,
             user_metadata: { full_name: fullName }
         });
@@ -66,7 +116,7 @@ export async function createAdminUser(email: string, fullName: string, roleNames
         // 2. Create entry in public.users table
         const { error: userError } = await supabaseAdmin
             .from('users')
-            .insert({ id: userId, email, full_name: fullName });
+            .upsert({ id: userId, email, full_name: fullName });
 
         if (userError) throw userError;
 
@@ -93,85 +143,122 @@ export async function createAdminUser(email: string, fullName: string, roleNames
     }
 }
 
+export async function deleteAdminUser(userId: string) {
+    try {
+        // 1. Delete from Auth (this also deletes from public.users due to CASCADE in DB)
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (authError) throw authError;
+
+        revalidatePath('/admin/settings');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+export async function updateAdminUser(userId: string, fullName: string, roleNames: string[]) {
+    try {
+        // 1. Update public.users
+        const { error: userError } = await supabaseAdmin
+            .from('users')
+            .update({ full_name: fullName })
+            .eq('id', userId);
+
+        if (userError) throw userError;
+
+        // 2. Update Auth metadata
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: { full_name: fullName }
+        });
+
+        // 3. Update Roles
+        await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+        for (const roleName of roleNames) {
+            const { data: roleData } = await supabaseAdmin
+                .from('roles')
+                .select('id')
+                .eq('name', roleName)
+                .single();
+
+            if (roleData) {
+                await supabaseAdmin
+                    .from('user_roles')
+                    .insert({ user_id: userId, role_id: roleData.id });
+            }
+        }
+
+        revalidatePath('/admin/settings');
+        revalidatePath('/admin', 'layout');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
 export async function submitApplication(formData: FormData) {
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
-    const position = formData.get("position") as string;
-    const coverLetter = formData.get("coverLetter") as string;
-    const resumeFile = formData.get("resume") as File;
-
-    if (!resumeFile) {
-        return { error: "Resume is required" };
-    }
+    const resume = formData.get("resume") as File;
+    const position = formData.get("position") as string || "General Application";
 
     try {
-        // 1. Upload Resume to Storage
-        const fileName = `${Date.now()}_${resumeFile.name}`;
+        if (!resume) throw new Error("Resume is required");
+
+        const fileExt = resume.name.split(".").pop();
+        const fileName = `${Math.random()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from("resumes")
-            .upload(fileName, resumeFile);
+            .upload(fileName, resume);
 
         if (uploadError) throw uploadError;
 
-        // 2. Get Public URL
         const { data: { publicUrl } } = supabase.storage
             .from("resumes")
             .getPublicUrl(fileName);
 
-        // 3. Insert into Database
-        const { data: candidate, error: insertError } = await supabase
+        const { data: candidate, error: candidateError } = await supabase
             .from("candidates")
             .insert({
                 name,
                 email,
                 phone,
-                position,
-                cover_letter: coverLetter,
                 resume_url: publicUrl,
-                status: "Applied",
+                position,
+                status: "Applied"
             })
             .select()
             .single();
 
-        if (insertError) throw insertError;
+        if (candidateError) throw candidateError;
 
-        // 4. Create internal notification
-        await supabase
-            .from('notifications')
-            .insert({
-                title: 'New Application',
-                message: `${name} has applied for the CGAP program.`,
-                is_read: false
-            });
+        // Create notification for admin
+        await supabase.from('notifications').insert({
+            title: 'New Application',
+            message: `${name} has applied for ${position}.`,
+            is_read: false
+        });
 
-        revalidatePath("/admin/applications");
         revalidatePath("/admin");
         return { success: true };
     } catch (error: any) {
-        console.error("Submission error:", error);
-        return { error: error.message || "Failed to submit application" };
+        console.error("submitApplication error:", error);
+        return { error: error.message };
     }
 }
 
 export async function updateCandidateStatus(candidateId: string, status: string) {
     try {
-        // 1. Fetch candidate details for email triggers
-        const { data: candidate } = await supabase
-            .from("candidates")
-            .select("name, email")
-            .eq("id", candidateId)
-            .single();
-
-        // 2. Update status
-        const { error } = await supabase
+        const { data: candidate, error } = await supabase
             .from("candidates")
             .update({ status })
-            .eq("id", candidateId);
+            .eq("id", candidateId)
+            .select()
+            .single();
 
         if (error) throw error;
 
-        // 3. Trigger Email Notifications
+        // Trigger Email Notifications
         if (candidate) {
             try {
                 const origin = process.env.NEXT_PUBLIC_APP_URL ||
@@ -187,7 +274,6 @@ export async function updateCandidateStatus(candidateId: string, status: string)
                 }
             } catch (emailError: any) {
                 console.error("Email delivery failed, but status was updated:", emailError.message);
-                // Return success but with the SPECIFIC error message so we can debug it
                 return {
                     success: true,
                     note: `Status updated, but email failed: ${emailError.message}`
@@ -199,35 +285,37 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         revalidatePath("/admin");
         return { success: true };
     } catch (error: any) {
-        console.error("Error updating status:", error);
         return { error: error.message };
     }
 }
 
-export async function createAssessmentSlot(startTime: string, endTime: string) {
+export async function createAssessmentSlot(formData: FormData) {
+    const startTime = formData.get("startTime") as string;
+    const duration = parseInt(formData.get("duration") as string);
+
     try {
-        const { data, error } = await supabase
+        const endTime = new Date(new Date(startTime).getTime() + duration * 60000);
+
+        const { error } = await supabase
             .from("assessment_slots")
             .insert({
                 start_time: startTime,
-                end_time: endTime,
+                end_time: endTime.toISOString(),
                 is_locked: false
-            })
-            .select()
-            .single();
+            });
 
         if (error) throw error;
+
         revalidatePath("/admin/slots");
-        return { success: true, data };
+        return { success: true };
     } catch (error: any) {
         return { error: error.message };
     }
 }
 
-export async function bookAssessmentSlot(slotId: string, candidateId: string) {
+export async function bookAssessmentSlot(candidateId: string, slotId: string) {
     try {
-        // 1. Update the slot
-        const { error: slotError } = await supabase
+        const { error } = await supabase
             .from("assessment_slots")
             .update({
                 candidate_id: candidateId,
@@ -235,28 +323,14 @@ export async function bookAssessmentSlot(slotId: string, candidateId: string) {
             })
             .eq("id", slotId);
 
-        if (slotError) throw slotError;
+        if (error) throw error;
 
-        // 2. Update candidate status
-        const { error: candidateError } = await supabase
-            .from("candidates")
-            .update({ status: "Assessment Scheduled" })
-            .eq("id", candidateId);
-
-        if (candidateError) throw candidateError;
-
-        // 3. Create notification for HR
-        await supabase
-            .from('notifications')
-            .insert({
-                title: 'Assessment Scheduled',
-                message: `An assessment slot has been booked.`,
-                is_read: false
-            });
+        // Update candidate status
+        await updateCandidateStatus(candidateId, "Assessment Scheduled");
 
         revalidatePath("/admin/slots");
-        revalidatePath("/admin/applications");
         revalidatePath("/admin");
+        revalidatePath(`/book-slot/${candidateId}`);
         return { success: true };
     } catch (error: any) {
         return { error: error.message };
@@ -265,10 +339,8 @@ export async function bookAssessmentSlot(slotId: string, candidateId: string) {
 
 export async function completeAssessment(candidateId: string) {
     try {
-        // 1. Create an interview record first (using current date/time)
+        // 1. Create interview entry
         const now = new Date();
-
-        // We fetch the candidate name first for a better notification
         const { data: candidate } = await supabase
             .from("candidates")
             .select("name")
@@ -285,8 +357,7 @@ export async function completeAssessment(candidateId: string) {
 
         if (interviewError) throw new Error(`Failed to create interview: ${interviewError.message}`);
 
-        // 2. Update candidate status ONLY if interview was created successfully
-        // Note: Using the updateCandidateStatus function here to trigger any related logic
+        // 2. Update candidate status
         await updateCandidateStatus(candidateId, "To Be Interviewed");
 
         // 3. Create notification
@@ -310,7 +381,7 @@ export async function completeAssessment(candidateId: string) {
 
 export async function deleteCandidate(candidateId: string) {
     try {
-        // 1. Delete dependent records first (since we don't have CASCADE set up in DB yet)
+        // 1. Delete dependent records
         await supabase.from("assessment_slots").delete().eq("candidate_id", candidateId);
         await supabase.from("interviews").delete().eq("candidate_id", candidateId);
 

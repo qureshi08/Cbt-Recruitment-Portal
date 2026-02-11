@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
-import { UserRole } from "@/app/actions";
+import { UserRole, logout } from "@/app/actions";
 
 interface SidebarProps {
     userRoles: UserRole[];
@@ -65,10 +65,15 @@ export default function Sidebar({ userRoles }: SidebarProps) {
             </nav>
 
             <div className="p-4 border-t border-border">
-                <button className="flex items-center gap-3 px-3 py-2 w-full text-gray-600 hover:text-red-600 rounded hover:bg-red-50 transition-colors">
-                    <LogOut className="w-5 h-5" />
-                    <span>Logout</span>
-                </button>
+                <form action={logout}>
+                    <button
+                        type="submit"
+                        className="flex items-center gap-3 px-3 py-2 w-full text-gray-600 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
         </aside>
     );

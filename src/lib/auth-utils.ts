@@ -1,5 +1,5 @@
-import { supabase } from "./supabase";
-import { UserRole } from "@/app/actions";
+import { createClient } from "./supabase-server";
+import { UserRole, getUserRoles } from "@/app/actions";
 
 export interface AppUser {
     id: string;
@@ -8,15 +8,26 @@ export interface AppUser {
     roles: UserRole[];
 }
 
-// In a real app, this would use supabase.auth.getUser()
-// For now, we simulate "Farooq Sahab" as the default Master/Approver user
 export async function getCurrentUser(): Promise<AppUser | null> {
-    // We'll mock a user for the demonstration
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    // Fetch user profile from public.users
+    const { data: profile } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+    const roles = await getUserRoles(user.id);
+
     return {
-        id: "fc2db9a3-5c8e-4a6b-9c5d-4f1e2a3b4c5d",
-        email: "farooq@cbt.com",
-        full_name: "Farooq Sahab",
-        roles: ["Master", "Approver"] // Give him dual roles as requested
+        id: user.id,
+        email: user.email!,
+        full_name: profile?.full_name || 'System User',
+        roles: roles
     };
 }
 
