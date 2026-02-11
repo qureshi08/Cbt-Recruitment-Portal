@@ -40,7 +40,7 @@ export default function Home() {
     ];
 
     return (
-        <div className="min-h-screen font-sans">
+        <div className="min-h-screen">
             {/* Header */}
             <header className="bg-white/80 backdrop-blur-md border-b border-border py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-50">
                 <Logo />
@@ -101,7 +101,7 @@ export default function Home() {
                     <div className="lg:col-span-5 grid grid-cols-1 gap-4">
                         <div className="card p-6 bg-gray-50 border-none">
                             <h4 className="font-bold text-gray-900 mb-2">Iteration Progress</h4>
-                            <p className="text-sm text-gray-500">The team behind the program has run more than <span className="font-bold text-primary">12 successful iterations</span> of the program already.</p>
+                            <p className="text-sm text-gray-500">The team behind the program has run more than <span className="font-bold text-primary">26 successful iterations</span> of the program already.</p>
                         </div>
                         <div className="card p-6 bg-primary text-white border-none shadow-xl shadow-primary/20">
                             <h4 className="font-bold mb-2">What you get</h4>
@@ -141,7 +141,7 @@ export default function Home() {
                 <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-gray-50 to-white" />
                 <div className="max-w-4xl mx-auto relative">
                     <div className="text-center mb-12">
-                        <h3 className="text-3xl font-bold text-gray-900 mb-2 font-serif">Apply for CGAP</h3>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-2">Apply for CGAP</h3>
                         <p className="text-gray-500">Start your journey into Data Analytics consultancy today.</p>
                     </div>
                     <ApplicationForm />
