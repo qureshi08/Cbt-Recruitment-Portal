@@ -1,19 +1,19 @@
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'muhammadanasq@gmail.com',
-        pass: 'Maq.192.168.',
-    },
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'muhammadanasq@gmail.com',
+    pass: process.env.EMAIL_PASSWORD || 'Maq.192.168.',
+  },
 });
 
 export const sendAssessmentEmail = async (candidateEmail: string, candidateName: string, bookingLink: string) => {
-    const mailOptions = {
-        from: '"CBT Recruitment" <muhammadanasq@gmail.com>',
-        to: candidateEmail,
-        subject: 'Action Required: Schedule Your CBT Assessment',
-        html: `
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    to: candidateEmail,
+    subject: 'Action Required: Schedule Your CBT Assessment',
+    html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #2563eb;">Congratulations, ${candidateName}!</h2>
         <p>Your application for the CGAP program has been approved. The next step is a technical assessment.</p>
@@ -26,17 +26,17 @@ export const sendAssessmentEmail = async (candidateEmail: string, candidateName:
         <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
       </div>
     `,
-    };
+  };
 
-    return transporter.sendMail(mailOptions);
+  return transporter.sendMail(mailOptions);
 };
 
 export const sendRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
-    const mailOptions = {
-        from: '"CBT Recruitment" <muhammadanasq@gmail.com>',
-        to: candidateEmail,
-        subject: 'Great News from CBT Recruitment',
-        html: `
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    to: candidateEmail,
+    subject: 'Great News from CBT Recruitment',
+    html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #059669;">Good News, ${candidateName}!</h2>
         <p>We are pleased to inform you that the interview panel has recommended you for the next phase of the CGAP program.</p>
@@ -46,17 +46,17 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
         <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
       </div>
     `,
-    };
+  };
 
-    return transporter.sendMail(mailOptions);
+  return transporter.sendMail(mailOptions);
 };
 
 export const sendNotRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
-    const mailOptions = {
-        from: '"CBT Recruitment" <muhammadanasq@gmail.com>',
-        to: candidateEmail,
-        subject: 'Update Regarding Your Application - CBT',
-        html: `
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    to: candidateEmail,
+    subject: 'Update Regarding Your Application - CBT',
+    html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2>Update on your application, ${candidateName}</h2>
         <p>Thank you for giving us the opportunity to consider you for the CGAP program.</p>
@@ -66,7 +66,7 @@ export const sendNotRecommendedEmail = async (candidateEmail: string, candidateN
         <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
       </div>
     `,
-    };
+  };
 
-    return transporter.sendMail(mailOptions);
+  return transporter.sendMail(mailOptions);
 };
