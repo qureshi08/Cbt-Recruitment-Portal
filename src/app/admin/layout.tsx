@@ -24,10 +24,7 @@ export default async function AdminLayout({
             <Sidebar userRoles={roles} />
             <div className="flex-1 ml-64">
                 <header className="h-16 bg-white border-b border-border flex items-center justify-between px-8 sticky top-0 z-10">
-                    <div className="flex flex-col">
-                        <h1 className="text-sm font-bold text-gray-400 uppercase tracking-tighter line-none">Internal Systems</h1>
-                        <span className="text-lg font-bold text-gray-800 -mt-1">Admin Control Center</span>
-                    </div>
+                    <div></div>
 
                     <div className="flex items-center gap-6">
                         <NotificationBell />
