@@ -25,7 +25,7 @@ export default function SlotBookingClient({ candidateId, initialSlots }: SlotBoo
         if (!selectedSlot) return;
         setIsSubmitting(true);
 
-        const result = await bookAssessmentSlot(selectedSlot, candidateId);
+        const result = await bookAssessmentSlot(candidateId, selectedSlot);
 
         if (result.success) {
             setIsSuccess(true);
