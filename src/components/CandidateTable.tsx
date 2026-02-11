@@ -42,11 +42,15 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
     const [statusFilter, setStatusFilter] = useState<string>("All");
 
     const handleStatusUpdate = async (id: string, newStatus: CandidateStatus) => {
-        const result = await updateCandidateStatus(id, newStatus);
+        const result: any = await updateCandidateStatus(id, newStatus);
         if (result.success) {
             setCandidates(prev =>
                 prev.map(c => c.id === id ? { ...c, status: newStatus } : c)
             );
+
+            if (result.note) {
+                alert(result.note);
+            }
         } else {
             alert("Failed to update status: " + result.error);
         }

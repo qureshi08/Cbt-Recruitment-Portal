@@ -88,15 +88,24 @@ export async function updateCandidateStatus(candidateId: string, status: string)
 
         // 3. Trigger Email Notifications
         if (candidate) {
-            const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            try {
+                const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-            if (status === "Approved") {
-                const bookingLink = `${origin}/book-slot/${candidateId}`;
-                await sendAssessmentEmail(candidate.email, candidate.name, bookingLink);
-            } else if (status === "Recommended") {
-                await sendRecommendedEmail(candidate.email, candidate.name);
-            } else if (status === "Not Recommended" || status === "Rejected") {
-                await sendNotRecommendedEmail(candidate.email, candidate.name);
+                if (status === "Approved") {
+                    const bookingLink = `${origin}/book-slot/${candidateId}`;
+                    await sendAssessmentEmail(candidate.email, candidate.name, bookingLink);
+                } else if (status === "Recommended") {
+                    await sendRecommendedEmail(candidate.email, candidate.name);
+                } else if (status === "Not Recommended" || status === "Rejected") {
+                    await sendNotRecommendedEmail(candidate.email, candidate.name);
+                }
+            } catch (emailError: any) {
+                console.error("Email delivery failed, but status was updated:", emailError.message);
+                // We return a success with a note so the admin knows the status changed but email didn't
+                return {
+                    success: true,
+                    note: "Status updated, but email delivery failed. Please check your Gmail App Password."
+                };
             }
         }
 
