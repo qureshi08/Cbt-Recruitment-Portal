@@ -89,7 +89,8 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         // 3. Trigger Email Notifications
         if (candidate) {
             try {
-                const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+                const origin = process.env.NEXT_PUBLIC_APP_URL ||
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
                 if (status === "Approved") {
                     const bookingLink = `${origin}/book-slot/${candidateId}`;
