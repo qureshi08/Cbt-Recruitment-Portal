@@ -16,11 +16,11 @@ export const sendAssessmentEmail = async (candidateEmail: string, candidateName:
     subject: 'Action Required: Schedule Your CBT Assessment',
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #2563eb;">Congratulations, ${candidateName}!</h2>
+        <h2 style="color: #009245;">Congratulations, ${candidateName}!</h2>
         <p>Your application for the CGAP program has been approved. The next step is a technical assessment.</p>
         <p>Please use the link below to select a convenient time slot for your assessment:</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${bookingLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Schedule Assessment</a>
+          <a href="${bookingLink}" style="background-color: #009245; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Schedule Assessment</a>
         </div>
         <p>If you have any questions, feel free to reply to this email.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
@@ -39,7 +39,7 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
     subject: 'Great News from CBT Recruitment',
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #059669;">Good News, ${candidateName}!</h2>
+        <h2 style="color: #009245;">Good News, ${candidateName}!</h2>
         <p>We are pleased to inform you that the interview panel has recommended you for the next phase of the CGAP program.</p>
         <p>Our team will reach out to you shortly with more details regarding the final onboarding process.</p>
         <p>Congratulations once again!</p>
