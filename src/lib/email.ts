@@ -3,8 +3,9 @@ import nodemailer from 'nodemailer';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'muhammadanasq@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'rshr fqyi nszd vzus',
+    user: 'muhammadanasq@gmail.com',
+    // Force the new working password to bypass stale Vercel env variables
+    pass: 'rshr fqyi nszd vzus',
   },
 });
 
