@@ -4,7 +4,6 @@ import {
     Calendar,
     CheckCircle,
     Clock,
-    ArrowUpRight,
     Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -59,19 +58,19 @@ export default async function AdminDashboard() {
     ];
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <div className="flex justify-between items-end bg-white p-8 rounded-3xl border border-border shadow-sm">
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center bg-white p-8 rounded-2xl border border-border shadow-sm">
                 <div>
-                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
                         Welcome, {user?.full_name?.split(' ')[0] || 'User'}!
                     </h2>
-                    <p className="text-gray-500 font-medium mt-1">
-                        Signed in as <span className="text-primary font-bold">{user?.email}</span>
+                    <p className="text-gray-500 font-medium text-sm mt-1">
+                        Signed in as <span className="text-primary font-semibold">{user?.email}</span>
                     </p>
                 </div>
                 <div className="flex gap-2">
                     {user?.roles?.map(role => (
-                        <div key={role} className="px-3 py-1 bg-gray-100 text-gray-600 text-[10px] font-black uppercase rounded-lg border border-gray-200">
+                        <div key={role} className="px-3 py-1 bg-gray-50 text-gray-600 text-[11px] font-bold uppercase rounded-lg border border-gray-200">
                             {role}
                         </div>
                     ))}
@@ -80,24 +79,24 @@ export default async function AdminDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat) => (
-                    <div key={stat.name} className="card group flex items-center justify-between p-6 hover:border-primary/50 transition-all cursor-default">
+                    <div key={stat.name} className="card group flex items-center justify-between p-6 hover:shadow-md transition-all cursor-default overflow-hidden border-none shadow-sm outline outline-1 outline-border">
                         <div className="space-y-1">
-                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{stat.name}</p>
-                            <p className="text-3xl font-black text-gray-900 leading-none">{stat.value}</p>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{stat.name}</p>
+                            <p className="text-3xl font-bold text-gray-900 leading-none">{stat.value}</p>
                         </div>
-                        <div className={`p-4 rounded-2xl transition-transform group-hover:scale-110 ${stat.bg}`}>
-                            <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                        <div className={`p-4 rounded-xl transition-all group-hover:bg-opacity-80 ${stat.bg}`}>
+                            <stat.icon className={`w-6 h-6 ${stat.color}`} />
                         </div>
                     </div>
                 ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="card space-y-4 p-6">
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="font-black text-gray-900 text-lg uppercase tracking-tighter">Recent Candidates</h3>
-                        <button className="text-xs font-bold text-primary hover:underline px-3 py-1.5 bg-primary/5 rounded-lg">
-                            ALL FILES
+                <div className="card space-y-4 p-6 shadow-sm border-none outline outline-1 outline-border">
+                    <div className="flex justify-between items-center pb-4 border-b border-gray-50">
+                        <h3 className="font-bold text-gray-900 text-lg">Recent Candidates</h3>
+                        <button className="text-xs font-bold text-primary hover:text-primary-600 transition-colors">
+                            View all
                         </button>
                     </div>
                     <div className="divide-y divide-gray-50">
@@ -109,13 +108,13 @@ export default async function AdminDashboard() {
                                             {candidate.name?.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-gray-900 leading-none mb-1">{candidate.name}</p>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{new Date(candidate.created_at).toLocaleDateString()}</p>
+                                            <p className="text-sm font-semibold text-gray-900 leading-none mb-1">{candidate.name}</p>
+                                            <p className="text-[11px] text-gray-400 font-medium">{new Date(candidate.created_at).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                     <span className={cn(
-                                        "status-badge text-[10px] font-black uppercase tracking-widest px-3",
-                                        candidate.status === 'Recommended' ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-600 border-gray-200"
+                                        "status-badge text-[10px] font-bold uppercase tracking-wider px-3",
+                                        candidate.status === 'Recommended' ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-600 border border-gray-200"
                                     )}>
                                         {candidate.status}
                                     </span>
@@ -127,32 +126,32 @@ export default async function AdminDashboard() {
                     </div>
                 </div>
 
-                <div className="card space-y-4 p-6">
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="font-black text-gray-900 text-lg uppercase tracking-tighter">Upcoming Slots</h3>
-                        <Shield className="w-5 h-5 text-gray-100" />
+                <div className="card space-y-4 p-6 shadow-sm border-none outline outline-1 outline-border">
+                    <div className="flex justify-between items-center pb-4 border-b border-gray-50">
+                        <h3 className="font-bold text-gray-900 text-lg">Upcoming Assessments</h3>
+                        <Shield className="w-5 h-5 text-gray-200" />
                     </div>
                     <div className="divide-y divide-gray-50">
                         {upcomingAssessments && upcomingAssessments.length > 0 ? (
                             upcomingAssessments.map((slot: any) => (
                                 <div key={slot.id} className="py-4 flex justify-between items-center hover:bg-gray-50/50 transition-colors rounded-xl px-2">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-primary/5 rounded-2xl flex items-center justify-center flex-shrink-0">
+                                        <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center flex-shrink-0">
                                             <Calendar className="w-5 h-5 text-primary" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-gray-900 leading-none mb-1">{slot.candidates?.name}</p>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                {new Date(slot.start_time).toLocaleDateString()} @ {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            <p className="text-sm font-semibold text-gray-900 leading-none mb-1">{slot.candidates?.name}</p>
+                                            <p className="text-[11px] font-medium text-gray-400">
+                                                {new Date(slot.start_time).toLocaleDateString()} at {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <div className="py-12 flex flex-col items-center justify-center opacity-40">
+                            <div className="py-12 flex flex-col items-center justify-center opacity-50">
                                 <Calendar className="w-10 h-10 mb-2 text-gray-300" />
-                                <p className="text-xs font-bold text-gray-400 uppercase">Nothing scheduled</p>
+                                <p className="text-xs font-semibold text-gray-400">Nothing scheduled for today</p>
                             </div>
                         )}
                     </div>
