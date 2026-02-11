@@ -1,12 +1,97 @@
 "use server";
 
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { revalidatePath } from "next/cache";
 import {
     sendAssessmentEmail,
     sendRecommendedEmail,
     sendNotRecommendedEmail
 } from "@/lib/email";
+
+export type UserRole = 'Master' | 'Approver' | 'HR' | 'Interviewer';
+
+export async function getUserRoles(userId: string): Promise<UserRole[]> {
+    const { data, error } = await supabase
+        .from('user_roles')
+        .select(`
+            roles (
+                name
+            )
+        `)
+        .eq('user_id', userId);
+
+    if (error || !data) return [];
+    return data.map((d: any) => d.roles.name as UserRole);
+}
+
+export async function getAllRoles() {
+    const { data, error } = await supabase.from('roles').select('*');
+    if (error) throw error;
+    return data;
+}
+
+export async function fetchAllUsers() {
+    const { data, error } = await supabase
+        .from('users')
+        .select(`
+            *,
+            user_roles (
+                roles (
+                    name
+                )
+            )
+        `);
+
+    if (error) throw error;
+    return data.map((u: any) => ({
+        ...u,
+        roles: u.user_roles.map((ur: any) => ur.roles.name)
+    }));
+}
+
+export async function createAdminUser(email: string, fullName: string, roleNames: string[]) {
+    try {
+        // 1. Create user in Supabase Auth
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password: 'Cbt@123456', // Direct password for immediate access
+            email_confirm: true,
+            user_metadata: { full_name: fullName }
+        });
+
+        if (authError) throw authError;
+        const userId = authData.user.id;
+
+        // 2. Create entry in public.users table
+        const { error: userError } = await supabaseAdmin
+            .from('users')
+            .insert({ id: userId, email, full_name: fullName });
+
+        if (userError) throw userError;
+
+        // 3. Assign roles
+        for (const roleName of roleNames) {
+            const { data: roleData } = await supabaseAdmin
+                .from('roles')
+                .select('id')
+                .eq('name', roleName)
+                .single();
+
+            if (roleData) {
+                await supabaseAdmin
+                    .from('user_roles')
+                    .insert({ user_id: userId, role_id: roleData.id });
+            }
+        }
+
+        revalidatePath('/admin/settings');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Create user error:", error);
+        return { error: error.message };
+    }
+}
 
 export async function submitApplication(formData: FormData) {
     const name = formData.get("name") as string;

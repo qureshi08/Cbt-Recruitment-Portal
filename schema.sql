@@ -1,6 +1,14 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
+-- USERS TABLE (Extending Supabase Auth)
+create table public.users (
+  id uuid references auth.users on delete cascade primary key,
+  email text unique not null,
+  full_name text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- ROLES TABLE
 create table public.roles (
   id uuid primary key default uuid_generate_v4(),
@@ -9,19 +17,16 @@ create table public.roles (
 );
 
 insert into public.roles (name, description) values
-  ('Candidate', 'External user applying for jobs'),
-  ('Farooq Sahab', 'Approving Authority'),
-  ('HR', 'Recruitment Team'),
-  ('Interviewer', 'Interview Panel Member'),
-  ('Admin', 'System Administrator');
+  ('Master', 'Can do everything'),
+  ('Approver', 'Can do initial approvals'),
+  ('HR', 'Recruitment team - View only'),
+  ('Interviewer', 'Can only do interviews');
 
--- USERS TABLE (Extending Supabase Auth)
-create table public.users (
-  id uuid references auth.users on delete cascade primary key,
-  email text unique not null,
-  full_name text,
-  role_id uuid references public.roles(id),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- USER_ROLES JUNCTION TABLE
+create table public.user_roles (
+  user_id uuid references public.users(id) on delete cascade,
+  role_id uuid references public.roles(id) on delete cascade,
+  primary key (user_id, role_id)
 );
 
 -- CANDIDATES TABLE

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Clock, User, CheckCircle, XCircle, MessageSquare, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateCandidateStatus } from "@/app/actions";
+import { updateCandidateStatus, UserRole } from "@/app/actions";
 import { supabase } from "@/lib/supabase";
 
 interface Interview {
@@ -17,9 +17,10 @@ interface Interview {
 
 interface InterviewListProps {
     initialInterviews: Interview[];
+    userRoles: UserRole[];
 }
 
-export default function InterviewList({ initialInterviews }: InterviewListProps) {
+export default function InterviewList({ initialInterviews, userRoles }: InterviewListProps) {
     const [interviews, setInterviews] = useState(initialInterviews);
     const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,7 +97,7 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
                                 )}
                             </td>
                             <td className="px-6 py-4 text-right">
-                                {!interview.decision && (
+                                {!interview.decision && (userRoles.includes('Interviewer') || userRoles.includes('Master')) ? (
                                     <button
                                         onClick={() => setSelectedInterview(interview)}
                                         className="btn-secondary !py-1 !px-3 text-xs flex items-center justify-center gap-1 ml-auto"
@@ -104,6 +105,8 @@ export default function InterviewList({ initialInterviews }: InterviewListProps)
                                         <MessageSquare className="w-3 h-3" />
                                         Submit Feedback
                                     </button>
+                                ) : (
+                                    !interview.decision && <span className="text-xs text-gray-400 font-medium">View Only</span>
                                 )}
                             </td>
                         </tr>

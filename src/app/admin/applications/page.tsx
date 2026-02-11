@@ -1,10 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import { Candidate } from "@/types/database";
 import CandidateTable from "@/components/CandidateTable";
+import { getCurrentUser } from "@/lib/auth-utils";
 
 export default async function ApplicationsPage() {
+    const user = await getCurrentUser();
+    const roles = user?.roles || [];
+
     // Fetch candidates from Supabase
-    // In a real app, we'd handle pagination and filtering
     const { data: candidates, error } = await supabase
         .from("candidates")
         .select("*")
@@ -24,7 +27,7 @@ export default async function ApplicationsPage() {
             </div>
 
             <div className="card !p-0 overflow-hidden">
-                <CandidateTable initialCandidates={candidates || []} />
+                <CandidateTable initialCandidates={candidates || []} userRoles={roles} />
             </div>
         </div>
     );

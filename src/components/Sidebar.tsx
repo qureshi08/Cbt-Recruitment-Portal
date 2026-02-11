@@ -13,17 +13,26 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
+import { UserRole } from "@/app/actions";
+
+interface SidebarProps {
+    userRoles: UserRole[];
+}
 
 const menuItems = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "Applications", href: "/admin/applications", icon: Users },
-    { name: "Assessment Slots", href: "/admin/slots", icon: Calendar },
-    { name: "Interviews", href: "/admin/interviews", icon: ClipboardList },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
+    { name: "Dashboard", href: "/admin", icon: LayoutDashboard, roles: ["Master", "Approver", "HR"] },
+    { name: "Applications", href: "/admin/applications", icon: Users, roles: ["Master", "Approver", "HR"] },
+    { name: "Assessment Slots", href: "/admin/slots", icon: Calendar, roles: ["Master", "HR"] },
+    { name: "Interviews", href: "/admin/interviews", icon: ClipboardList, roles: ["Master", "Interviewer", "HR"] },
+    { name: "Settings", href: "/admin/settings", icon: Settings, roles: ["Master"] },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ userRoles }: SidebarProps) {
     const pathname = usePathname();
+
+    const allowedItems = menuItems.filter(item =>
+        item.roles.some(role => userRoles.includes(role as UserRole))
+    );
 
     return (
         <aside className="w-64 bg-white border-r border-border flex flex-col h-screen fixed left-0 top-0">
@@ -32,7 +41,7 @@ export default function Sidebar() {
             </div>
 
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                {menuItems.map((item) => {
+                {allowedItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link

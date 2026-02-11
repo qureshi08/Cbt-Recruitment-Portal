@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Candidate, CandidateStatus } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole } from "@/app/actions";
 import {
     MoreHorizontal,
     ExternalLink,
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 interface CandidateTableProps {
     initialCandidates: Candidate[];
+    userRoles: UserRole[];
 }
 
 const statusColors: Record<CandidateStatus, string> = {
@@ -36,13 +37,23 @@ const statusColors: Record<CandidateStatus, string> = {
     "Not Recommended": "bg-red-600 text-white shadow-sm",
 };
 
-export default function CandidateTable({ initialCandidates }: CandidateTableProps) {
+export default function CandidateTable({ initialCandidates, userRoles }: CandidateTableProps) {
     const [candidates, setCandidates] = useState(initialCandidates);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("All");
 
+    const isMaster = userRoles.includes('Master');
+    const isApprover = userRoles.includes('Approver');
+    const isHR = userRoles.includes('HR');
+    const isInterviewer = userRoles.includes('Interviewer');
+
+    const canApprove = isMaster || isApprover;
+    const canDelete = isMaster;
+    const canViewOnly = isHR || isInterviewer;
+
     const handleDelete = async (id: string) => {
+        if (!canDelete) return;
         if (!window.confirm("Are you sure you want to delete this application? This action cannot be undone.")) return;
 
         const result = await deleteCandidate(id);
@@ -54,6 +65,8 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
     };
 
     const handleStatusUpdate = async (id: string, newStatus: CandidateStatus) => {
+        if (!canApprove && candidateStatusIsInitial(newStatus)) return;
+
         const result: any = await updateCandidateStatus(id, newStatus);
         if (result.success) {
             setCandidates(prev =>
@@ -66,6 +79,10 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
         } else {
             alert("Failed to update status: " + result.error);
         }
+    };
+
+    const candidateStatusIsInitial = (status: string) => {
+        return status === 'Approved' || status === 'Rejected';
     };
 
     const copyBookingLink = (id: string) => {
@@ -155,7 +172,7 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
-                                        {candidate.status === 'Approved' && (
+                                        {candidate.status === 'Approved' && (isMaster || isHR) && (
                                             <button
                                                 onClick={() => copyBookingLink(candidate.id)}
                                                 className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20 transition-all border border-primary/20"
@@ -176,7 +193,7 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
                                             <ExternalLink className="w-4 h-4" />
                                         </a>
 
-                                        {candidate.status === 'Applied' && (
+                                        {candidate.status === 'Applied' && canApprove && (
                                             <>
                                                 <button
                                                     onClick={() => handleStatusUpdate(candidate.id, 'Approved')}
@@ -195,13 +212,15 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
                                             </>
                                         )}
 
-                                        <button
-                                            onClick={() => handleDelete(candidate.id)}
-                                            className="p-1.5 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors"
-                                            title="Delete Application"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {canDelete && (
+                                            <button
+                                                onClick={() => handleDelete(candidate.id)}
+                                                className="p-1.5 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors"
+                                                title="Delete Application"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
 
                                         <button className="p-1.5 hover:bg-gray-100 rounded text-gray-400">
                                             <MoreHorizontal className="w-4 h-4" />

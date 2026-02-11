@@ -1,7 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import InterviewList from "@/components/InterviewList";
+import { getCurrentUser } from "@/lib/auth-utils";
 
 export default async function InterviewsPage() {
+    const user = await getCurrentUser();
+    const roles = user?.roles || [];
+
     const { data: interviews, error } = await supabase
         .from("interviews")
         .select(`
@@ -25,7 +29,7 @@ export default async function InterviewsPage() {
             </div>
 
             <div className="card !p-0">
-                <InterviewList initialInterviews={interviews || []} />
+                <InterviewList initialInterviews={interviews || []} userRoles={roles} />
             </div>
         </div>
     );
