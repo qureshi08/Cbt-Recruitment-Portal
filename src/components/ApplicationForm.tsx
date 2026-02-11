@@ -1,13 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Send, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, Send, CheckCircle2, AlertCircle, FileCheck } from "lucide-react";
 import { submitApplication } from "@/app/actions";
 
 export default function ApplicationForm() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fileName, setFileName] = useState<string | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setFileName(file.name);
+        } else {
+            setFileName(null);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -90,12 +100,30 @@ export default function ApplicationForm() {
 
             <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700">Resume (PDF/DOC)</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary transition-colors cursor-pointer group relative">
-                    <input type="file" name="resume" required className="absolute inset-0 opacity-0 cursor-pointer" id="resume-upload" accept=".pdf,.doc,.docx" />
+                <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer group relative ${fileName ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary'}`}>
+                    <input
+                        type="file"
+                        name="resume"
+                        required
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        id="resume-upload"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleFileChange}
+                    />
                     <div className="pointer-events-none">
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2 group-hover:text-primary transition-colors" />
-                        <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                        <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX up to 5MB</p>
+                        {fileName ? (
+                            <>
+                                <FileCheck className="w-8 h-8 text-primary mx-auto mb-2" />
+                                <p className="text-sm font-bold text-primary">{fileName}</p>
+                                <p className="text-xs text-primary/60 mt-1">Click to change file</p>
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2 group-hover:text-primary transition-colors" />
+                                <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                                <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX up to 5MB</p>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
