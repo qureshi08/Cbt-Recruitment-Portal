@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Candidate, CandidateStatus } from "@/types/database";
-import { updateCandidateStatus } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate } from "@/app/actions";
 import {
     MoreHorizontal,
     ExternalLink,
@@ -12,7 +12,8 @@ import {
     Check,
     Search,
     Filter,
-    Phone
+    Phone,
+    Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,17 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("All");
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this application? This action cannot be undone.")) return;
+
+        const result = await deleteCandidate(id);
+        if (result.success) {
+            setCandidates(prev => prev.filter(c => c.id !== id));
+        } else {
+            alert("Failed to delete application: " + result.error);
+        }
+    };
 
     const handleStatusUpdate = async (id: string, newStatus: CandidateStatus) => {
         const result: any = await updateCandidateStatus(id, newStatus);
@@ -182,6 +194,14 @@ export default function CandidateTable({ initialCandidates }: CandidateTableProp
                                                 </button>
                                             </>
                                         )}
+
+                                        <button
+                                            onClick={() => handleDelete(candidate.id)}
+                                            className="p-1.5 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors"
+                                            title="Delete Application"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
 
                                         <button className="p-1.5 hover:bg-gray-100 rounded text-gray-400">
                                             <MoreHorizontal className="w-4 h-4" />

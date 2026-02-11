@@ -221,3 +221,20 @@ export async function completeAssessment(candidateId: string) {
         return { error: error.message };
     }
 }
+
+export async function deleteCandidate(candidateId: string) {
+    try {
+        const { error } = await supabase
+            .from("candidates")
+            .delete()
+            .eq("id", candidateId);
+
+        if (error) throw error;
+
+        revalidatePath("/admin/applications");
+        revalidatePath("/admin");
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
