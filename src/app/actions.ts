@@ -289,25 +289,22 @@ export async function updateCandidateStatus(candidateId: string, status: string)
     }
 }
 
-export async function createAssessmentSlot(formData: FormData) {
-    const startTime = formData.get("startTime") as string;
-    const duration = parseInt(formData.get("duration") as string);
-
+export async function createAssessmentSlot(startTime: string, endTime: string) {
     try {
-        const endTime = new Date(new Date(startTime).getTime() + duration * 60000);
-
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from("assessment_slots")
             .insert({
                 start_time: startTime,
-                end_time: endTime.toISOString(),
+                end_time: endTime,
                 is_locked: false
-            });
+            })
+            .select('*')
+            .single();
 
         if (error) throw error;
 
         revalidatePath("/admin/slots");
-        return { success: true };
+        return { success: true, data };
     } catch (error: any) {
         return { error: error.message };
     }
