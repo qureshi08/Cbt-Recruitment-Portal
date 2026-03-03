@@ -23,7 +23,7 @@ const menuItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard, roles: ["Master", "Approver", "HR"] },
     { name: "Applications", href: "/admin/applications", icon: Users, roles: ["Master", "Approver", "HR"] },
     { name: "Assessment Slots", href: "/admin/slots", icon: Calendar, roles: ["Master", "HR"] },
-    { name: "Interviews", href: "/admin/interviews", icon: ClipboardList, roles: ["Master", "Interviewer", "HR"] },
+    { name: "Interviews", href: "/admin/interviews", icon: ClipboardList, roles: ["Master", "Interviewer", "HR", "L1_Interviewer", "L2_Interviewer"] },
     { name: "Settings", href: "/admin/settings", icon: Settings, roles: ["Master"] },
 ];
 

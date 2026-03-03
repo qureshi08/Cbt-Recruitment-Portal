@@ -39,6 +39,7 @@ const statusColors: Record<CandidateStatus, string> = {
     "Interview Scheduled": "bg-purple-100 text-purple-800",
     Recommended: "bg-green-600 text-white shadow-sm",
     "Not Recommended": "bg-red-600 text-white shadow-sm",
+    "L2 Interview Required": "bg-blue-600 text-white shadow-sm",
 };
 
 export default function CandidateTable({ initialCandidates, userRoles }: CandidateTableProps) {
