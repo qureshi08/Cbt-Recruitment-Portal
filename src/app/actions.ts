@@ -320,7 +320,7 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             .single();
 
         if (candidate?.status !== "Approved") {
-            return { error: `You have already scheduled an assessment (Current status: ${candidate?.status}).` };
+            return { error: `You have scheduled an assessment (Current status: ${candidate?.status}).` };
         }
 
         // 1. Check if the slot is still available...
@@ -423,32 +423,19 @@ export async function completeAssessment(candidateId: string) {
 
 export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string) {
     try {
-        // 1. Close the L1 interview record with decision
-        const { error: l1Error } = await supabaseAdmin
+        // 1. Save L1 feedback and mark as needing L2 review (same record, no duplicate)
+        const { error: updateError } = await supabaseAdmin
             .from("interviews")
             .update({
                 decision: "L2 Interview Required",
-                feedback: l1Feedback
+                feedback: `L1: ${l1Feedback}`
             })
             .eq("id", interviewId);
 
-        if (l1Error) throw l1Error;
+        if (updateError) throw updateError;
 
         // 2. Update Candidate Status
         await updateCandidateStatus(candidateId, "L2 Interview Required");
-
-        // 3. Create a brand new Interview entry for the L2 round
-        const now = new Date();
-        const { error: interviewError } = await supabaseAdmin
-            .from("interviews")
-            .insert({
-                candidate_id: candidateId,
-                scheduled_at: now.toISOString(),
-                decision: null,
-                feedback: `L1 FEEDBACK: ${l1Feedback}`
-            });
-
-        if (interviewError) throw interviewError;
 
         revalidatePath("/admin/interviews");
         revalidatePath("/admin/applications");

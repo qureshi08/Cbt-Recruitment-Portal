@@ -37,7 +37,7 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
                             <CheckCircle2 className="w-10 h-10" />
                         </div>
                         <div className="space-y-2">
-                            <h2 className="text-2xl font-extrabold text-gray-900">Already Scheduled!</h2>
+                            <h2 className="text-2xl font-extrabold text-gray-900">Scheduled!</h2>
                             <p className="text-gray-600">
                                 You have already booked an assessment slot.
                             </p>

@@ -38,23 +38,22 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             const feedback = (document.getElementById('feedback-textarea') as HTMLTextAreaElement).value;
 
             if (decision === 'L2 Interview Required') {
-                // Pass the current interview ID so it gets closed properly
                 const result = await requestL2Interview(selectedInterview.id, selectedInterview.candidate_id, feedback);
                 if (result.error) throw new Error(result.error);
             } else {
-                // 1. Update Interview record
+                // For L2 final decisions, prepend L2 feedback to existing L1 feedback
+                const existingL1 = selectedInterview.feedback?.startsWith('L1:') ? selectedInterview.feedback : '';
+                const fullFeedback = existingL1 ? `${existingL1}\nL2: ${feedback}` : feedback;
+
                 const { error: intError } = await supabase
                     .from('interviews')
-                    .update({ decision, feedback })
+                    .update({ decision, feedback: fullFeedback })
                     .eq('id', selectedInterview.id);
 
                 if (intError) throw intError;
-
-                // 2. Update Candidate Status
                 await updateCandidateStatus(selectedInterview.candidate_id, decision);
             }
 
-            // 3. Update Local State
             setInterviews(prev => prev.map(i =>
                 i.id === selectedInterview.id ? { ...i, decision, feedback } : i
             ));
@@ -80,7 +79,12 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                 </thead>
                 <tbody className="divide-y divide-border">
                     {interviews.map((interview) => {
-                        const isL2 = !!interview.feedback?.includes('L1 FEEDBACK:');
+                        const isAwaitingL2 = interview.decision === 'L2 Interview Required';
+                        const isFinal = interview.decision === 'Recommended' || interview.decision === 'Not Recommended';
+                        const canAct = !isFinal && (userRoles.includes('Interviewer') || userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));
+                        // For L2 actions, only L2_Interviewer or Master can act
+                        const canActL2 = isAwaitingL2 && (userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));
+
                         return (
                             <tr key={interview.id} className="hover:bg-gray-50/50">
                                 <td className="px-6 py-4">
@@ -93,15 +97,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-sm font-bold text-gray-900">{interview.candidates?.name}</span>
-                                            <span className={cn(
-                                                "text-[8px] font-black uppercase px-1.5 py-0.5 rounded",
-                                                isL2 ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"
-                                            )}>
-                                                {isL2 ? "L2" : "L1"}
-                                            </span>
-                                        </div>
+                                        <span className="text-sm font-bold text-gray-900 mb-1">{interview.candidates?.name}</span>
                                         <span className="text-xs text-gray-500 mb-2">{interview.candidates?.position}</span>
 
                                         <div className="flex items-center gap-3">
@@ -143,7 +139,8 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    {!interview.decision && (userRoles.includes('Interviewer') || userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master')) ? (
+                                    {/* No decision yet → L1 can act */}
+                                    {!interview.decision && canAct && (
                                         <button
                                             onClick={() => setSelectedInterview(interview)}
                                             className="btn-secondary !py-1 !px-3 text-xs flex items-center justify-center gap-1 ml-auto"
@@ -151,8 +148,20 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                             <MessageSquare className="w-3 h-3" />
                                             Submit Feedback
                                         </button>
-                                    ) : (
-                                        !interview.decision && <span className="text-xs text-gray-400 font-medium">View Only</span>
+                                    )}
+                                    {/* L2 Required → L2/Master can give final verdict */}
+                                    {isAwaitingL2 && canActL2 && (
+                                        <button
+                                            onClick={() => setSelectedInterview(interview)}
+                                            className="btn-secondary !py-1 !px-3 text-xs flex items-center justify-center gap-1 ml-auto border-blue-300 text-blue-700 hover:bg-blue-50"
+                                        >
+                                            <MessageSquare className="w-3 h-3" />
+                                            Submit L2 Feedback
+                                        </button>
+                                    )}
+                                    {/* No permission */}
+                                    {!interview.decision && !canAct && (
+                                        <span className="text-xs text-gray-400 font-medium">View Only</span>
                                     )}
                                 </td>
                             </tr>
@@ -180,10 +189,10 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
-                            {selectedInterview.feedback?.includes('L1 FEEDBACK:') && (
+                            {selectedInterview.feedback?.startsWith('L1:') && (
                                 <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
-                                    <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Previous Round Feedback</p>
-                                    <p className="text-xs text-blue-800 italic">{selectedInterview.feedback}</p>
+                                    <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">L1 Interview Feedback</p>
+                                    <p className="text-xs text-blue-800 italic">{selectedInterview.feedback.replace('L1: ', '')}</p>
                                 </div>
                             )}
                             <div className="space-y-2">
@@ -204,14 +213,15 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     Reject
                                 </button>
 
-                                {!selectedInterview.feedback?.includes('L1 FEEDBACK:') && (userRoles.includes('Master') || userRoles.includes('L1_Interviewer') || userRoles.includes('Interviewer')) && (
+                                {/* Only show L2 button when no decision yet (L1 round) */}
+                                {!selectedInterview.decision && (userRoles.includes('Master') || userRoles.includes('L1_Interviewer') || userRoles.includes('Interviewer')) && (
                                     <button
                                         onClick={() => handleDecision('L2 Interview Required')}
                                         disabled={isSubmitting}
                                         className="flex-1 min-w-[120px] bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
                                     >
                                         <MessageSquare className="w-4 h-4" />
-                                        Required L2
+                                        Require L2
                                     </button>
                                 )}
 
