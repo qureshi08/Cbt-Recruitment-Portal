@@ -550,7 +550,7 @@ export async function updateCandidate(candidateId: string, updates: Partial<any>
 
 export async function ensureBuckets() {
     try {
-        // 1. Ensure Storage Buckets
+        // 1. Ensure Storage Buckets exist and are configured correctly
         const buckets = ['resumes', 'assessment-scores'];
         const { data: existingBuckets } = await supabaseAdmin.storage.listBuckets();
         const existingBucketIds = existingBuckets?.map(b => b.id) || [];
@@ -559,6 +559,12 @@ export async function ensureBuckets() {
             if (!existingBucketIds.includes(bucketId)) {
                 await supabaseAdmin.storage.createBucket(bucketId, {
                     public: true,
+                });
+            } else {
+                // Update existing buckets to ensure they are public with no MIME restrictions
+                await supabaseAdmin.storage.updateBucket(bucketId, {
+                    public: true,
+                    allowedMimeTypes: null as any, // Remove restrictions
                 });
             }
         }
