@@ -421,12 +421,23 @@ export async function completeAssessment(candidateId: string) {
     }
 }
 
-export async function requestL2Interview(candidateId: string, l1Feedback: string) {
+export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string) {
     try {
-        // 1. Update Candidate Status
+        // 1. Close the L1 interview record with decision
+        const { error: l1Error } = await supabaseAdmin
+            .from("interviews")
+            .update({
+                decision: "L2 Interview Required",
+                feedback: l1Feedback
+            })
+            .eq("id", interviewId);
+
+        if (l1Error) throw l1Error;
+
+        // 2. Update Candidate Status
         await updateCandidateStatus(candidateId, "L2 Interview Required");
 
-        // 2. Create new Interview entry for L2
+        // 3. Create a brand new Interview entry for the L2 round
         const now = new Date();
         const { error: interviewError } = await supabaseAdmin
             .from("interviews")

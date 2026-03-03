@@ -38,7 +38,8 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             const feedback = (document.getElementById('feedback-textarea') as HTMLTextAreaElement).value;
 
             if (decision === 'L2 Interview Required') {
-                const result = await requestL2Interview(selectedInterview.candidate_id, feedback);
+                // Pass the current interview ID so it gets closed properly
+                const result = await requestL2Interview(selectedInterview.id, selectedInterview.candidate_id, feedback);
                 if (result.error) throw new Error(result.error);
             } else {
                 // 1. Update Interview record
@@ -71,6 +72,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             <table className="w-full text-left border-collapse">
                 <thead>
                     <tr className="bg-gray-50 border-b border-border">
+                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Round</th>
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Interview</th>
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate</th>
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Decision</th>
@@ -78,82 +80,95 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                    {interviews.map((interview) => (
-                        <tr key={interview.id} className="hover:bg-gray-50/50">
-                            <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-gray-400" />
-                                    <span className="text-sm text-gray-900">
-                                        {new Date(interview.scheduled_at).toLocaleString()}
-                                    </span>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4">
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm font-bold text-gray-900">{interview.candidates?.name}</span>
-                                        {interview.feedback?.includes('L1 FEEDBACK:') && (
-                                            <span className="bg-blue-600 text-[8px] font-black text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">L2 Round</span>
-                                        )}
-                                    </div>
-                                    <span className="text-xs text-gray-500 mb-2">{interview.candidates?.position}</span>
-
-                                    <div className="flex items-center gap-3">
-                                        {interview.candidates?.resume_url && (
-                                            <a
-                                                href={interview.candidates.resume_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded"
-                                            >
-                                                Resume
-                                            </a>
-                                        )}
-                                        {interview.candidates?.assessment_score_url && (
-                                            <a
-                                                href={interview.candidates.assessment_score_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-[10px] font-bold text-emerald-600 hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded border border-emerald-100"
-                                            >
-                                                Score Sheet
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4">
-                                {interview.decision ? (
+                    {interviews.map((interview) => {
+                        const isL2 = !!interview.feedback?.includes('L1 FEEDBACK:');
+                        return (
+                            <tr key={interview.id} className="hover:bg-gray-50/50">
+                                <td className="px-6 py-4">
                                     <span className={cn(
-                                        "status-badge",
-                                        interview.decision === 'Recommended' ? "bg-green-100 text-green-800" :
-                                            interview.decision === 'L2 Interview Required' ? "bg-blue-100 text-blue-800" :
-                                                "bg-red-100 text-red-800"
+                                        "text-[10px] font-black uppercase px-2 py-1 rounded",
+                                        isL2
+                                            ? "bg-blue-600 text-white"
+                                            : "bg-gray-200 text-gray-700"
                                     )}>
-                                        {interview.decision}
+                                        {isL2 ? "L2" : "L1"}
                                     </span>
-                                ) : (
-                                    <span className="text-xs text-gray-400 italic">Pending Feedback</span>
-                                )}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                {!interview.decision && (userRoles.includes('Interviewer') || userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master')) ? (
-                                    <button
-                                        onClick={() => setSelectedInterview(interview)}
-                                        className="btn-secondary !py-1 !px-3 text-xs flex items-center justify-center gap-1 ml-auto"
-                                    >
-                                        <MessageSquare className="w-3 h-3" />
-                                        Submit Feedback
-                                    </button>
-                                ) : (
-                                    !interview.decision && <span className="text-xs text-gray-400 font-medium">View Only</span>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-gray-400" />
+                                        <span className="text-sm text-gray-900">
+                                            {new Date(interview.scheduled_at).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-sm font-bold text-gray-900">{interview.candidates?.name}</span>
+                                            {interview.feedback?.includes('L1 FEEDBACK:') && (
+                                                <span className="bg-blue-600 text-[8px] font-black text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">L2 Round</span>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-gray-500 mb-2">{interview.candidates?.position}</span>
+
+                                        <div className="flex items-center gap-3">
+                                            {interview.candidates?.resume_url && (
+                                                <a
+                                                    href={interview.candidates.resume_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded"
+                                                >
+                                                    Resume
+                                                </a>
+                                            )}
+                                            {interview.candidates?.assessment_score_url && (
+                                                <a
+                                                    href={interview.candidates.assessment_score_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[10px] font-bold text-emerald-600 hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded border border-emerald-100"
+                                                >
+                                                    Score Sheet
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {interview.decision ? (
+                                        <span className={cn(
+                                            "status-badge",
+                                            interview.decision === 'Recommended' ? "bg-green-100 text-green-800" :
+                                                interview.decision === 'L2 Interview Required' ? "bg-blue-100 text-blue-800" :
+                                                    "bg-red-100 text-red-800"
+                                        )}>
+                                            {interview.decision}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">Pending Feedback</span>
+                                    )}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    {!interview.decision && (userRoles.includes('Interviewer') || userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master')) ? (
+                                        <button
+                                            onClick={() => setSelectedInterview(interview)}
+                                            className="btn-secondary !py-1 !px-3 text-xs flex items-center justify-center gap-1 ml-auto"
+                                        >
+                                            <MessageSquare className="w-3 h-3" />
+                                            Submit Feedback
+                                        </button>
+                                    ) : (
+                                        !interview.decision && <span className="text-xs text-gray-400 font-medium">View Only</span>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
                     {interviews.length === 0 && (
                         <tr>
-                            <td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">
+                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">
                                 No interviews scheduled.
                             </td>
                         </tr>

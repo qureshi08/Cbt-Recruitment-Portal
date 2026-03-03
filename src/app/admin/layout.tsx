@@ -13,8 +13,8 @@ export default async function AdminLayout({
 }) {
     const user = await getCurrentUser();
 
-    // Silently ensure buckets exist (one-time setup logic)
-    if (user?.roles?.includes('Master')) {
+    // Silently ensure buckets and roles exist (runs once, idempotent)
+    if (user?.roles) {
         await ensureBuckets();
     }
 
