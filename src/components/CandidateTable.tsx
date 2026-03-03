@@ -91,15 +91,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const handleScoreUpload = async (candidateId: string, file: File) => {
         setUploadingScore(candidateId);
         try {
-            // Read file as base64 to send to server action
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve) => {
-                reader.onload = () => resolve(reader.result as string);
-                reader.readAsDataURL(file);
-            });
-            const base64 = await base64Promise;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('candidateId', candidateId);
 
-            const result = await uploadAssessmentScore(candidateId, base64, file.name);
+            const result = await uploadAssessmentScore(formData);
 
             if (result.success && result.publicUrl) {
                 setCandidates(prev => prev.map(c =>

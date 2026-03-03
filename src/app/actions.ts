@@ -427,22 +427,29 @@ export async function markNotificationsAsRead() {
     }
 }
 
-export async function uploadAssessmentScore(candidateId: string, base64: string, fileName: string) {
+export async function uploadAssessmentScore(formData: FormData) {
     try {
-        // Convert base64 to buffer
-        const buffer = Buffer.from(base64.split(',')[1], 'base64');
-        const fileExt = fileName.split('.').pop();
+        const candidateId = formData.get('candidateId') as string;
+        const file = formData.get('file') as File;
+
+        if (!file || !candidateId) throw new Error("Missing file or candidate ID");
+
+        const fileExt = file.name.split('.').pop();
         const finalFileName = `${candidateId}_score_${Date.now()}.${fileExt}`;
 
-        // Upload using admin client to bypass RLS for storage
-        const { data, error: uploadError } = await supabaseAdmin.storage
+        // Convert File to Buffer for Supabase storage upload
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Upload using admin client
+        const { error: uploadError } = await supabaseAdmin.storage
             .from('assessment-scores')
             .upload(finalFileName, buffer, {
-                contentType: `image/${fileExt}`,
+                contentType: file.type,
                 upsert: true
             });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
         const { data: { publicUrl } } = supabaseAdmin.storage
             .from('assessment-scores')
@@ -454,7 +461,7 @@ export async function uploadAssessmentScore(candidateId: string, base64: string,
             .update({ assessment_score_url: publicUrl })
             .eq('id', candidateId);
 
-        if (updateError) throw updateError;
+        if (updateError) throw new Error(`Database update failed: ${updateError.message}`);
 
         revalidatePath('/admin/applications');
         return { success: true, publicUrl };
