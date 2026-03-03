@@ -12,7 +12,7 @@ import {
     sendNotRecommendedEmail
 } from "@/lib/email";
 
-export type UserRole = 'Master' | 'Approver' | 'HR' | 'Interviewer';
+export type UserRole = 'Master' | 'Approver' | 'HR' | 'Interviewer' | 'L1_Interviewer' | 'L2_Interviewer';
 
 export async function login(formData: FormData) {
     const email = formData.get("email") as string;
@@ -421,6 +421,32 @@ export async function completeAssessment(candidateId: string) {
     }
 }
 
+export async function requestL2Interview(candidateId: string, l1Feedback: string) {
+    try {
+        // 1. Update Candidate Status
+        await updateCandidateStatus(candidateId, "L2 Interview Required");
+
+        // 2. Create new Interview entry for L2
+        const now = new Date();
+        const { error: interviewError } = await supabaseAdmin
+            .from("interviews")
+            .insert({
+                candidate_id: candidateId,
+                scheduled_at: now.toISOString(),
+                decision: null,
+                feedback: `L1 FEEDBACK: ${l1Feedback}`
+            });
+
+        if (interviewError) throw interviewError;
+
+        revalidatePath("/admin/interviews");
+        revalidatePath("/admin/applications");
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
 export async function deleteCandidate(candidateId: string) {
     try {
         // 1. Delete dependent records
@@ -526,24 +552,44 @@ export async function updateCandidate(candidateId: string, updates: Partial<any>
 
 export async function ensureBuckets() {
     try {
+        // 1. Ensure Storage Buckets
         const buckets = ['resumes', 'assessment-scores'];
         const { data: existingBuckets } = await supabaseAdmin.storage.listBuckets();
         const existingBucketIds = existingBuckets?.map(b => b.id) || [];
 
         for (const bucketId of buckets) {
             if (!existingBucketIds.includes(bucketId)) {
-                const { error } = await supabaseAdmin.storage.createBucket(bucketId, {
+                await supabaseAdmin.storage.createBucket(bucketId, {
                     public: true,
-                    allowedMimeTypes: bucketId === 'resumes'
-                        ? ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-                        : ['image/png', 'image/jpeg', 'image/jpg'],
                 });
-                if (error) console.error(`Error creating bucket ${bucketId}:`, error.message);
             }
         }
+
+        // 2. Ensure Roles Exist
+        const roles = [
+            { name: 'Master', description: 'Can do everything' },
+            { name: 'Approver', description: 'Can do initial approvals' },
+            { name: 'HR', description: 'Recruitment team - View only' },
+            { name: 'Interviewer', description: 'Can do interviews' },
+            { name: 'L1_Interviewer', description: 'Can do L1 interviews and request L2' },
+            { name: 'L2_Interviewer', description: 'Can do dynamic L2 interviews' }
+        ];
+
+        for (const role of roles) {
+            const { data: existingRole } = await supabaseAdmin
+                .from('roles')
+                .select('name')
+                .eq('name', role.name)
+                .single();
+
+            if (!existingRole) {
+                await supabaseAdmin.from('roles').insert(role);
+            }
+        }
+
         return { success: true };
     } catch (error: any) {
-        console.error("ensureBuckets error:", error.message);
+        console.error("Initialization error:", error.message);
         return { error: error.message };
     }
 }

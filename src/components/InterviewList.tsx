@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Clock, User, CheckCircle, XCircle, MessageSquare, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateCandidateStatus, UserRole } from "@/app/actions";
+import { updateCandidateStatus, UserRole, requestL2Interview } from "@/app/actions";
 import { supabase } from "@/lib/supabase";
 
 interface Interview {
@@ -30,23 +30,28 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
     const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleDecision = async (decision: 'Recommended' | 'Not Recommended') => {
+    const handleDecision = async (decision: 'Recommended' | 'Not Recommended' | 'L2 Interview Required') => {
         if (!selectedInterview) return;
         setIsSubmitting(true);
 
         try {
             const feedback = (document.getElementById('feedback-textarea') as HTMLTextAreaElement).value;
 
-            // 1. Update Interview record
-            const { error: intError } = await supabase
-                .from('interviews')
-                .update({ decision, feedback })
-                .eq('id', selectedInterview.id);
+            if (decision === 'L2 Interview Required') {
+                const result = await requestL2Interview(selectedInterview.candidate_id, feedback);
+                if (result.error) throw new Error(result.error);
+            } else {
+                // 1. Update Interview record
+                const { error: intError } = await supabase
+                    .from('interviews')
+                    .update({ decision, feedback })
+                    .eq('id', selectedInterview.id);
 
-            if (intError) throw intError;
+                if (intError) throw intError;
 
-            // 2. Update Candidate Status
-            await updateCandidateStatus(selectedInterview.candidate_id, decision);
+                // 2. Update Candidate Status
+                await updateCandidateStatus(selectedInterview.candidate_id, decision);
+            }
 
             // 3. Update Local State
             setInterviews(prev => prev.map(i =>
@@ -85,7 +90,12 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             </td>
                             <td className="px-6 py-4">
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-gray-900">{interview.candidates?.name}</span>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-sm font-bold text-gray-900">{interview.candidates?.name}</span>
+                                        {interview.feedback?.includes('L1 FEEDBACK:') && (
+                                            <span className="bg-blue-600 text-[8px] font-black text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">L2 Round</span>
+                                        )}
+                                    </div>
                                     <span className="text-xs text-gray-500 mb-2">{interview.candidates?.position}</span>
 
                                     <div className="flex items-center gap-3">
@@ -116,7 +126,9 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                 {interview.decision ? (
                                     <span className={cn(
                                         "status-badge",
-                                        interview.decision === 'Recommended' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                        interview.decision === 'Recommended' ? "bg-green-100 text-green-800" :
+                                            interview.decision === 'L2 Interview Required' ? "bg-blue-100 text-blue-800" :
+                                                "bg-red-100 text-red-800"
                                     )}>
                                         {interview.decision}
                                     </span>
@@ -125,7 +137,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                 )}
                             </td>
                             <td className="px-6 py-4 text-right">
-                                {!interview.decision && (userRoles.includes('Interviewer') || userRoles.includes('Master')) ? (
+                                {!interview.decision && (userRoles.includes('Interviewer') || userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master')) ? (
                                     <button
                                         onClick={() => setSelectedInterview(interview)}
                                         className="btn-secondary !py-1 !px-3 text-xs flex items-center justify-center gap-1 ml-auto"
@@ -161,6 +173,12 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
+                            {selectedInterview.feedback?.includes('L1 FEEDBACK:') && (
+                                <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                                    <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Previous Round Feedback</p>
+                                    <p className="text-xs text-blue-800 italic">{selectedInterview.feedback}</p>
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700 font-bold uppercase tracking-wider text-xs">Interview Notes</label>
                                 <textarea
@@ -169,19 +187,31 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     placeholder="Assess technical skills, communication, and cultural fit..."
                                 />
                             </div>
-                            <div className="flex gap-4 pt-4">
+                            <div className="flex flex-wrap gap-2 pt-4">
                                 <button
                                     onClick={() => handleDecision('Not Recommended')}
                                     disabled={isSubmitting}
-                                    className="flex-1 bg-red-50 text-red-700 border border-red-200 py-3 rounded-lg font-bold text-sm hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 min-w-[120px] bg-red-50 text-red-700 border border-red-200 py-2.5 rounded-lg font-bold text-xs hover:bg-red-100 transition-all flex items-center justify-center gap-2"
                                 >
                                     <XCircle className="w-4 h-4" />
                                     Reject
                                 </button>
+
+                                {(userRoles.includes('Master') || userRoles.includes('L1_Interviewer') || userRoles.includes('Interviewer')) && (
+                                    <button
+                                        onClick={() => handleDecision('L2 Interview Required')}
+                                        disabled={isSubmitting}
+                                        className="flex-1 min-w-[120px] bg-blue-50 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageSquare className="w-4 h-4" />
+                                        Required L2
+                                    </button>
+                                )}
+
                                 <button
                                     onClick={() => handleDecision('Recommended')}
                                     disabled={isSubmitting}
-                                    className="flex-1 bg-green-50 text-green-700 border border-green-200 py-3 rounded-lg font-bold text-sm hover:bg-green-100 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 min-w-[120px] bg-green-50 text-green-700 border border-green-200 py-2.5 rounded-lg font-bold text-xs hover:bg-green-100 transition-all flex items-center justify-center gap-2"
                                 >
                                     <CheckCircle className="w-4 h-4" />
                                     Recommend

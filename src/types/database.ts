@@ -9,6 +9,7 @@ export type CandidateStatus =
     | 'Assessment Completed'
     | 'To Be Interviewed'
     | 'Interview Scheduled'
+    | 'L2 Interview Required'
     | 'Recommended'
     | 'Not Recommended';
 
