@@ -72,7 +72,6 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             <table className="w-full text-left border-collapse">
                 <thead>
                     <tr className="bg-gray-50 border-b border-border">
-                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Round</th>
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Interview</th>
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate</th>
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Decision</th>
@@ -85,16 +84,6 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                         return (
                             <tr key={interview.id} className="hover:bg-gray-50/50">
                                 <td className="px-6 py-4">
-                                    <span className={cn(
-                                        "text-[10px] font-black uppercase px-2 py-1 rounded",
-                                        isL2
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700"
-                                    )}>
-                                        {isL2 ? "L2" : "L1"}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
                                     <div className="flex items-center gap-2">
                                         <Clock className="w-4 h-4 text-gray-400" />
                                         <span className="text-sm text-gray-900">
@@ -106,9 +95,12 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="text-sm font-bold text-gray-900">{interview.candidates?.name}</span>
-                                            {interview.feedback?.includes('L1 FEEDBACK:') && (
-                                                <span className="bg-blue-600 text-[8px] font-black text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">L2 Round</span>
-                                            )}
+                                            <span className={cn(
+                                                "text-[8px] font-black uppercase px-1.5 py-0.5 rounded",
+                                                isL2 ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"
+                                            )}>
+                                                {isL2 ? "L2" : "L1"}
+                                            </span>
                                         </div>
                                         <span className="text-xs text-gray-500 mb-2">{interview.candidates?.position}</span>
 
@@ -168,7 +160,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                     })}
                     {interviews.length === 0 && (
                         <tr>
-                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">
+                            <td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">
                                 No interviews scheduled.
                             </td>
                         </tr>
@@ -212,7 +204,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     Reject
                                 </button>
 
-                                {(userRoles.includes('Master') || userRoles.includes('L1_Interviewer') || userRoles.includes('Interviewer')) && (
+                                {!selectedInterview.feedback?.includes('L1 FEEDBACK:') && (userRoles.includes('Master') || userRoles.includes('L1_Interviewer') || userRoles.includes('Interviewer')) && (
                                     <button
                                         onClick={() => handleDecision('L2 Interview Required')}
                                         disabled={isSubmitting}
