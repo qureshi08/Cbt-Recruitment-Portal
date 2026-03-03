@@ -427,6 +427,43 @@ export async function markNotificationsAsRead() {
     }
 }
 
+export async function uploadAssessmentScore(candidateId: string, base64: string, fileName: string) {
+    try {
+        // Convert base64 to buffer
+        const buffer = Buffer.from(base64.split(',')[1], 'base64');
+        const fileExt = fileName.split('.').pop();
+        const finalFileName = `${candidateId}_score_${Date.now()}.${fileExt}`;
+
+        // Upload using admin client to bypass RLS for storage
+        const { data, error: uploadError } = await supabaseAdmin.storage
+            .from('assessment-scores')
+            .upload(finalFileName, buffer, {
+                contentType: `image/${fileExt}`,
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabaseAdmin.storage
+            .from('assessment-scores')
+            .getPublicUrl(finalFileName);
+
+        // Update candidate record
+        const { error: updateError } = await supabaseAdmin
+            .from('candidates')
+            .update({ assessment_score_url: publicUrl })
+            .eq('id', candidateId);
+
+        if (updateError) throw updateError;
+
+        revalidatePath('/admin/applications');
+        return { success: true, publicUrl };
+    } catch (error: any) {
+        console.error("uploadAssessmentScore error:", error.message);
+        return { error: error.message };
+    }
+}
+
 export async function updateCandidate(candidateId: string, updates: Partial<any>) {
     try {
         const { error } = await supabase

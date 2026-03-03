@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Candidate, CandidateStatus } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore } from "@/app/actions";
 import {
     ExternalLink,
     CheckCircle,
@@ -91,36 +91,24 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const handleScoreUpload = async (candidateId: string, file: File) => {
         setUploadingScore(candidateId);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('candidateId', candidateId);
+            // Read file as base64 to send to server action
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve) => {
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+            });
+            const base64 = await base64Promise;
 
-            // Using direct supabase upload here for simplicity as a POC, or I could call an action
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${candidateId}_score.${fileExt}`;
+            const result = await uploadAssessmentScore(candidateId, base64, file.name);
 
-            const { data, error } = await supabase.storage
-                .from('assessment-scores')
-                .upload(fileName, file, { upsert: true });
-
-            if (error) throw error;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('assessment-scores')
-                .getPublicUrl(fileName);
-
-            // Update candidate record
-            const { error: updateError } = await supabase
-                .from('candidates')
-                .update({ assessment_score_url: publicUrl })
-                .eq('id', candidateId);
-
-            if (updateError) throw updateError;
-
-            setCandidates(prev => prev.map(c =>
-                c.id === candidateId ? { ...c, assessment_score_url: publicUrl } : c
-            ));
-            alert("Score uploaded successfully!");
+            if (result.success && result.publicUrl) {
+                setCandidates(prev => prev.map(c =>
+                    c.id === candidateId ? { ...c, assessment_score_url: result.publicUrl } : c
+                ));
+                alert("Score uploaded successfully!");
+            } else {
+                throw new Error(result.error || "Failed to upload");
+            }
         } catch (err: any) {
             alert("Failed to upload score: " + err.message);
         } finally {
