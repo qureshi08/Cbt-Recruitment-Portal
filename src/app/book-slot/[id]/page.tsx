@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import Logo from "@/components/Logo";
 import SlotBookingClient from "@/components/SlotBookingClient";
+import RescheduleButton from "@/components/RescheduleButton";
 import { notFound } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 
@@ -22,7 +23,7 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
     }
 
     if (candidate.status !== "Approved") {
-        // If already scheduled, show their current slot instead of a booking form
+        // If already scheduled, show their current slot + reschedule option
         if (candidate.status === "Assessment Scheduled") {
             const { data: currentSlot } = await supabase
                 .from("assessment_slots")
@@ -57,8 +58,8 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
                             </div>
                         )}
 
-                        <div className="pt-4 border-t border-gray-100 italic text-[10px] text-gray-400">
-                            If you need to reschedule, please contact the recruitment team at recruitment@cbt.com.
+                        <div className="pt-4 border-t border-gray-100">
+                            <RescheduleButton candidateId={id} />
                         </div>
                     </div>
                 </div>

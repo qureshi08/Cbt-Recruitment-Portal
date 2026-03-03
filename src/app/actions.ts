@@ -379,6 +379,43 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
     }
 }
 
+export async function rescheduleAssessment(candidateId: string) {
+    try {
+        // 1. Verify candidate is currently scheduled
+        const { data: candidate } = await supabase
+            .from("candidates")
+            .select("status")
+            .eq("id", candidateId)
+            .single();
+
+        if (candidate?.status !== "Assessment Scheduled") {
+            return { error: "Only candidates with 'Assessment Scheduled' status can reschedule." };
+        }
+
+        // 2. Free up their current slot
+        const { error: slotError } = await supabaseAdmin
+            .from("assessment_slots")
+            .update({
+                candidate_id: null,
+                is_locked: false
+            })
+            .eq("candidate_id", candidateId);
+
+        if (slotError) throw slotError;
+
+        // 3. Reset candidate status back to Approved
+        await updateCandidateStatus(candidateId, "Approved");
+
+        revalidatePath("/admin/slots");
+        revalidatePath("/admin/applications");
+        revalidatePath(`/book-slot/${candidateId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error("rescheduleAssessment error:", error);
+        return { error: error.message };
+    }
+}
+
 export async function completeAssessment(candidateId: string) {
     try {
         // 1. Create interview entry
