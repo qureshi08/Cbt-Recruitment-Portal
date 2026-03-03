@@ -447,15 +447,23 @@ export async function updateCandidate(candidateId: string, updates: Partial<any>
 export async function ensureBuckets() {
     try {
         const buckets = ['resumes', 'assessment-scores'];
-        for (const bucket of buckets) {
-            const { data, error } = await supabaseAdmin.storage.createBucket(bucket, {
-                public: true,
-                allowedMimeTypes: bucket === 'resumes' ? ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'] : ['image/png', 'image/jpeg', 'image/jpg'],
-            });
-            // We ignore error if it already exists
+        const { data: existingBuckets } = await supabaseAdmin.storage.listBuckets();
+        const existingBucketIds = existingBuckets?.map(b => b.id) || [];
+
+        for (const bucketId of buckets) {
+            if (!existingBucketIds.includes(bucketId)) {
+                const { error } = await supabaseAdmin.storage.createBucket(bucketId, {
+                    public: true,
+                    allowedMimeTypes: bucketId === 'resumes'
+                        ? ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+                        : ['image/png', 'image/jpeg', 'image/jpg'],
+                });
+                if (error) console.error(`Error creating bucket ${bucketId}:`, error.message);
+            }
         }
         return { success: true };
     } catch (error: any) {
+        console.error("ensureBuckets error:", error.message);
         return { error: error.message };
     }
 }
