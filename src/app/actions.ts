@@ -427,6 +427,7 @@ export async function markNotificationsAsRead() {
     }
 }
 
+// Force-refresh build comment: v3.1
 export async function uploadAssessmentScore(formData: FormData) {
     try {
         const candidateId = formData.get('candidateId') as string;
