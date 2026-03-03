@@ -79,15 +79,6 @@ export default function ApplicationForm() {
                     <label className="text-sm font-medium text-gray-700">Phone Number</label>
                     <input type="tel" name="phone" required className="input-field" placeholder="+92 3XX XXXXXXX" />
                 </div>
-                <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Batch #</label>
-                    <select name="batch_number" required className="input-field">
-                        <option value="">Select Batch</option>
-                        <option value="26">Batch # 26</option>
-                        <option value="27">Batch # 27</option>
-                        <option value="28">Batch # 28</option>
-                    </select>
-                </div>
             </div>
 
             <div className="space-y-1 font-medium text-gray-600 bg-gray-50 p-3 rounded border border-gray-100 flex items-center gap-2">

@@ -201,10 +201,9 @@ export async function submitApplication(formData: FormData) {
     const phone = formData.get("phone") as string;
     const resume = formData.get("resume") as File;
     const position = formData.get("position") as string || "General Application";
-    const batchNumber = formData.get("batch_number") as string;
 
     try {
-        if (!resume) throw new Error("Resume is required");
+        if (!resume || resume.size === 0) throw new Error("Resume is required");
 
         const fileExt = resume.name.split(".").pop();
         const fileName = `${Math.random()}.${fileExt}`;
@@ -226,7 +225,6 @@ export async function submitApplication(formData: FormData) {
                 phone,
                 resume_url: publicUrl,
                 position,
-                batch_number: batchNumber,
                 status: "Applied"
             })
             .select()
@@ -423,6 +421,39 @@ export async function markNotificationsAsRead() {
         if (error) throw error;
 
         revalidatePath("/admin");
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+export async function updateCandidate(candidateId: string, updates: Partial<any>) {
+    try {
+        const { error } = await supabase
+            .from("candidates")
+            .update(updates)
+            .eq("id", candidateId);
+
+        if (error) throw error;
+
+        revalidatePath("/admin/applications");
+        revalidatePath("/admin/interviews");
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+export async function ensureBuckets() {
+    try {
+        const buckets = ['resumes', 'assessment-scores'];
+        for (const bucket of buckets) {
+            const { data, error } = await supabaseAdmin.storage.createBucket(bucket, {
+                public: true,
+                allowedMimeTypes: bucket === 'resumes' ? ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'] : ['image/png', 'image/jpeg', 'image/jpg'],
+            });
+            // We ignore error if it already exists
+        }
         return { success: true };
     } catch (error: any) {
         return { error: error.message };

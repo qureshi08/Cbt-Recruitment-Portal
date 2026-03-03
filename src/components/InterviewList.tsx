@@ -12,7 +12,12 @@ interface Interview {
     scheduled_at: string;
     decision?: string | null;
     feedback?: string | null;
-    candidates?: { name: string; position: string } | null;
+    candidates?: {
+        name: string;
+        position: string;
+        resume_url?: string;
+        assessment_score_url?: string;
+    } | null;
 }
 
 interface InterviewListProps {
@@ -80,8 +85,31 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             </td>
                             <td className="px-6 py-4">
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-gray-900">{interview.candidates?.name}</span>
-                                    <span className="text-xs text-gray-500">{interview.candidates?.position}</span>
+                                    <span className="text-sm font-bold text-gray-900">{interview.candidates?.name}</span>
+                                    <span className="text-xs text-gray-500 mb-2">{interview.candidates?.position}</span>
+
+                                    <div className="flex items-center gap-3">
+                                        {interview.candidates?.resume_url && (
+                                            <a
+                                                href={interview.candidates.resume_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded"
+                                            >
+                                                Resume
+                                            </a>
+                                        )}
+                                        {interview.candidates?.assessment_score_url && (
+                                            <a
+                                                href={interview.candidates.assessment_score_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[10px] font-bold text-emerald-600 hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded border border-emerald-100"
+                                            >
+                                                Score Sheet
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             </td>
                             <td className="px-6 py-4">

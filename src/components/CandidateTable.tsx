@@ -2,9 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Candidate, CandidateStatus } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate, UserRole } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate } from "@/app/actions";
 import {
-    MoreHorizontal,
     ExternalLink,
     CheckCircle,
     XCircle,
@@ -14,7 +13,10 @@ import {
     Filter,
     Phone,
     Trash2,
-    Upload
+    Upload,
+    Edit2,
+    X,
+    MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -46,6 +48,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [statusFilter, setStatusFilter] = useState<string>("All");
     const [batchFilter, setBatchFilter] = useState<string>("All");
     const [uploadingScore, setUploadingScore] = useState<string | null>(null);
+    const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -122,6 +125,30 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             alert("Failed to upload score: " + err.message);
         } finally {
             setUploadingScore(null);
+        }
+    };
+
+    const handleEditSave = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!editingCandidate) return;
+
+        const formData = new FormData(e.currentTarget);
+        const updates = {
+            name: formData.get('name') as string,
+            email: formData.get('email') as string,
+            phone: formData.get('phone') as string,
+            batch_number: formData.get('batch_number') as string,
+        };
+
+        const result = await updateCandidate(editingCandidate.id, updates);
+        if (result.success) {
+            setCandidates(prev => prev.map(c =>
+                c.id === editingCandidate.id ? { ...c, ...updates } : c
+            ));
+            setEditingCandidate(null);
+            alert("Application updated successfully!");
+        } else {
+            alert("Failed to update: " + result.error);
         }
     };
 
@@ -309,6 +336,16 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             </>
                                         )}
 
+                                        {isMaster && (
+                                            <button
+                                                onClick={() => setEditingCandidate(candidate)}
+                                                className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-primary transition-colors"
+                                                title="Edit Application"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+
                                         {canDelete && (
                                             <button
                                                 onClick={() => handleDelete(candidate.id)}
@@ -336,6 +373,43 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     </tbody>
                 </table>
             </div>
+
+            {/* Edit Candidate Modal */}
+            {editingCandidate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditingCandidate(null)} />
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b border-border flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-800">Edit Application: {editingCandidate.name}</h3>
+                            <button onClick={() => setEditingCandidate(null)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditSave} className="p-6 space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+                                <input name="name" defaultValue={editingCandidate.name} required className="input-field" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
+                                <input name="email" type="email" defaultValue={editingCandidate.email} required className="input-field" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
+                                <input name="phone" defaultValue={editingCandidate.phone} required className="input-field" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Batch Number</label>
+                                <input name="batch_number" defaultValue={editingCandidate.batch_number} placeholder="e.g. 26" className="input-field" />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => setEditingCandidate(null)} className="btn-secondary flex-1">Cancel</button>
+                                <button type="submit" className="btn-primary flex-1">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

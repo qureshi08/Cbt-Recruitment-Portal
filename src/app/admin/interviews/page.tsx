@@ -12,7 +12,9 @@ export default async function InterviewsPage() {
       *,
       candidates (
         name,
-        position
+        position,
+        resume_url,
+        assessment_score_url
       )
     `)
         .order("scheduled_at", { ascending: true });
