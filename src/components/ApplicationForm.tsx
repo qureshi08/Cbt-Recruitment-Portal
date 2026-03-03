@@ -80,12 +80,20 @@ export default function ApplicationForm() {
                     <input type="tel" name="phone" required className="input-field" placeholder="+92 3XX XXXXXXX" />
                 </div>
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Applying For</label>
-                    <div className="input-field bg-gray-50 flex items-center font-medium text-gray-600">
-                        Convergent Graduate Academy Program (CGAP)
-                        <input type="hidden" name="position" value="CGAP" />
-                    </div>
+                    <label className="text-sm font-medium text-gray-700">Batch #</label>
+                    <select name="batch_number" required className="input-field">
+                        <option value="">Select Batch</option>
+                        <option value="26">Batch # 26</option>
+                        <option value="27">Batch # 27</option>
+                        <option value="28">Batch # 28</option>
+                    </select>
                 </div>
+            </div>
+
+            <div className="space-y-1 font-medium text-gray-600 bg-gray-50 p-3 rounded border border-gray-100 flex items-center gap-2">
+                <span className="text-sm">Applying For:</span>
+                <span className="text-primary font-bold">Convergent Graduate Academy Program (CGAP)</span>
+                <input type="hidden" name="position" value="CGAP" />
             </div>
 
             <div className="space-y-1">

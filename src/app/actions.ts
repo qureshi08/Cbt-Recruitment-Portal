@@ -201,6 +201,7 @@ export async function submitApplication(formData: FormData) {
     const phone = formData.get("phone") as string;
     const resume = formData.get("resume") as File;
     const position = formData.get("position") as string || "General Application";
+    const batchNumber = formData.get("batch_number") as string;
 
     try {
         if (!resume) throw new Error("Resume is required");
@@ -225,6 +226,7 @@ export async function submitApplication(formData: FormData) {
                 phone,
                 resume_url: publicUrl,
                 position,
+                batch_number: batchNumber,
                 status: "Applied"
             })
             .select()
@@ -312,6 +314,16 @@ export async function createAssessmentSlot(startTime: string, endTime: string) {
 
 export async function bookAssessmentSlot(candidateId: string, slotId: string) {
     try {
+        // 1. Unlock any previous slots booked by this candidate
+        await supabase
+            .from("assessment_slots")
+            .update({
+                candidate_id: null,
+                is_locked: false
+            })
+            .eq("candidate_id", candidateId);
+
+        // 2. Lock the new slot
         const { error } = await supabase
             .from("assessment_slots")
             .update({

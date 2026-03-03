@@ -13,9 +13,11 @@ import {
     Search,
     Filter,
     Phone,
-    Trash2
+    Trash2,
+    Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 interface CandidateTableProps {
     initialCandidates: Candidate[];
@@ -42,6 +44,8 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("All");
+    const [batchFilter, setBatchFilter] = useState<string>("All");
+    const [uploadingScore, setUploadingScore] = useState<string | null>(null);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -81,6 +85,46 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
         }
     };
 
+    const handleScoreUpload = async (candidateId: string, file: File) => {
+        setUploadingScore(candidateId);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('candidateId', candidateId);
+
+            // Using direct supabase upload here for simplicity as a POC, or I could call an action
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${candidateId}_score.${fileExt}`;
+
+            const { data, error } = await supabase.storage
+                .from('assessment-scores')
+                .upload(fileName, file, { upsert: true });
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('assessment-scores')
+                .getPublicUrl(fileName);
+
+            // Update candidate record
+            const { error: updateError } = await supabase
+                .from('candidates')
+                .update({ assessment_score_url: publicUrl })
+                .eq('id', candidateId);
+
+            if (updateError) throw updateError;
+
+            setCandidates(prev => prev.map(c =>
+                c.id === candidateId ? { ...c, assessment_score_url: publicUrl } : c
+            ));
+            alert("Score uploaded successfully!");
+        } catch (err: any) {
+            alert("Failed to upload score: " + err.message);
+        } finally {
+            setUploadingScore(null);
+        }
+    };
+
     const candidateStatusIsInitial = (status: string) => {
         return status === 'Approved' || status === 'Rejected';
     };
@@ -100,12 +144,14 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 (candidate.phone && candidate.phone.includes(searchQuery));
 
             const matchesStatus = statusFilter === "All" || candidate.status === statusFilter;
+            const matchesBatch = batchFilter === "All" || candidate.batch_number === batchFilter;
 
-            return matchesSearch && matchesStatus;
+            return matchesSearch && matchesStatus && matchesBatch;
         });
-    }, [candidates, searchQuery, statusFilter]);
+    }, [candidates, searchQuery, statusFilter, batchFilter]);
 
     const statuses = ["All", ...Object.keys(statusColors)];
+    const batches = ["All", ...Array.from(new Set(candidates.map(c => c.batch_number).filter(Boolean)))];
 
     return (
         <div className="space-y-4">
@@ -121,17 +167,32 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-400" />
-                    <select
-                        className="input-field h-10 text-sm min-w-[150px] py-1"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                        {statuses.map(status => (
-                            <option key={status} value={status}>{status}</option>
-                        ))}
-                    </select>
+                <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <Filter className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="text-[10px] uppercase font-bold text-gray-400">Status</span>
+                        <select
+                            className="input-field h-9 text-xs min-w-[120px] py-1"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            {statuses.map(status => (
+                                <option key={status} value={status}>{status}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold text-gray-400">Batch</span>
+                        <select
+                            className="input-field h-9 text-xs min-w-[100px] py-1"
+                            value={batchFilter}
+                            onChange={(e) => setBatchFilter(e.target.value)}
+                        >
+                            {batches.map(batch => (
+                                <option key={batch as string} value={batch as string}>{batch}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -140,8 +201,9 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     <thead>
                         <tr className="bg-white border-b border-border">
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate / Contact</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Batch</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Applied On</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Assessment Score</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
@@ -162,13 +224,48 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </div>
                                     </div>
                                 </td>
+                                <td className="px-6 py-4 text-center">
+                                    <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
+                                        #{candidate.batch_number || 'N/A'}
+                                    </span>
+                                </td>
                                 <td className="px-6 py-4">
                                     <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
                                         {candidate.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-500">
-                                    {new Date(candidate.created_at).toLocaleDateString()}
+                                <td className="px-6 py-4">
+                                    {candidate.assessment_score_url ? (
+                                        <a
+                                            href={candidate.assessment_score_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            View Score Sheet
+                                        </a>
+                                    ) : (isMaster || isHR) ? (
+                                        <div className="flex items-center gap-2">
+                                            <label className="cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 flex items-center gap-2 transition-all">
+                                                {uploadingScore === candidate.id ? (
+                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                ) : <Upload className="w-3 h-3" />}
+                                                Upload Score
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleScoreUpload(candidate.id, file);
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">No score uploaded</span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
@@ -231,7 +328,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         ))}
                         {filteredCandidates.length === 0 && (
                             <tr>
-                                <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 italic">
                                     No candidates match your search.
                                 </td>
                             </tr>

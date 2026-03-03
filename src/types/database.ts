@@ -21,6 +21,8 @@ export interface Candidate {
     resume_url: string;
     cover_letter: string;
     status: CandidateStatus;
+    batch_number?: string;
+    assessment_score_url?: string;
     created_at: string;
 }
 
