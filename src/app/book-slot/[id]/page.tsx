@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import Logo from "@/components/Logo";
 import SlotBookingClient from "@/components/SlotBookingClient";
 import { notFound } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 
 export default async function BookSlotPage(props: { params: Promise<{ id: string }> }) {
     const { id } = await props.params;
@@ -17,7 +18,50 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
         return notFound();
     }
 
-    if (candidate.status !== "Approved" && candidate.status !== "Assessment Scheduled") {
+    if (candidate.status !== "Approved") {
+        // If already scheduled, show their current slot instead of a booking form
+        if (candidate.status === "Assessment Scheduled") {
+            const { data: currentSlot } = await supabase
+                .from("assessment_slots")
+                .select("*")
+                .eq("candidate_id", id)
+                .single();
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+                    <div className="card max-w-lg w-full text-center space-y-6 p-12">
+                        <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto scale-110">
+                            <CheckCircle2 className="w-10 h-10" />
+                        </div>
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-extrabold text-gray-900">Already Scheduled!</h2>
+                            <p className="text-gray-600">
+                                You have already booked an assessment slot.
+                            </p>
+                        </div>
+
+                        {currentSlot && (
+                            <div className="bg-gray-50 border border-border p-4 rounded-xl space-y-2">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Scheduled For</p>
+                                <p className="text-lg font-bold text-primary">
+                                    {new Date(currentSlot.start_time).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                                </p>
+                                <p className="text-sm font-medium text-gray-700">
+                                    {new Date(currentSlot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {" - "}
+                                    {new Date(currentSlot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="pt-4 border-t border-gray-100 italic text-[10px] text-gray-400">
+                            If you need to reschedule, please contact the recruitment team at recruitment@cbt.com.
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
                 <div className="card max-w-md w-full text-center space-y-4">
