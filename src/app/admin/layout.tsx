@@ -2,6 +2,7 @@ import Sidebar from "@/components/Sidebar";
 import NotificationBell from "@/components/NotificationBell";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
+import { ensureBuckets } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,11 @@ export default async function AdminLayout({
     children: React.ReactNode;
 }) {
     const user = await getCurrentUser();
+
+    // Silently ensure buckets exist (one-time setup logic)
+    if (user?.roles?.includes('Master')) {
+        await ensureBuckets();
+    }
 
     // Strict multi-layer check: Redirect if no user or no assigned roles
     if (!user || !user.roles || user.roles.length === 0) {

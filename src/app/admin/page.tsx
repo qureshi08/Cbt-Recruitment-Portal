@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth-utils";
-import SystemInitializer from "@/components/SystemInitializer";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +73,6 @@ export default async function AdminDashboard() {
                     ))}
                 </div>
             </div>
-
-            {user?.roles?.includes('Master') && <SystemInitializer />}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -20,17 +20,21 @@ export default function SlotBookingClient({ candidateId, initialSlots }: SlotBoo
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleBooking = async () => {
         if (!selectedSlot) return;
         setIsSubmitting(true);
+        setError(null);
 
         const result = await bookAssessmentSlot(candidateId, selectedSlot);
 
         if (result.success) {
             setIsSuccess(true);
         } else {
-            alert("Failed to book slot: " + result.error);
+            setError(result.error || "An unexpected error occurred.");
+            // Scroll to error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         setIsSubmitting(false);
     };
@@ -59,6 +63,20 @@ export default function SlotBookingClient({ candidateId, initialSlots }: SlotBoo
 
     return (
         <div className="space-y-8">
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="bg-red-100 p-2 rounded-full">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="font-bold text-sm">Booking Error</p>
+                        <p className="text-xs">{error}</p>
+                    </div>
+                    <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors">
+                        <Clock className="w-4 h-4 rotate-45" /> {/* Using clock as X variant for simplicity info */}
+                    </button>
+                </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {initialSlots.map((slot) => (
                     <div

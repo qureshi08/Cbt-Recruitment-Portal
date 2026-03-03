@@ -312,7 +312,21 @@ export async function createAssessmentSlot(startTime: string, endTime: string) {
 
 export async function bookAssessmentSlot(candidateId: string, slotId: string) {
     try {
-        // 1. Unlock any previous slots booked by this candidate
+        // 1. Check if the slot is still available or belongs to the current candidate (for rescheduling)
+        const { data: currentSlot, error: fetchError } = await supabase
+            .from("assessment_slots")
+            .select("is_locked, candidate_id")
+            .eq("id", slotId)
+            .single();
+
+        if (fetchError) throw new Error("Could not verify slot availability.");
+
+        // If locked by someone else, prevent booking
+        if (currentSlot.is_locked && currentSlot.candidate_id !== candidateId) {
+            return { error: "This slot was just booked by another candidate. Please select a different one." };
+        }
+
+        // 2. Unlock any previous slots booked by this candidate (CLEANUP BEFORE RESCHEDULING)
         await supabase
             .from("assessment_slots")
             .update({
@@ -321,16 +335,22 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             })
             .eq("candidate_id", candidateId);
 
-        // 2. Lock the new slot
-        const { error } = await supabase
+        // 3. Lock the new slot (with concurrency check)
+        const { error: lockError, data: updatedData } = await supabase
             .from("assessment_slots")
             .update({
                 candidate_id: candidateId,
                 is_locked: true
             })
-            .eq("id", slotId);
+            .eq("id", slotId)
+            .or(`is_locked.eq.false,candidate_id.eq.${candidateId}`) // Atomic check
+            .select();
 
-        if (error) throw error;
+        if (lockError) throw lockError;
+
+        if (!updatedData || updatedData.length === 0) {
+            return { error: "Slot is no longer available. Please refresh and try another." };
+        }
 
         // Update candidate status
         await updateCandidateStatus(candidateId, "Assessment Scheduled");
@@ -340,6 +360,7 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
         revalidatePath(`/book-slot/${candidateId}`);
         return { success: true };
     } catch (error: any) {
+        console.error("bookAssessmentSlot error:", error);
         return { error: error.message };
     }
 }
