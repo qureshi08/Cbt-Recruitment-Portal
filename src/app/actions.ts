@@ -364,7 +364,10 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
         }
 
         // Update candidate status
-        await updateCandidateStatus(candidateId, "Assessment Scheduled");
+        const statusResult = await updateCandidateStatus(candidateId, "Assessment Scheduled");
+        if (!statusResult.success) {
+            throw new Error(statusResult.error || "Failed to update candidate status.");
+        }
 
         revalidatePath("/admin/slots");
         revalidatePath("/admin");

@@ -4,6 +4,9 @@ import SlotBookingClient from "@/components/SlotBookingClient";
 import { notFound } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function BookSlotPage(props: { params: Promise<{ id: string }> }) {
     const { id } = await props.params;
 

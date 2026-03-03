@@ -53,22 +53,24 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                     </p>
                 </div>
                 <button
-                    onClick={() => window.location.href = '/'}
+                    onClick={() => {
+                        window.location.reload(); // Force refresh to trigger Server-Side status check
+                    }}
                     className="btn-primary"
                 >
-                    Return Home
+                    View My Booking Details
                 </button>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in fade-in duration-500">
             <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold text-gray-900">Select Your Assessment Slot</h1>
+                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Schedule Your Assessment Slot</h1>
                 <p className="text-gray-600 text-lg">
                     Welcome, <span className="text-primary font-bold">{candidateName}</span>!
-                    Please pick a time for your digital assessment.
+                    Please select a convenient time for your 2-hour digital assessment.
                 </p>
             </div>
 
