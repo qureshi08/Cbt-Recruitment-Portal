@@ -93,17 +93,7 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
             </header>
 
             <main className="max-w-4xl mx-auto py-12 px-6">
-                <div className="space-y-8">
-                    <div className="text-center space-y-2">
-                        <h1 className="text-3xl font-bold text-gray-900">Select Your Assessment Slot</h1>
-                        <p className="text-gray-600 text-lg">
-                            Welcome, <span className="text-primary font-bold">{candidate.name}</span>!
-                            Please pick a time for your digital assessment.
-                        </p>
-                    </div>
-
-                    <SlotBookingClient candidateId={id} initialSlots={slots || []} />
-                </div>
+                <SlotBookingClient candidateId={id} candidateName={candidate.name} initialSlots={slots || []} />
             </main>
         </div>
     );

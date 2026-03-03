@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar as CalendarIcon, Clock, CheckCircle2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, CheckCircle2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { bookAssessmentSlot } from "@/app/actions";
 
@@ -13,10 +13,11 @@ interface Slot {
 
 interface SlotBookingClientProps {
     candidateId: string;
+    candidateName: string;
     initialSlots: Slot[];
 }
 
-export default function SlotBookingClient({ candidateId, initialSlots }: SlotBookingClientProps) {
+export default function SlotBookingClient({ candidateId, candidateName, initialSlots }: SlotBookingClientProps) {
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -63,20 +64,27 @@ export default function SlotBookingClient({ candidateId, initialSlots }: SlotBoo
 
     return (
         <div className="space-y-8">
+            <div className="text-center space-y-2">
+                <h1 className="text-3xl font-bold text-gray-900">Select Your Assessment Slot</h1>
+                <p className="text-gray-600 text-lg">
+                    Welcome, <span className="text-primary font-bold">{candidateName}</span>!
+                    Please pick a time for your digital assessment.
+                </p>
+            </div>
+
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <div className="bg-red-100 p-2 rounded-full">
-                        <Clock className="w-5 h-5" />
-                    </div>
+                    <Clock className="w-5 h-5 text-red-400" />
                     <div className="flex-1">
                         <p className="font-bold text-sm">Booking Error</p>
                         <p className="text-xs">{error}</p>
                     </div>
-                    <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors">
-                        <Clock className="w-4 h-4 rotate-45" /> {/* Using clock as X variant for simplicity info */}
+                    <button onClick={() => setError(null)} className="text-red-400 hover:text-red-700">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
             )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {initialSlots.map((slot) => (
                     <div
@@ -103,12 +111,6 @@ export default function SlotBookingClient({ candidateId, initialSlots }: SlotBoo
                         </div>
                     </div>
                 ))}
-
-                {initialSlots.length === 0 && (
-                    <div className="col-span-full py-16 text-center card bg-white border-dashed">
-                        <p className="text-gray-500 italic">No available slots at the moment. Please check back later.</p>
-                    </div>
-                )}
             </div>
 
             {selectedSlot && (
