@@ -33,12 +33,14 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         const formData = new FormData(e.currentTarget);
         const date = formData.get("date") as string;
         const startTime = formData.get("startTime") as string;
-        const endTime = formData.get("endTime") as string;
 
-        const startDateTime = new Date(`${date}T${startTime}`).toISOString();
-        const endDateTime = new Date(`${date}T${endTime}`).toISOString();
+        const startDateTime = new Date(`${date}T${startTime}`);
+        const endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
 
-        const result = await createAssessmentSlot(startDateTime, endDateTime);
+        const result = await createAssessmentSlot(
+            startDateTime.toISOString(),
+            endDateTime.toISOString()
+        );
 
         if (result.success) {
             setSlots((prev) => [...prev, result.data as Slot].sort((a, b) =>
@@ -175,14 +177,13 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                 <label className="text-sm font-medium text-gray-700">Date</label>
                                 <input type="date" name="date" required className="input-field" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-gray-700">Start Time</label>
                                     <input type="time" name="startTime" required className="input-field" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">End Time</label>
-                                    <input type="time" name="endTime" required className="input-field" />
+                                    <p className="text-[10px] text-primary font-medium mt-1 uppercase tracking-wider">
+                                        Note: All assessment slots are 2 hours long.
+                                    </p>
                                 </div>
                             </div>
 
