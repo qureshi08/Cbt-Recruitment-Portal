@@ -312,7 +312,18 @@ export async function createAssessmentSlot(startTime: string, endTime: string) {
 
 export async function bookAssessmentSlot(candidateId: string, slotId: string) {
     try {
-        // 1. Check if the slot is still available or belongs to the current candidate (for rescheduling)
+        // 0. Verify candidate is actually allowed to book (must be 'Approved')
+        const { data: candidate } = await supabase
+            .from("candidates")
+            .select("status")
+            .eq("id", candidateId)
+            .single();
+
+        if (candidate?.status !== "Approved") {
+            return { error: `You have already scheduled an assessment (Current status: ${candidate?.status}).` };
+        }
+
+        // 1. Check if the slot is still available...
         const { data: currentSlot, error: fetchError } = await supabase
             .from("assessment_slots")
             .select("is_locked, candidate_id")
