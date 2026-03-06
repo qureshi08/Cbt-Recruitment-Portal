@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
+import mammoth from "mammoth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -636,7 +637,7 @@ export async function ensureBuckets() {
     }
 }
 
-export async function analyzeCandidateWithAi(candidateId: string) {
+export async function analyzeCandidateWithAi(candidateId: string, customCriteria?: string) {
     try {
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) throw new Error("GEMINI_API_KEY is not configured in .env.local");
@@ -651,10 +652,12 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         if (fetchError || !candidate) throw new Error("Candidate not found");
         if (!candidate.resume_url) throw new Error("No resume found for this candidate");
 
-        // 2. Download resume from Supabase Storage
-        // Extract filename from URL
+        const criteria = customCriteria || candidate.analysis_criteria || "Software Engineer with technical excellence.";
+
+        // 2. Download resume
         const urlParts = candidate.resume_url.split('/');
         const fileName = urlParts[urlParts.length - 1];
+        const isWord = fileName.toLowerCase().endsWith('.docx');
 
         const { data: fileData, error: downloadError } = await supabaseAdmin.storage
             .from('resumes')
@@ -662,52 +665,90 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
         if (downloadError || !fileData) throw new Error(`Failed to download resume: ${downloadError?.message}`);
 
-        // 3. Prepare PDF for Gemini
-        const buffer = Buffer.from(await fileData.arrayBuffer());
-        const base64Data = buffer.toString("base64");
-
-        // 4. Send to Gemini
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const prompt = `
-            You are an expert recruiter for a tech company. 
-            Analyze the attached resume for the position of: ${candidate.position || 'Software Engineer'}.
-            
-            Candidate Name: ${candidate.name}
+        let prompt = "";
+        let contentToAnalyze: any[] = [];
 
-            Please provide:
-            1. A score from 0 to 100 based on how well the candidate fits the role.
-            2. A brief reasoning (2-3 sentences) explaining the score. Focus on skills, experience, and educational background.
+        if (isWord) {
+            // Mammoth for Word files
+            const arrayBuffer = await fileData.arrayBuffer();
+            const { value: text } = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
 
-            Format your response strictly as a JSON object:
-            {
-                "score": 85,
-                "reasoning": "Strong technical background with 5 years of React experience. Has worked on relevant projects but lacks specific cloud infrastructure knowledge required for this role."
-            }
-        `;
+            prompt = `
+                You are an expert recruiter for a tech company. 
+                Perform a deep analysis of the following candidate's resume content based on specific criteria.
+                
+                POSITION: ${candidate.position || 'Software Engineer'}
+                RECRUITER'S CUSTOM CRITERIA: ${criteria}
 
-        const result = await model.generateContent([
-            { text: prompt },
-            {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: "application/pdf"
+                RESUME CONTENT:
+                ${text}
+
+                Perform a structural and qualitative analysis and respond STRICTLY in JSON:
+                {
+                    "score": number (0-100),
+                    "reasoning": "Quick one-sentence summary",
+                    "extracted_skills": ["skill1", "skill2", "..."],
+                    "experience_summary": "3-4 sentence detailed summary of work history",
+                    "matching_analysis": "Detailed breakdown of how they meet or miss the specific criteria mentioned above",
+                    "education_match": boolean,
+                    "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
                 }
-            }
-        ]);
-        const responseText = result.response.text();
 
-        // Clean up response if Gemini adds markdown code blocks
+                BE OBJECTIVE AND CRITICAL. If they don't match the criteria, score them lower.
+            `;
+            contentToAnalyze = [prompt];
+        } else {
+            // Native PDF for Gemini
+            const arrayBuffer = await fileData.arrayBuffer();
+            const base64Data = Buffer.from(arrayBuffer).toString("base64");
+
+            prompt = `
+                You are an expert recruiter for a tech company. 
+                Perform a deep analysis of the attached resume based on specific criteria.
+                
+                POSITION: ${candidate.position || 'Software Engineer'}
+                RECRUITER'S CUSTOM CRITERIA: ${criteria}
+
+                Perform a structural and qualitative analysis and respond STRICTLY in JSON:
+                {
+                    "score": number (0-100),
+                    "reasoning": "Quick one-sentence summary",
+                    "extracted_skills": ["skill1", "skill2", "..."],
+                    "experience_summary": "3-4 sentence detailed summary of work history",
+                    "matching_analysis": "Detailed breakdown of how they meet or miss the specific criteria mentioned above",
+                    "education_match": boolean,
+                    "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
+                }
+
+                BE OBJECTIVE AND CRITICAL. If they don't match the criteria, score them lower.
+            `;
+            contentToAnalyze = [
+                { text: prompt },
+                {
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: "application/pdf"
+                    }
+                }
+            ];
+        }
+
+        const result = await model.generateContent(contentToAnalyze);
+        const responseText = result.response.text();
         const cleanedResponse = responseText.replace(/```json|```/g, '').trim();
         const analysis = JSON.parse(cleanedResponse);
 
-        // 5. Update candidate record
+        // 5. Update record
         const { error: updateError } = await supabaseAdmin
             .from('candidates')
             .update({
                 ai_score: analysis.score,
-                ai_reasoning: analysis.reasoning
+                ai_reasoning: analysis.reasoning,
+                ai_analysis_json: analysis,
+                analysis_criteria: criteria
             })
             .eq('id', candidateId);
 
@@ -716,8 +757,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         revalidatePath('/admin/applications');
         return {
             success: true,
-            score: analysis.score,
-            reasoning: analysis.reasoning
+            analysis: analysis
         };
     } catch (error: any) {
         console.error("AI Analysis error:", error);

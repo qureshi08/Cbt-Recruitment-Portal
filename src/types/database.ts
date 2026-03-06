@@ -26,6 +26,14 @@ export interface Candidate {
     assessment_score_url?: string;
     ai_score?: number;
     ai_reasoning?: string;
+    analysis_criteria?: string;
+    ai_analysis_json?: {
+        extracted_skills: string[];
+        experience_summary: string;
+        matching_analysis: string;
+        education_match: boolean;
+        verdict: string;
+    };
     created_at: string;
 }
 
