@@ -48,12 +48,15 @@ const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass, isLast 
     </div>
 );
 
-const MetricBox = ({ label, value, description }: any) => (
+const MetricBox = ({ label, value, denominator, numerator, description }: any) => (
     <div className="bg-gray-50/50 p-4 rounded-xl border border-border">
         <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{label}</span>
-            <div className="p-1 rounded bg-white shadow-sm">
-                <Percent className="w-3 h-3 text-primary" />
+            <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-gray-400">{numerator}/{denominator}</span>
+                <div className="p-1 rounded bg-white shadow-sm">
+                    <Percent className="w-3 h-3 text-primary" />
+                </div>
             </div>
         </div>
         <div className="text-2xl font-bold text-gray-900">{value}%</div>
@@ -99,11 +102,24 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         return ['All', ...Array.from(set).sort()];
     }, [initialCandidates]);
 
-    const efficiency = useMemo(() => ({
-        testRate: stats.total ? Math.round(((stats.testParticipants + stats.activeInterviews + stats.recommended) / stats.total) * 100) : 0,
-        interviewRate: (stats.testParticipants + stats.activeInterviews + stats.recommended) ? Math.round(((stats.activeInterviews + stats.recommended) / (stats.testParticipants + stats.activeInterviews + stats.recommended)) * 100) : 0,
-        recRate: (stats.activeInterviews + stats.recommended) ? Math.round((stats.recommended / (stats.activeInterviews + stats.recommended)) * 100) : 0
-    }), [stats]);
+    const efficiency = useMemo(() => {
+        const totalAfterScreening = stats.testParticipants + stats.activeInterviews + stats.recommended;
+        const totalAfterTest = stats.activeInterviews + stats.recommended;
+
+        return {
+            testRate: stats.total ? Math.round((totalAfterScreening / stats.total) * 100) : 0,
+            testNumerator: totalAfterScreening,
+            testDenominator: stats.total,
+
+            interviewRate: totalAfterScreening ? Math.round((totalAfterTest / totalAfterScreening) * 100) : 0,
+            interviewNumerator: totalAfterTest,
+            interviewDenominator: totalAfterScreening,
+
+            recRate: totalAfterScreening ? Math.round((stats.recommended / totalAfterScreening) * 100) : 0,
+            recNumerator: stats.recommended,
+            recDenominator: totalAfterScreening // Overall Pass Rate = Recommended / Total Tested (Total after screening)
+        };
+    }, [stats]);
 
 
 
@@ -202,18 +218,25 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     <MetricBox
                         label="Screening to Test"
                         value={efficiency.testRate}
+                        numerator={efficiency.testNumerator}
+                        denominator={efficiency.testDenominator}
                         description="Candidates passing initial screening"
                     />
                     <MetricBox
                         label="Test to Interview"
                         value={efficiency.interviewRate}
+                        numerator={efficiency.interviewNumerator}
+                        denominator={efficiency.interviewDenominator}
                         description="Pass rate of the technical assessment"
                     />
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex flex-col justify-center">
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Overall Pass Rate</span>
-                            <div className="p-1 rounded bg-white shadow-sm">
-                                <CheckCircle className="w-3 h-3 text-primary" />
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-primary/60">{efficiency.recNumerator}/{efficiency.recDenominator}</span>
+                                <div className="p-1 rounded bg-white shadow-sm">
+                                    <CheckCircle className="w-3 h-3 text-primary" />
+                                </div>
                             </div>
                         </div>
                         <div className="text-2xl font-black text-gray-900">{efficiency.recRate}%</div>
