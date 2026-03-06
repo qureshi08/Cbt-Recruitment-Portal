@@ -9,20 +9,18 @@ import {
     CheckCircle,
     TrendingUp,
     Calendar,
-    ChevronDown,
     Layers,
     ArrowRight,
-    Target
+    Search,
+    ChevronRight,
+    Percent
 } from 'lucide-react';
 import {
-    BarChart,
-    Bar,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Cell,
     AreaChart,
     Area
 } from 'recharts';
@@ -33,47 +31,43 @@ interface RecruitmentPipelineDashboardProps {
     initialCandidates: Candidate[];
 }
 
-const BRAND_COLORS = {
-    primary: '#009245',
-    blue: '#3b82f6',
-    amber: '#f59e0b',
-    purple: '#8b5cf6',
-};
+const BRAND_PRIMARY = '#009245';
 
-// --- Funnel Step Component ---
-const UnifiedFunnelStep = ({ label, count, previousCount, last, color, percentageTotal }: any) => {
-    const conversion = previousCount ? Math.round((count / previousCount) * 100) : 100;
+// --- Sub-components ---
 
-    return (
-        <div className="relative flex flex-col items-center flex-1">
-            <div className="w-full px-2">
-                <div className={cn("p-6 rounded-2xl border border-black/5 shadow-sm transition-all hover:shadow-md h-32 flex flex-col items-center justify-center relative overflow-hidden group", color)}>
-                    {/* Background decoration */}
-                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
-                        <Target className="w-20 h-20 text-white" />
-                    </div>
-
-                    <span className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-2 relative z-10">{label}</span>
-                    <span className="text-white text-4xl font-extrabold tracking-tighter relative z-10">{count}</span>
-
-                    {percentageTotal !== undefined && (
-                        <span className="text-white/50 text-[10px] font-medium mt-1 relative z-10">{percentageTotal}% of total</span>
-                    )}
+const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass, isLast }: any) => (
+    <div className="flex-1 flex items-center group">
+        <div className="flex-1 bg-white p-5 rounded-xl border border-border shadow-sm hover:border-primary/20 transition-all relative overflow-hidden">
+            <div className={cn("absolute top-0 left-0 w-1 h-full", colorClass)} />
+            <div className="flex items-center justify-between mb-3">
+                <div className={cn("p-2 rounded-lg bg-gray-50 text-gray-400 group-hover:text-primary group-hover:bg-primary/5 transition-colors")}>
+                    <Icon className="w-4 h-4" />
                 </div>
+                <span className="text-2xl font-bold text-gray-900 tracking-tight">{count}</span>
             </div>
-
-            {!last && (
-                <div className="py-2 flex flex-col items-center h-16 w-full relative">
-                    <div className="h-full w-px bg-gray-100 absolute left-1/2 -translate-x-1/2" />
-                    <div className="relative z-10 px-3 py-1 bg-white border border-border shadow-sm rounded-full flex items-center gap-1.5 mt-2">
-                        <span className="text-[10px] font-bold text-gray-500">{conversion}%</span>
-                        <ArrowRight className="w-3 h-3 text-gray-400" />
-                    </div>
-                </div>
-            )}
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{title}</p>
+            <p className="text-[10px] text-gray-400 font-medium mt-1">{subtitle}</p>
         </div>
-    );
-};
+        {!isLast && (
+            <div className="hidden lg:flex px-2 text-gray-300">
+                <ChevronRight className="w-5 h-5" />
+            </div>
+        )}
+    </div>
+);
+
+const MetricBox = ({ label, value, description }: any) => (
+    <div className="bg-gray-50/50 p-4 rounded-xl border border-border">
+        <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{label}</span>
+            <div className="p-1 rounded bg-white shadow-sm">
+                <Percent className="w-3 h-3 text-primary" />
+            </div>
+        </div>
+        <div className="text-2xl font-bold text-gray-900">{value}%</div>
+        <p className="text-[10px] text-gray-400 font-medium mt-1">{description}</p>
+    </div>
+);
 
 export default function RecruitmentPipelineDashboard({ initialCandidates }: RecruitmentPipelineDashboardProps) {
     const [filterBatch, setFilterBatch] = useState('All');
@@ -89,21 +83,20 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
     const stats = useMemo(() => {
         const total = filteredCandidates.length;
 
-        // Pending Approval: Waiting for screening or approval (limbo between applied and test)
-        const pending = filteredCandidates.filter(c =>
-            ['Applied', 'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled'].includes(c.status)
-        ).length;
+        // 1. Pending Screening: Candidate applied but HR hasn't taken any action.
+        const pending = filteredCandidates.filter(c => c.status === 'Applied').length;
 
-        // Test Participants: Actually took the assessment
+        // 2. Test Participants: Passed initial screening (Approved) OR already in testing phase.
         const testParticipants = filteredCandidates.filter(c =>
-            !['Applied', 'Rejected', 'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled'].includes(c.status)
+            ['Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed'].includes(c.status)
         ).length;
 
-        // Active Interviews: In current interview phase
+        // 3. Active Interviews: Cleared assessment phase and moved to interviews.
         const activeInterviews = filteredCandidates.filter(c =>
-            ['To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Not Recommended'].includes(c.status)
+            ['To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'].includes(c.status)
         ).length;
 
+        // 4. Recommendation: Final positive decision.
         const recommended = filteredCandidates.filter(c => c.status === 'Recommended').length;
 
         return { total, pending, testParticipants, activeInterviews, recommended };
@@ -114,6 +107,12 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         return ['All', ...Array.from(set).sort()];
     }, [initialCandidates]);
 
+    const efficiency = useMemo(() => ({
+        testRate: stats.total ? Math.round(((stats.testParticipants + stats.activeInterviews + stats.recommended) / stats.total) * 100) : 0,
+        interviewRate: (stats.testParticipants + stats.activeInterviews + stats.recommended) ? Math.round(((stats.activeInterviews + stats.recommended) / (stats.testParticipants + stats.activeInterviews + stats.recommended)) * 100) : 0,
+        recRate: (stats.activeInterviews + stats.recommended) ? Math.round((stats.recommended / (stats.activeInterviews + stats.recommended)) * 100) : 0
+    }), [stats]);
+
     const trendData = useMemo(() => {
         const monthlyData: Record<string, any> = {};
         filteredCandidates.forEach(c => {
@@ -122,44 +121,45 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             if (!monthlyData[month]) monthlyData[month] = { month, apps: 0, tests: 0, recs: 0 };
             monthlyData[month].apps += 1;
             if (c.status === 'Recommended') monthlyData[month].recs += 1;
-            if (!['Applied', 'Rejected', 'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled'].includes(c.status)) {
-                monthlyData[month].tests += 1;
-            }
+            const isAtLeastTest = !['Applied', 'Rejected'].includes(c.status);
+            if (isAtLeastTest) monthlyData[month].tests += 1;
         });
         return Object.values(monthlyData);
     }, [filteredCandidates]);
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
-            {/* 1. Header & Filters (Cleaned Up) */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 bg-white rounded-xl border border-border shadow-sm">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">Recruitment Pipeline Dashboard</h2>
-                    <p className="text-sm text-gray-500">Monitoring candidate flow up to final recommendation</p>
+        <div className="space-y-6">
+            {/* --- Filter Bar --- */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-border shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900 tracking-tight leading-none">Recruitment Insights</h2>
+                        <p className="text-xs text-gray-400 font-medium mt-1">Operational view of the hiring pipeline</p>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-lg border border-border">
-                        <Layers className="w-4 h-4 text-gray-400" />
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Batch:</span>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 bg-gray-50 border border-border px-3 py-1.5 rounded-lg">
+                        <Layers className="w-3.5 h-3.5 text-gray-400" />
                         <select
                             value={filterBatch}
                             onChange={(e) => setFilterBatch(e.target.value)}
-                            className="bg-transparent text-xs font-bold text-gray-900 outline-none cursor-pointer"
+                            className="bg-transparent text-[11px] font-bold text-gray-700 outline-none cursor-pointer"
                         >
                             {batches.map(b => (
                                 <option key={b} value={b}>{b === 'All' ? 'All Batches' : `Batch ${b}`}</option>
                             ))}
                         </select>
                     </div>
-
-                    <div className="flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-lg border border-border">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Period:</span>
+                    <div className="flex items-center gap-2 bg-gray-50 border border-border px-3 py-1.5 rounded-lg">
+                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
                         <select
                             value={filterPeriod}
                             onChange={(e) => setFilterPeriod(e.target.value)}
-                            className="bg-transparent text-xs font-bold text-gray-900 outline-none cursor-pointer"
+                            className="bg-transparent text-[11px] font-bold text-gray-700 outline-none cursor-pointer"
                         >
                             <option value="All">All Time</option>
                             <option value="Month">Last 30 Days</option>
@@ -168,94 +168,98 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                 </div>
             </div>
 
-            {/* 2. Unified funnel row (KPIs + Funnel in one) */}
-            <div className="bg-white p-8 rounded-2xl border border-border shadow-sm">
-                <div className="flex items-center gap-2 mb-10">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Candidate Journey Conversion</h3>
-                </div>
-
-                <div className="flex flex-col lg:flex-row items-center justify-between w-full">
-                    <UnifiedFunnelStep
-                        label="Total Candidates"
-                        count={stats.total}
-                        color="bg-blue-500"
-                    />
-                    <UnifiedFunnelStep
-                        label="Pending Approval"
-                        count={stats.pending}
-                        previousCount={stats.total}
-                        percentageTotal={stats.total ? Math.round((stats.pending / stats.total) * 100) : 0}
-                        color="bg-amber-500"
-                    />
-                    <UnifiedFunnelStep
-                        label="Test Participants"
-                        count={stats.testParticipants}
-                        previousCount={stats.total}
-                        percentageTotal={stats.total ? Math.round((stats.testParticipants / stats.total) * 100) : 0}
-                        color="bg-indigo-500"
-                    />
-                    <UnifiedFunnelStep
-                        label="Active Interviews"
-                        count={stats.activeInterviews}
-                        previousCount={stats.testParticipants}
-                        percentageTotal={stats.total ? Math.round((stats.activeInterviews / stats.total) * 100) : 0}
-                        color="bg-purple-500"
-                    />
-                    <UnifiedFunnelStep
-                        label="Recommended"
-                        count={stats.recommended}
-                        previousCount={stats.activeInterviews}
-                        last
-                        percentageTotal={stats.total ? Math.round((stats.recommended / stats.total) * 100) : 0}
-                        color="bg-[#009245]"
-                    />
-                </div>
+            {/* --- Main Pipeline View (Combined KPI & Flow) --- */}
+            <div className="flex flex-col lg:flex-row gap-2">
+                <PipelineStage
+                    title="Total Applications"
+                    count={stats.total}
+                    subtitle="Gross application volume"
+                    icon={Users}
+                    colorClass="bg-blue-500"
+                />
+                <PipelineStage
+                    title="Pending Approval"
+                    count={stats.pending}
+                    subtitle="Awaiting HR screening"
+                    icon={Clock}
+                    colorClass="bg-amber-500"
+                />
+                <PipelineStage
+                    title="Test Phase"
+                    count={stats.testParticipants}
+                    subtitle="Assessment participation"
+                    icon={FileText}
+                    colorClass="bg-indigo-500"
+                />
+                <PipelineStage
+                    title="Active Interviews"
+                    count={stats.activeInterviews}
+                    subtitle="Qualified interview pool"
+                    icon={MessageSquare}
+                    colorClass="bg-purple-500"
+                />
+                <PipelineStage
+                    title="Recommended"
+                    count={stats.recommended}
+                    subtitle="Successful candidacies"
+                    icon={CheckCircle}
+                    colorClass="bg-primary"
+                    isLast
+                />
             </div>
 
-            {/* 3. Efficiency & Activity (Combined for zero redundancy) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
-                <div className="bg-white p-6 rounded-2xl border border-border shadow-sm">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Efficiency Pulse</h3>
+            {/* --- Insight Section --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Efficiency Stats */}
+                <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Stage Conversion</h3>
+                        <span className="text-[10px] bg-primary/5 text-primary px-2 py-0.5 rounded-full font-bold">Pipeline Health</span>
+                    </div>
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                            <span className="text-xs font-bold text-gray-600">Test Participation</span>
-                            <span className="text-xl font-black text-primary">{stats.total ? Math.round((stats.testParticipants / stats.total) * 100) : 0}%</span>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                            <span className="text-xs font-bold text-gray-600">Interview Yield</span>
-                            <span className="text-xl font-black text-primary">{stats.testParticipants ? Math.round((stats.activeInterviews / stats.testParticipants) * 100) : 0}%</span>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                            <span className="text-xs font-bold text-gray-600">Final Recommendation</span>
-                            <span className="text-xl font-black text-primary">{stats.activeInterviews ? Math.round((stats.recommended / stats.activeInterviews) * 100) : 0}%</span>
-                        </div>
+                        <MetricBox label="Screening to Test" value={efficiency.testRate} description="Candidates passing initial screening" />
+                        <MetricBox label="Test to Interview" value={efficiency.interviewRate} description="Pass rate of the technical assessment" />
+                        <MetricBox label="Interview Success" value={efficiency.recRate} description="Final recommendation yield" />
                     </div>
                 </div>
 
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-border shadow-sm">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 px-2">Pipeline Activity Over Time</h3>
-                    <div className="h-[200px] w-full">
+                {/* Trend Chart */}
+                <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Recruitment Velocity</h3>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                <span className="text-[9px] font-bold text-gray-400 uppercase">Apps</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-2 h-2 rounded-full bg-primary" />
+                                <span className="text-[9px] font-bold text-gray-400 uppercase">Recs</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="h-[280px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trendData}>
                                 <defs>
-                                    <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={BRAND_COLORS.primary} stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor={BRAND_COLORS.primary} stopOpacity={0} />
+                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={BRAND_PRIMARY} stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor={BRAND_PRIMARY} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }} />
                                 <Tooltip content={({ active, payload }) => {
                                     if (active && payload && payload.length) {
                                         return (
-                                            <div className="bg-white p-3 rounded-xl shadow-xl border border-border">
+                                            <div className="bg-white p-3 rounded-lg shadow-xl border border-border">
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{payload[0].payload.month}</p>
                                                 {payload.map((p, i) => (
                                                     <div key={i} className="flex items-center gap-2 text-[11px] font-bold">
                                                         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color }} />
-                                                        <span>{p.name}: {p.value}</span>
+                                                        <span className="text-gray-600">{p.name === 'apps' ? 'Applications' : p.name === 'recs' ? 'Recommended' : 'Tested'}:</span>
+                                                        <span className="text-gray-900">{p.value}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -263,9 +267,9 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                                     }
                                     return null;
                                 }} />
-                                <Area type="monotone" dataKey="apps" name="Apps" stroke={BRAND_COLORS.blue} strokeWidth={2} fill="transparent" />
-                                <Area type="monotone" dataKey="tests" name="Tests" stroke={BRAND_COLORS.purple} strokeWidth={2} fill="transparent" />
-                                <Area type="monotone" dataKey="recs" name="Recommendations" stroke={BRAND_COLORS.primary} strokeWidth={3} fill="url(#trendGradient)" />
+                                <Area type="monotone" dataKey="apps" stroke="#3b82f6" strokeWidth={2} fill="transparent" />
+                                <Area type="monotone" dataKey="tests" stroke="#6366f1" strokeWidth={2} fill="transparent" />
+                                <Area type="monotone" dataKey="recs" stroke={BRAND_PRIMARY} strokeWidth={3} fill="url(#chartGradient)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
