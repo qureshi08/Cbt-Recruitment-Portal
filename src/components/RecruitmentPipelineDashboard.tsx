@@ -265,6 +265,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                                     axisLine={false}
                                     tickLine={false}
                                     tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }}
+                                    allowDecimals={false}
                                 >
                                     <Label value="Candidates" angle={-90} position="insideLeft" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#9ca3af', textTransform: 'uppercase' }} />
                                 </YAxis>
@@ -279,12 +280,12 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                                                     {payload.map((p, i) => (
                                                         <div key={i} className="flex justify-between items-center gap-6">
                                                             <div className="flex items-center gap-2">
-                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.name === 'apps' ? '#14b8a6' : p.name === 'tests' ? '#6366f1' : '#10b981' }} />
                                                                 <span className="text-[11px] font-bold text-gray-600">
                                                                     {p.name === 'apps' ? 'Applied' : p.name === 'tests' ? 'Tested' : 'Passed'}
                                                                 </span>
                                                             </div>
-                                                            <span className="text-[11px] font-black text-gray-900">{p.value}</span>
+                                                            <span className="text-[11px] font-black text-gray-900">{Math.round(Number(p.value))}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -308,11 +309,18 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                                     name="apps"
                                     type="monotone"
                                     dataKey="apps"
-                                    stroke="#3b82f6"
+                                    stroke="#14b8a6"
                                     strokeWidth={3}
                                     dot={false}
-                                    activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 0 }}
-                                    label={{ position: 'top', fontSize: 10, fontWeight: 'bold', fill: '#3b82f6', offset: 10 }}
+                                    activeDot={{ r: 6, fill: '#14b8a6', strokeWidth: 0 }}
+                                    label={{
+                                        position: 'top',
+                                        fontSize: 10,
+                                        fontWeight: 'bold',
+                                        fill: '#14b8a6',
+                                        offset: 10,
+                                        formatter: (val: any) => Math.round(val)
+                                    }}
                                 />
                                 <Line
                                     name="tests"
@@ -322,17 +330,31 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                                     strokeWidth={3}
                                     dot={false}
                                     activeDot={{ r: 6, fill: '#6366f1', strokeWidth: 0 }}
-                                    label={{ position: 'top', fontSize: 10, fontWeight: 'bold', fill: '#6366f1', offset: 10 }}
+                                    label={{
+                                        position: 'top',
+                                        fontSize: 10,
+                                        fontWeight: 'bold',
+                                        fill: '#6366f1',
+                                        offset: 10,
+                                        formatter: (val: any) => Math.round(val)
+                                    }}
                                 />
                                 <Line
                                     name="recs"
                                     type="monotone"
                                     dataKey="recs"
-                                    stroke={BRAND_PRIMARY}
+                                    stroke="#10b981"
                                     strokeWidth={3}
                                     dot={false}
-                                    activeDot={{ r: 6, fill: BRAND_PRIMARY, strokeWidth: 0 }}
-                                    label={{ position: 'top', fontSize: 10, fontWeight: 'bold', fill: BRAND_PRIMARY, offset: 10 }}
+                                    activeDot={{ r: 6, fill: '#10b981', strokeWidth: 0 }}
+                                    label={{
+                                        position: 'top',
+                                        fontSize: 10,
+                                        fontWeight: 'bold',
+                                        fill: '#10b981',
+                                        offset: 10,
+                                        formatter: (val: any) => Math.round(val)
+                                    }}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
