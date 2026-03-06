@@ -360,19 +360,24 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-white border-b border-border">
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate / Contact</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Demographics</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Batch</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Analysis</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Assessment Score</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Interview</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Assessment Score</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border bg-white">
                         {filteredCandidates.map((candidate) => (
                             <tr key={candidate.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-6 py-4">
+                                    <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
+                                        {candidate.batch_number || 'N/A'}
+                                    </span>
+                                </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col gap-1">
                                         <span className="text-sm font-bold text-gray-900">{candidate.name}</span>
@@ -415,11 +420,6 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             <span className="text-xs text-gray-400 italic">Not provided</span>
                                         )}
                                     </div>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                                        #{candidate.batch_number || 'N/A'}
-                                    </span>
                                 </td>
                                 <td className="px-6 py-4">
                                     {candidate.ai_score !== undefined ? (
@@ -466,6 +466,39 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </span>
                                     )}
                                 </td>
+                                <td className="px-6 py-4">
+                                    {candidate.assessment_score_url ? (
+                                        <a
+                                            href={candidate.assessment_score_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            View Score Sheet
+                                        </a>
+                                    ) : (isMaster || isHR) ? (
+                                        <div className="flex items-center gap-2">
+                                            <label className="cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 flex items-center gap-2 transition-all">
+                                                {uploadingScore === candidate.id ? (
+                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                ) : <Upload className="w-3 h-3" />}
+                                                Upload Score
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleScoreUpload(candidate.id, file);
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">No score uploaded</span>
+                                    )}
+                                </td>
                                 {/* Interview Scores */}
                                 <td className="px-6 py-4">
                                     {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
@@ -500,39 +533,6 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
                                         {candidate.status}
                                     </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    {candidate.assessment_score_url ? (
-                                        <a
-                                            href={candidate.assessment_score_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
-                                        >
-                                            <ExternalLink className="w-3.5 h-3.5" />
-                                            View Score Sheet
-                                        </a>
-                                    ) : (isMaster || isHR) ? (
-                                        <div className="flex items-center gap-2">
-                                            <label className="cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 flex items-center gap-2 transition-all">
-                                                {uploadingScore === candidate.id ? (
-                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                                ) : <Upload className="w-3 h-3" />}
-                                                Upload Score
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleScoreUpload(candidate.id, file);
-                                                    }}
-                                                />
-                                            </label>
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs text-gray-400 italic">No score uploaded</span>
-                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
@@ -576,11 +576,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             </>
                                         )}
 
-                                        {isMaster && (
+                                        {(isMaster || isHR || isApprover) && (
                                             <button
                                                 onClick={() => setEditingCandidate(candidate)}
-                                                className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-primary transition-colors"
-                                                title="Edit Application"
+                                                className="p-1.5 hover:bg-blue-50 rounded text-blue-600 transition-colors"
+                                                title="Edit"
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
@@ -589,8 +589,8 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         {canDelete && (
                                             <button
                                                 onClick={() => handleDelete(candidate.id)}
-                                                className="p-1.5 hover:bg-red-50 rounded text-red-400 hover:text-red-600 transition-colors"
-                                                title="Delete Application"
+                                                className="p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors"
+                                                title="Delete"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
