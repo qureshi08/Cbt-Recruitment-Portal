@@ -54,9 +54,6 @@ const MetricBox = ({ label, value, denominator, numerator, description }: any) =
             <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
             <div className="flex items-center gap-1.5 font-bold">
                 <span className="text-[10px] text-gray-400">{numerator}/{denominator}</span>
-                <div className="p-1 rounded-md bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-                    <Percent className="w-2.5 h-2.5 text-primary" />
-                </div>
             </div>
         </div>
         <div className="text-2xl font-semibold text-gray-900">{value}%</div>
@@ -234,9 +231,6 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                             <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Overall Pass Rate</span>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-primary/60">{efficiency.recNumerator}/{efficiency.recDenominator}</span>
-                                <div className="p-1 rounded bg-white shadow-sm">
-                                    <CheckCircle className="w-3 h-3 text-primary" />
-                                </div>
                             </div>
                         </div>
                         <div className="text-2xl font-semibold text-gray-900">{efficiency.recRate}%</div>
