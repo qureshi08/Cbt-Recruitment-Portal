@@ -235,17 +235,23 @@ export async function submitApplication(formData: FormData) {
         if (!resume || resume.size === 0) throw new Error("Resume is required");
         if (!cnic) throw new Error("CNIC Number is required");
 
+        // Normalize CNIC: Remove all non-digit characters for consistent lookup
+        const normalizedCnic = cnic.replace(/\D/g, '');
+        if (normalizedCnic.length < 5) throw new Error("Invalid CNIC format");
+
         // --- Reapplication Logic Based on CNIC ---
-        // 1. Check if there's any previous application with this CNIC
+        // 1. Check if there's any previous application with this (normalized) CNIC
+        // We use a broader check to find matches even if we previously stored them with dashes
         const { data: pastApps, error: pastAppError } = await supabaseAdmin
             .from('candidates')
-            .select('id, status, created_at, updated_at')
-            .eq('cnic', cnic)
+            .select('id, status, created_at, updated_at, cnic')
+            .or(`cnic.eq."${cnic}",cnic.eq."${normalizedCnic}"`) // Try both raw and normalized
             .order('created_at', { ascending: false })
             .limit(1);
 
         if (pastAppError) {
             console.error("Error checking past applications:", pastAppError);
+            throw new Error("System is currently unable to verify eligibility. Please try again in a few minutes.");
         } else if (pastApps && pastApps.length > 0) {
             const lastApp = pastApps[0];
 
@@ -270,24 +276,28 @@ export async function submitApplication(formData: FormData) {
                 const isInterviewPhase = (count || 0) > 0 || lastApp.status === 'Not Recommended';
                 const requiredWaitMonths = isInterviewPhase ? 6 : 3;
 
-                // Use the later of created_at or updated_at (updated_at would be when the rejection was set)
+                // Use the later of created_at or updated_at
                 const lastActivityDate = new Date(lastApp.updated_at || lastApp.created_at);
                 const now = new Date();
 
-                // Calculate difference in months accurately
-                const diffTime = Math.abs(now.getTime() - lastActivityDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const diffMonths = diffDays / 30.44; // Avg days per month
+                // Calculate difference in days (more robust than months/days ratio)
+                const diffTime = now.getTime() - lastActivityDate.getTime();
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-                if (diffMonths < requiredWaitMonths) {
-                    const remainingMonths = Math.ceil(requiredWaitMonths - diffMonths);
+                // 30 days per month estimate for the restriction
+                if (diffDays < (requiredWaitMonths * 30)) {
+                    const daysLeft = Math.ceil((requiredWaitMonths * 30) - diffDays);
+                    const monthsLeft = Math.ceil(daysLeft / 30);
                     const phaseName = isInterviewPhase ? "interview phase" : "initial filtering phase";
+
                     return {
-                        error: `Candidates rejected at the ${phaseName} can reapply after ${requiredWaitMonths} months. Based on your previous application, you can reapply in approximately ${remainingMonths} month(s).`
+                        error: `Candidates rejected at the ${phaseName} can reapply after ${requiredWaitMonths} months. Based on your previous application, you can reapply in approximately ${monthsLeft} month(s).`
                     };
                 }
             }
         }
+        // Save normalized CNIC for future consistency
+        const finalCnic = normalizedCnic;
         // -----------------------------------------
 
 
@@ -313,10 +323,11 @@ export async function submitApplication(formData: FormData) {
                 education_status,
                 graduation_year,
                 degree_field,
-                cnic,
+                cnic: finalCnic,
                 resume_url: publicUrl,
                 position,
-                status: "Applied"
+                status: "Applied",
+                updated_at: new Date().toISOString()
             })
             .select()
             .single();
@@ -665,6 +676,9 @@ export async function uploadAssessmentScore(formData: FormData) {
 
 export async function updateCandidate(candidateId: string, updates: Partial<any>) {
     try {
+        if (updates.cnic) {
+            updates.cnic = updates.cnic.replace(/\D/g, '');
+        }
         const { error } = await supabase
             .from("candidates")
             .update({

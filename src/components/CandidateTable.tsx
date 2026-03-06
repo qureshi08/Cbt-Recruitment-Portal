@@ -164,6 +164,15 @@ const statusColors: Record<CandidateStatus, string> = {
     "L2 Interview Required": "bg-blue-600 text-white shadow-sm",
 };
 
+const formatCNIC = (cnic: string) => {
+    if (!cnic) return "";
+    const cleaned = cnic.replace(/\D/g, '');
+    if (cleaned.length === 13) {
+        return `${cleaned.slice(0, 5)}-${cleaned.slice(5, 12)}-${cleaned.slice(12)}`;
+    }
+    return cnic;
+};
+
 export default function CandidateTable({ initialCandidates, userRoles }: CandidateTableProps) {
     const [candidates, setCandidates] = useState(initialCandidates);
     const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -270,7 +279,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             name: formData.get('name') as string,
             email: formData.get('email') as string,
             phone: formData.get('phone') as string,
-            cnic: formData.get('cnic') as string,
+            cnic: (formData.get('cnic') as string || "").replace(/\D/g, ''),
             batch_number: formData.get('batch_number') as string,
         };
 
@@ -391,9 +400,9 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 </span>
                                             )}
                                             {candidate.cnic && (
-                                                <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 mt-0.5">
+                                                <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 mt-0.5" title="CNIC">
                                                     <span className="px-1 bg-gray-100 rounded text-[9px]">CNIC</span>
-                                                    {candidate.cnic}
+                                                    {formatCNIC(candidate.cnic)}
                                                 </span>
                                             )}
                                         </div>
