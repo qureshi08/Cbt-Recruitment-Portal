@@ -106,7 +106,7 @@ export default function UserManager({ initialUsers, availableRoles }: UserManage
                         <Key className="w-5 h-5 text-primary" />
                         User Management
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">Manage system secondary administrators and their roles.</p>
+                    <p className="text-sm text-gray-500 mt-1">Manage system secondary users and their roles.</p>
                 </div>
                 <button
                     onClick={() => {
@@ -117,7 +117,7 @@ export default function UserManager({ initialUsers, availableRoles }: UserManage
                     className="btn-primary flex items-center gap-2 text-sm font-semibold rounded-xl shadow-sm"
                 >
                     {isAdding ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                    {isAdding ? "Cancel" : "Add New Admin"}
+                    {isAdding ? "Cancel" : "Add New User"}
                 </button>
             </div>
 
@@ -244,6 +244,7 @@ export default function UserManager({ initialUsers, availableRoles }: UserManage
                             <tr className="bg-gray-50 border-b border-border">
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Permissions</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
@@ -256,7 +257,7 @@ export default function UserManager({ initialUsers, availableRoles }: UserManage
                                                 {user.full_name?.charAt(0) || user.email?.charAt(0)}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900 leading-none mb-1">{user.full_name}</span>
+                                                <span className="text-sm font-bold text-gray-900 mb-1">{user.full_name}</span>
                                                 <span className="text-xs text-gray-500">{user.email}</span>
                                             </div>
                                         </div>
@@ -270,19 +271,26 @@ export default function UserManager({ initialUsers, availableRoles }: UserManage
                                             ))}
                                         </div>
                                     </td>
+                                    <td className="px-6 py-6">
+                                        <span className="text-xs text-gray-500 font-medium">
+                                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                        </span>
+                                    </td>
                                     <td className="px-6 py-6 text-right">
-                                        <div className="flex justify-end gap-2">
+                                        <div className="flex justify-end gap-3">
                                             <button
                                                 onClick={() => setEditingUser(user)}
-                                                className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-primary transition-colors"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors border border-amber-100"
                                             >
-                                                <Pencil className="w-4 h-4" />
+                                                <Pencil className="w-3.5 h-3.5" />
+                                                Edit
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteUser(user.id, user.full_name)}
-                                                className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-100"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Delete
                                             </button>
                                         </div>
                                     </td>

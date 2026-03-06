@@ -13,7 +13,7 @@ import {
     sendNotRecommendedEmail
 } from "@/lib/email";
 
-export type UserRole = 'Master' | 'Approver' | 'HR' | 'Interviewer' | 'L1_Interviewer' | 'L2_Interviewer';
+export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer';
 
 export async function login(formData: FormData) {
     const email = formData.get("email") as string;
@@ -76,7 +76,7 @@ export async function getUserRoles(userId: string): Promise<UserRole[]> {
 }
 
 export async function getAllRoles() {
-    const { data, error } = await supabase.from('roles').select('*').neq('name', '_SYSTEM_AI_CRITERIA_');
+    const { data, error } = await supabase.from('roles').select('*').neq('name', '_SYSTEM_AI_CRITERIA_').neq('name', 'Interviewer');
     if (error) throw error;
     return data;
 }
@@ -723,7 +723,6 @@ export async function ensureBuckets() {
             { name: 'Master', description: 'Can do everything' },
             { name: 'Approver', description: 'Can do initial approvals' },
             { name: 'HR', description: 'Recruitment team - View only' },
-            { name: 'Interviewer', description: 'Can do interviews' },
             { name: 'L1_Interviewer', description: 'Can do L1 interviews and request L2' },
             { name: 'L2_Interviewer', description: 'Can do dynamic L2 interviews' }
         ];

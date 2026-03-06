@@ -188,7 +188,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
     const isHR = userRoles.includes('HR');
-    const isInterviewer = userRoles.includes('Interviewer');
+    const isInterviewer = userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer');
 
     const canApprove = isMaster || isApprover;
     const canDelete = isMaster;

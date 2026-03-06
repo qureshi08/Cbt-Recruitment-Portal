@@ -384,7 +384,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                     {interviews.map((interview) => {
                         const isAwaitingL2 = interview.decision === 'L2 Interview Required';
                         const isFinal = interview.decision === 'Recommended' || interview.decision === 'Not Recommended';
-                        const canAct = !isFinal && (userRoles.includes('Interviewer') || userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));
+                        const canAct = !isFinal && (userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));
                         const canActL2 = isAwaitingL2 && (userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));
 
                         return (
@@ -546,7 +546,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             </button>
 
                             {/* L1 can escalate to L2 */}
-                            {!isL2Round && (userRoles.includes('Master') || userRoles.includes('L1_Interviewer') || userRoles.includes('Interviewer')) && (
+                            {!isL2Round && (userRoles.includes('Master') || userRoles.includes('L1_Interviewer')) && (
                                 <button
                                     onClick={() => handleDecision('L2 Interview Required')}
                                     disabled={isSubmitting}
