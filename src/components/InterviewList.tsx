@@ -286,6 +286,16 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
 
     const handleDecision = async (decision: 'Recommended' | 'Not Recommended' | 'L2 Interview Required') => {
         if (!selectedInterview) return;
+
+        // Confirmation for actions that trigger emails
+        if (decision === 'Recommended' || decision === 'Not Recommended') {
+            const confirmMsg = decision === 'Recommended'
+                ? "Are you sure you want to RECOMMEND this candidate? This will send an automated acceptance/onboarding email."
+                : "Are you sure you want to REJECT this candidate? This will send an automated rejection email.";
+
+            if (!window.confirm(confirmMsg)) return;
+        }
+
         setIsSubmitting(true);
 
         try {

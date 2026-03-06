@@ -232,6 +232,16 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const handleStatusUpdate = async (id: string, newStatus: CandidateStatus) => {
         if (!canApprove && candidateStatusIsInitial(newStatus)) return;
 
+        // Confirmation for actions that trigger emails
+        const emailTriggerStatuses = ['Approved', 'Rejected', 'Recommended', 'Not Recommended'];
+        if (emailTriggerStatuses.includes(newStatus)) {
+            const confirmMsg = newStatus === 'Approved'
+                ? "Are you sure you want to APPROVE this candidate? This will send an automated email with an assessment booking link."
+                : `Are you sure you want to mark this candidate as ${newStatus.toUpperCase()}? This will send an automated rejection email.`;
+
+            if (!window.confirm(confirmMsg)) return;
+        }
+
         const result: any = await updateCandidateStatus(id, newStatus);
         if (result.success) {
             setCandidates(prev =>
