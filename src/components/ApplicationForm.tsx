@@ -88,6 +88,10 @@ export default function ApplicationForm() {
                     <label className="text-sm font-medium text-gray-700">Current Location (City/Area)</label>
                     <input type="text" name="location" required className="input-field" placeholder="e.g. Rawalpindi, Gulberg Greens" />
                 </div>
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">CNIC Number</label>
+                    <input type="text" name="cnic" required className="input-field" placeholder="e.g. 61101-XXXXXXX-X" />
+                </div>
             </div>
 
             <div className="space-y-1">

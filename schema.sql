@@ -39,6 +39,17 @@ create table public.candidates (
   resume_url text,
   cover_letter text,
   status text not null default 'Applied',
+  location text,
+  education_status text,
+  graduation_year text,
+  degree_field text,
+  cnic text,
+  batch_number text,
+  assessment_score_url text,
+  ai_score integer,
+  ai_reasoning text,
+  analysis_criteria text,
+  ai_analysis_json jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

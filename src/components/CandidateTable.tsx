@@ -270,6 +270,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             name: formData.get('name') as string,
             email: formData.get('email') as string,
             phone: formData.get('phone') as string,
+            cnic: formData.get('cnic') as string,
             batch_number: formData.get('batch_number') as string,
         };
 
@@ -387,6 +388,12 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 <span className="text-[11px] text-primary font-bold flex items-center gap-1.5">
                                                     <Phone className="w-3 h-3" />
                                                     {candidate.phone}
+                                                </span>
+                                            )}
+                                            {candidate.cnic && (
+                                                <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 mt-0.5">
+                                                    <span className="px-1 bg-gray-100 rounded text-[9px]">CNIC</span>
+                                                    {candidate.cnic}
                                                 </span>
                                             )}
                                         </div>
@@ -667,6 +674,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
                                     <input name="phone" defaultValue={editingCandidate.phone} required className="input-field" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">CNIC</label>
+                                    <input name="cnic" defaultValue={editingCandidate.cnic} placeholder="e.g. 61101-XXXXXXX-X" className="input-field" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Batch Number</label>

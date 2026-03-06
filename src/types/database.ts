@@ -40,6 +40,7 @@ export interface Candidate {
     education_status?: string;
     graduation_year?: string;
     degree_field?: string;
+    cnic?: string;
     batch_number?: string;
     assessment_score_url?: string;
     ai_score?: number;
