@@ -21,8 +21,10 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    AreaChart,
-    Area
+    ComposedChart,
+    Area,
+    Bar,
+    Line
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { Candidate, CandidateStatus } from '@/types/database';
@@ -114,17 +116,36 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
     }), [stats]);
 
     const trendData = useMemo(() => {
-        const monthlyData: Record<string, any> = {};
+        const monthlyData: Record<string, { key: string; month: string; apps: number; tests: number; recs: number }> = {};
+
         filteredCandidates.forEach(c => {
             const date = new Date(c.created_at);
-            const month = date.toLocaleString('default', { month: 'short' });
-            if (!monthlyData[month]) monthlyData[month] = { month, apps: 0, tests: 0, recs: 0 };
-            monthlyData[month].apps += 1;
-            if (c.status === 'Recommended') monthlyData[month].recs += 1;
-            const isAtLeastTest = !['Applied', 'Rejected'].includes(c.status);
-            if (isAtLeastTest) monthlyData[month].tests += 1;
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthDisplay = date.toLocaleString('default', { month: 'short' });
+
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = {
+                    key: monthKey,
+                    month: monthDisplay,
+                    apps: 0,
+                    tests: 0,
+                    recs: 0
+                };
+            }
+            monthlyData[monthKey].apps += 1;
+
+            // For trend tracking, we check if they HAVE EVER reached these stages
+            // but since we only have current status, we use these proxies:
+            if (c.status === 'Recommended') {
+                monthlyData[monthKey].recs += 1;
+                monthlyData[monthKey].tests += 1;
+            } else if (!['Applied', 'Rejected'].includes(c.status)) {
+                monthlyData[monthKey].tests += 1;
+            }
         });
-        return Object.values(monthlyData);
+
+        // Sort by key (YYYY-MM) and return
+        return Object.values(monthlyData).sort((a, b) => a.key.localeCompare(b.key));
     }, [filteredCandidates]);
 
     return (
@@ -229,18 +250,22 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                         <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Recruitment Velocity</h3>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1.5">
-                                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                <span className="text-[9px] font-bold text-gray-400 uppercase">Apps</span>
+                                <div className="w-2.5 h-1 bg-gray-200 rounded-full" />
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Applied</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <div className="w-2 h-2 rounded-full bg-primary" />
-                                <span className="text-[9px] font-bold text-gray-400 uppercase">Recs</span>
+                                <div className="w-2.5 h-0.5 bg-indigo-500 border-t border-dashed border-indigo-500" />
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Tested</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-2.5 h-0.5 bg-primary" />
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Passed</span>
                             </div>
                         </div>
                     </div>
                     <div className="h-[280px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={trendData}>
+                            <ComposedChart data={trendData}>
                                 <defs>
                                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor={BRAND_PRIMARY} stopOpacity={0.1} />
@@ -252,25 +277,43 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }} />
                                 <Tooltip content={({ active, payload }) => {
                                     if (active && payload && payload.length) {
+                                        const values: Record<string, number> = {};
+                                        payload.forEach(p => { values[p.dataKey as string] = p.value as number });
                                         return (
-                                            <div className="bg-white p-3 rounded-lg shadow-xl border border-border">
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{payload[0].payload.month}</p>
-                                                {payload.map((p, i) => (
-                                                    <div key={i} className="flex items-center gap-2 text-[11px] font-bold">
-                                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color }} />
-                                                        <span className="text-gray-600">{p.name === 'apps' ? 'Applications' : p.name === 'recs' ? 'Recommended' : 'Tested'}:</span>
-                                                        <span className="text-gray-900">{p.value}</span>
+                                            <div className="bg-white p-3 rounded-xl shadow-xl border border-border min-w-[140px]">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 border-b border-border pb-2">{payload[0].payload.month} {payload[0].payload.key.split('-')[0]}</p>
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center gap-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                            <span className="text-[11px] font-bold text-gray-600">Applied</span>
+                                                        </div>
+                                                        <span className="text-[11px] font-black text-gray-900">{values.apps || 0}</span>
                                                     </div>
-                                                ))}
+                                                    <div className="flex justify-between items-center gap-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                                            <span className="text-[11px] font-bold text-gray-600">Tested</span>
+                                                        </div>
+                                                        <span className="text-[11px] font-black text-gray-900">{values.tests || 0}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center gap-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                                            <span className="text-[11px] font-bold text-gray-600">Passed</span>
+                                                        </div>
+                                                        <span className="text-[11px] font-black text-primary">{values.recs || 0}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )
                                     }
                                     return null;
                                 }} />
-                                <Area type="monotone" dataKey="apps" stroke="#3b82f6" strokeWidth={2} fill="transparent" />
-                                <Area type="monotone" dataKey="tests" stroke="#6366f1" strokeWidth={2} fill="transparent" />
+                                <Bar dataKey="apps" fill="#f1f5f9" radius={[4, 4, 0, 0]} barSize={40} />
+                                <Line type="monotone" dataKey="tests" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="5 5" />
                                 <Area type="monotone" dataKey="recs" stroke={BRAND_PRIMARY} strokeWidth={3} fill="url(#chartGradient)" />
-                            </AreaChart>
+                            </ComposedChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
