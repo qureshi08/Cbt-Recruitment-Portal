@@ -569,17 +569,27 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
                                         <div className="flex flex-col gap-1.5">
                                             {candidate.interview_scores.l1_feedback_json && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-[9px] font-black text-blue-500 uppercase">L1</span>
-                                                    <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l1_feedback_json))} />
-                                                    <span className="text-[10px] font-black text-blue-700">{calcAvg(candidate.interview_scores.l1_feedback_json).toFixed(1)}</span>
+                                                <div className="flex flex-col gap-0.5 mb-1 last:mb-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[9px] font-black text-blue-500 uppercase">L1</span>
+                                                        <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l1_feedback_json))} />
+                                                        <span className="text-[10px] font-black text-blue-700">{calcAvg(candidate.interview_scores.l1_feedback_json).toFixed(1)}</span>
+                                                    </div>
+                                                    {candidate.interview_scores.l1_interviewer_name && (
+                                                        <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l1_interviewer_name}</span>
+                                                    )}
                                                 </div>
                                             )}
                                             {candidate.interview_scores.l2_feedback_json && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-[9px] font-black text-purple-500 uppercase">L2</span>
-                                                    <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l2_feedback_json))} />
-                                                    <span className="text-[10px] font-black text-purple-700">{calcAvg(candidate.interview_scores.l2_feedback_json).toFixed(1)}</span>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[9px] font-black text-purple-500 uppercase">L2</span>
+                                                        <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l2_feedback_json))} />
+                                                        <span className="text-[10px] font-black text-purple-700">{calcAvg(candidate.interview_scores.l2_feedback_json).toFixed(1)}</span>
+                                                    </div>
+                                                    {candidate.interview_scores.l2_interviewer_name && (
+                                                        <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l2_interviewer_name}</span>
+                                                    )}
                                                 </div>
                                             )}
                                             <button
@@ -595,9 +605,16 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     )}
                                 </td>
                                 <td className="px-6 py-6">
-                                    <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
-                                        {candidate.status}
-                                    </span>
+                                    <div className="flex flex-col items-start gap-1">
+                                        <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
+                                            {candidate.status}
+                                        </span>
+                                        {candidate.last_action_by && (
+                                            <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
+                                                By: {candidate.last_action_by}
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="px-6 py-6 text-right">
                                     <div className="flex justify-end gap-2">

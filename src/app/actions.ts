@@ -12,8 +12,36 @@ import {
     sendRecommendedEmail,
     sendNotRecommendedEmail
 } from "@/lib/email";
+import { getCurrentUser } from "@/lib/auth-utils";
 
 export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer';
+
+// --- Audit Logging Helper ---
+async function logAction(action: string, entityId: string, entityType: string, details: any) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return;
+
+        await supabaseAdmin.from('audit_logs').insert({
+            user_id: user.id,
+            user_name: user.full_name,
+            action,
+            entity_id: entityId,
+            entity_type: entityType,
+            details
+        });
+
+        // If it's a candidate action, also update the denormalized field for easy UI access
+        if (entityType === 'candidate') {
+            await supabaseAdmin
+                .from('candidates')
+                .update({ last_action_by: user.full_name })
+                .eq('id', entityId);
+        }
+    } catch (error) {
+        console.error("Logging failed:", error);
+    }
+}
 
 export async function login(formData: FormData) {
     const email = formData.get("email") as string;
@@ -177,6 +205,8 @@ export async function createAdminUser(email: string, fullName: string, roleNames
             }
         }
 
+        await logAction('USER_CREATED', userId, 'user', { email, roles: roleNames });
+
         revalidatePath('/admin/settings');
         return { success: true };
     } catch (error: any) {
@@ -190,6 +220,8 @@ export async function deleteAdminUser(userId: string) {
         // 1. Delete from Auth (this also deletes from public.users due to CASCADE in DB)
         const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
         if (authError) throw authError;
+
+        await logAction('USER_DELETED', userId, 'user', {});
 
         revalidatePath('/admin/settings');
         return { success: true };
@@ -235,6 +267,8 @@ export async function updateAdminUser(userId: string, fullName: string, roleName
                     .insert({ user_id: userId, role_id: roleData.id });
             }
         }
+
+        await logAction('USER_UPDATED', userId, 'user', { roles: roleNames, password_changed: !!password });
 
         revalidatePath('/admin/settings');
         revalidatePath('/admin', 'layout');
@@ -393,6 +427,9 @@ export async function updateCandidateStatus(candidateId: string, status: string)
             try {
                 const origin = process.env.NEXT_PUBLIC_APP_URL ||
                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+                // --- Log Action ---
+                await logAction('STATUS_UPDATE', candidateId, 'candidate', { new_status: status });
 
                 if (status === "Approved") {
                     const bookingLink = `${origin}/book-slot/${candidateId}`;
@@ -590,6 +627,9 @@ export async function completeAssessment(candidateId: string) {
 
 export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string, l1FeedbackJson?: object) {
     try {
+        const user = await getCurrentUser();
+        const interviewerName = user?.full_name || 'Interviewer';
+
         // 1. Save L1 feedback and mark as needing L2 review (same record, no duplicate)
         const { error: updateError } = await supabaseAdmin
             .from("interviews")
@@ -597,6 +637,7 @@ export async function requestL2Interview(interviewId: string, candidateId: strin
                 decision: "L2 Interview Required",
                 feedback: `L1: ${l1Feedback}`,
                 l1_feedback_json: l1FeedbackJson || null,
+                l1_interviewer_name: interviewerName
             })
             .eq("id", interviewId);
 
@@ -605,8 +646,59 @@ export async function requestL2Interview(interviewId: string, candidateId: strin
         // 2. Update Candidate Status
         await updateCandidateStatus(candidateId, "L2 Interview Required");
 
+        await logAction('INTERVIEW_L2_REQUESTED', candidateId, 'candidate', {
+            interview_id: interviewId,
+            interviewer: interviewerName
+        });
+
         revalidatePath("/admin/interviews");
         revalidatePath("/admin/applications");
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+export async function submitFinalInterviewFeedback(
+    interviewId: string,
+    candidateId: string,
+    decision: string,
+    feedbackText: string,
+    feedbackJson: object,
+    round: 'L1' | 'L2'
+) {
+    try {
+        const user = await getCurrentUser();
+        const interviewerName = user?.full_name || 'Interviewer';
+
+        const updates: any = {
+            decision,
+            feedback: feedbackText,
+        };
+
+        if (round === 'L1') {
+            updates.l1_feedback_json = feedbackJson;
+            updates.l1_interviewer_name = interviewerName;
+        } else {
+            updates.l2_feedback_json = feedbackJson;
+            updates.l2_interviewer_name = interviewerName;
+        }
+
+        const { error: updateError } = await supabaseAdmin
+            .from('interviews')
+            .update(updates)
+            .eq('id', interviewId);
+
+        if (updateError) throw updateError;
+
+        await updateCandidateStatus(candidateId, decision);
+        await logAction(`INTERVIEW_${round}_COMPLETED`, candidateId, 'candidate', {
+            decision,
+            interviewer: interviewerName
+        });
+
+        revalidatePath('/admin/interviews');
+        revalidatePath('/admin/applications');
         return { success: true };
     } catch (error: any) {
         return { error: error.message };
@@ -626,6 +718,8 @@ export async function deleteCandidate(candidateId: string) {
             .eq("id", candidateId);
 
         if (error) throw error;
+
+        await logAction('CANDIDATE_DELETED', candidateId, 'candidate', {});
 
         revalidatePath("/admin/applications");
         revalidatePath("/admin/slots");
@@ -670,14 +764,14 @@ export async function uploadAssessmentScore(formData: FormData) {
         const buffer = Buffer.from(arrayBuffer);
 
         // Upload using admin client
-        const { error: uploadError } = await supabaseAdmin.storage
+        const { error } = await supabaseAdmin.storage
             .from('assessment-scores')
             .upload(finalFileName, buffer, {
                 contentType: file.type,
                 upsert: true
             });
 
-        if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+        if (error) throw new Error(`Upload failed: ${error.message}`);
 
         const { data: { publicUrl } } = supabaseAdmin.storage
             .from('assessment-scores')
@@ -690,6 +784,8 @@ export async function uploadAssessmentScore(formData: FormData) {
             .eq('id', candidateId);
 
         if (updateError) throw new Error(`Database update failed: ${updateError.message}`);
+
+        await logAction('SCORE_UPLOADED', candidateId, 'candidate', { url: publicUrl });
 
         revalidatePath('/admin/applications');
         return { success: true, publicUrl };
@@ -713,6 +809,8 @@ export async function updateCandidate(candidateId: string, updates: Partial<any>
             .eq("id", candidateId);
 
         if (error) throw error;
+
+        await logAction('CANDIDATE_UPDATED', candidateId, 'candidate', updates);
 
         revalidatePath("/admin/applications");
         revalidatePath("/admin/interviews");
@@ -902,6 +1000,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             .eq('id', candidateId);
 
         if (updateError) throw updateError;
+
+        await logAction('AI_ANALYSIS_COMPLETED', candidateId, 'candidate', { score: analysis.score });
 
         revalidatePath('/admin/applications');
         return {

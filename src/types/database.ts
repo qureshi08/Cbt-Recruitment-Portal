@@ -55,11 +55,14 @@ export interface Candidate {
     };
     created_at: string;
     updated_at: string;
+    last_action_by?: string;
     // Interview scores (joined from interviews table)
     interview_scores?: {
         decision?: string | null;
         l1_feedback_json?: InterviewFeedbackJson | null;
         l2_feedback_json?: InterviewFeedbackJson | null;
+        l1_interviewer_name?: string | null;
+        l2_interviewer_name?: string | null;
     };
 }
 

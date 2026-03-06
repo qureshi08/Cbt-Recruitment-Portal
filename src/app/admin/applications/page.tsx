@@ -10,7 +10,7 @@ export default async function ApplicationsPage() {
     // Fetch candidates + their latest interview scores in parallel
     const [{ data: candidates, error }, { data: interviews }] = await Promise.all([
         supabase.from("candidates").select("*").order("created_at", { ascending: false }),
-        supabase.from("interviews").select("candidate_id, decision, l1_feedback_json, l2_feedback_json"),
+        supabase.from("interviews").select("candidate_id, decision, l1_feedback_json, l2_feedback_json, l1_interviewer_name, l2_interviewer_name"),
     ]);
 
     if (error) {
@@ -18,12 +18,14 @@ export default async function ApplicationsPage() {
     }
 
     // Build a lookup Map of interview scores per candidate
-    const scoreMap = new Map<string, { decision?: string | null; l1_feedback_json?: any; l2_feedback_json?: any }>();
+    const scoreMap = new Map<string, { decision?: string | null; l1_feedback_json?: any; l2_feedback_json?: any; l1_interviewer_name?: string; l2_interviewer_name?: string }>();
     for (const iv of interviews || []) {
         scoreMap.set(iv.candidate_id, {
             decision: iv.decision,
             l1_feedback_json: iv.l1_feedback_json,
             l2_feedback_json: iv.l2_feedback_json,
+            l1_interviewer_name: iv.l1_interviewer_name,
+            l2_interviewer_name: iv.l2_interviewer_name,
         });
     }
 

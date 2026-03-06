@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateCandidateStatus, UserRole, requestL2Interview } from "@/app/actions";
+import { updateCandidateStatus, UserRole, requestL2Interview, submitFinalInterviewFeedback } from "@/app/actions";
 import { supabase } from "@/lib/supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -319,44 +319,31 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                         ? { ...i, decision: 'L2 Interview Required', feedback: `L1: ${legacyText}`, l1_feedback_json: feedback }
                         : i
                 ));
-            } else if (isL2Round) {
-                // L2 makes final call → save L2 scorecard separately
-                const { error: intError } = await supabase
-                    .from('interviews')
-                    .update({
-                        decision,
-                        l2_feedback_json: feedback,
-                        feedback: selectedInterview.feedback
-                            ? `${selectedInterview.feedback}\nL2: ${legacyText}`
-                            : `L2: ${legacyText}`,
-                    })
-                    .eq('id', selectedInterview.id);
-
-                if (intError) throw intError;
-                await updateCandidateStatus(selectedInterview.candidate_id, decision);
-
-                setInterviews(prev => prev.map(i =>
-                    i.id === selectedInterview.id
-                        ? { ...i, decision, l2_feedback_json: feedback }
-                        : i
-                ));
             } else {
-                // L1 makes a direct final call (no L2 needed)
-                const { error: intError } = await supabase
-                    .from('interviews')
-                    .update({
-                        decision,
-                        l1_feedback_json: feedback,
-                        feedback: legacyText,
-                    })
-                    .eq('id', selectedInterview.id);
+                // Final decision (L1 direct or L2 final)
+                const round = isL2Round ? 'L2' : 'L1';
+                const finalFeedbackText = isL2Round
+                    ? (selectedInterview.feedback ? `${selectedInterview.feedback}\nL2: ${legacyText}` : `L2: ${legacyText}`)
+                    : legacyText;
 
-                if (intError) throw intError;
-                await updateCandidateStatus(selectedInterview.candidate_id, decision);
+                const result = await submitFinalInterviewFeedback(
+                    selectedInterview.id,
+                    selectedInterview.candidate_id,
+                    decision,
+                    finalFeedbackText,
+                    feedback as unknown as object,
+                    round
+                );
+
+                if (result.error) throw new Error(result.error);
 
                 setInterviews(prev => prev.map(i =>
                     i.id === selectedInterview.id
-                        ? { ...i, decision, l1_feedback_json: feedback }
+                        ? {
+                            ...i,
+                            decision,
+                            [round === 'L1' ? 'l1_feedback_json' : 'l2_feedback_json']: feedback
+                        }
                         : i
                 ));
             }
