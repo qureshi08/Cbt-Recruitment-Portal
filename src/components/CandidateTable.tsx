@@ -359,32 +359,32 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="bg-white border-b border-border">
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate / Contact</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Demographics</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Analysis</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Assessment Score</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Interview</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                        <tr className="bg-white border-b border-border text-[10px]">
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Batch</th>
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Candidate / Contact</th>
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Demographics</th>
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">AI Analysis</th>
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Assessment Score</th>
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Interview</th>
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border bg-white">
                         {filteredCandidates.map((candidate) => (
                             <tr key={candidate.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-6">
                                     <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
                                         {candidate.batch_number || 'N/A'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-sm font-bold text-gray-900">{candidate.name}</span>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs text-gray-500">{candidate.email}</span>
+                                <td className="px-6 py-6">
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-sm font-bold text-gray-900 leading-none">{candidate.name}</span>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[11px] text-gray-500 font-medium">{candidate.email}</span>
                                             {candidate.phone && (
-                                                <span className="text-xs text-primary font-medium flex items-center gap-1">
+                                                <span className="text-[11px] text-primary font-bold flex items-center gap-1.5">
                                                     <Phone className="w-3 h-3" />
                                                     {candidate.phone}
                                                 </span>
@@ -392,7 +392,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-6">
                                     <div className="flex flex-col gap-1 max-w-[200px]">
                                         {candidate.location && (
                                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide truncate">
@@ -421,7 +421,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-6">
                                     {candidate.ai_score !== undefined ? (
                                         <div className="flex flex-col items-start gap-1">
                                             <div
@@ -505,7 +505,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </div>
                                     )}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-6">
                                     {candidate.assessment_score_url ? (
                                         <a
                                             href={candidate.assessment_score_url}
@@ -539,7 +539,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     )}
                                 </td>
                                 {/* Interview Scores */}
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-6">
                                     {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
                                         <div className="flex flex-col gap-1.5">
                                             {candidate.interview_scores.l1_feedback_json && (
@@ -568,12 +568,12 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         <span className="text-[10px] text-gray-300 italic">—</span>
                                     )}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-6">
                                     <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
                                         {candidate.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-6 py-6 text-right">
                                     <div className="flex justify-end gap-2">
                                         {candidate.status === 'Approved' && (isMaster || isHR) && (
                                             <button
