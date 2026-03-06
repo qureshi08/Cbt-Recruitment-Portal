@@ -105,22 +105,40 @@ export async function updateAiCriteria(newCriteria: string) {
 }
 
 export async function fetchAllUsers() {
-    const { data, error } = await supabase
-        .from('users')
-        .select(`
-            *,
-            user_roles (
-                roles (
-                    name
+    try {
+        // Fetch public table users
+        const { data: publicUsers, error: publicError } = await supabaseAdmin
+            .from('users')
+            .select(`
+                *,
+                user_roles (
+                    roles (
+                        name
+                    )
                 )
-            )
-        `);
+            `);
 
-    if (error) throw error;
-    return data.map((u: any) => ({
-        ...u,
-        roles: u.user_roles.map((ur: any) => ur.roles.name)
-    }));
+        if (publicError) throw publicError;
+
+        // Fetch auth users to get created_at accurately
+        const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+
+        if (authError) {
+            console.error("Auth list error:", authError);
+        }
+
+        return publicUsers.map((u: any) => {
+            const authUser = authUsers?.find(au => au.id === u.id);
+            return {
+                ...u,
+                created_at: u.created_at || authUser?.created_at || null,
+                roles: u.user_roles.map((ur: any) => ur.roles.name)
+            };
+        });
+    } catch (error) {
+        console.error("fetchAllUsers error:", error);
+        throw error;
+    }
 }
 
 export async function createAdminUser(email: string, fullName: string, roleNames: string[], password?: string) {
@@ -180,7 +198,7 @@ export async function deleteAdminUser(userId: string) {
     }
 }
 
-export async function updateAdminUser(userId: string, fullName: string, roleNames: string[]) {
+export async function updateAdminUser(userId: string, fullName: string, roleNames: string[], password?: string) {
     try {
         // 1. Update public.users
         const { error: userError } = await supabaseAdmin
@@ -190,10 +208,17 @@ export async function updateAdminUser(userId: string, fullName: string, roleName
 
         if (userError) throw userError;
 
-        // 2. Update Auth metadata
-        await supabaseAdmin.auth.admin.updateUserById(userId, {
+        // 2. Update Auth metadata and potentially password
+        const updateData: any = {
             user_metadata: { full_name: fullName }
-        });
+        };
+
+        if (password && password.trim().length > 0) {
+            updateData.password = password;
+        }
+
+        const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, updateData);
+        if (authUpdateError) throw authUpdateError;
 
         // 3. Update Roles
         await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);

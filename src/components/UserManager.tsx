@@ -70,14 +70,15 @@ export default function UserManager({ initialUsers, availableRoles }: UserManage
 
         const formData = new FormData(e.currentTarget);
         const fullName = formData.get('fullName') as string;
+        const password = formData.get('password') as string;
         const selectedRoles = availableRoles
             .filter(role => formData.get(`role-${role.name}`) === 'on')
             .map(role => role.name);
 
-        const result = await updateAdminUser(editingUser.id, fullName, selectedRoles);
+        const result = await updateAdminUser(editingUser.id, fullName, selectedRoles, password);
 
         if (result.success) {
-            setStatus({ type: 'success', message: 'Permissions updated successfully!' });
+            setStatus({ type: 'success', message: 'User updated successfully!' });
             setEditingUser(null);
             setTimeout(() => window.location.reload(), 1000);
         } else {
@@ -200,14 +201,28 @@ export default function UserManager({ initialUsers, availableRoles }: UserManage
                     </div>
 
                     <form onSubmit={handleUpdateUser} className="space-y-6">
-                        <div className="space-y-1.5 max-w-sm">
-                            <label className="text-sm font-semibold text-gray-700">Update Name</label>
-                            <input
-                                name="fullName"
-                                required
-                                defaultValue={editingUser.full_name}
-                                className="input-field h-11"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-gray-700">Update Name</label>
+                                <input
+                                    name="fullName"
+                                    required
+                                    defaultValue={editingUser.full_name}
+                                    className="input-field h-11"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-gray-700">New Password (Leave blank to keep current)</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        name="password"
+                                        type="password"
+                                        className="input-field pl-10 h-11 border-yellow-200 focus:border-yellow-400"
+                                        placeholder="Enter new password"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="space-y-3">
