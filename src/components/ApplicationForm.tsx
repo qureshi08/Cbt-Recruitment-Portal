@@ -24,14 +24,19 @@ export default function ApplicationForm() {
         setIsSubmitting(true);
         setError(null);
 
-        const formData = new FormData(e.currentTarget);
-        const result = await submitApplication(formData);
+        try {
+            const formData = new FormData(e.currentTarget);
+            const result = await submitApplication(formData);
 
-        setIsSubmitting(false);
-        if (result.success) {
-            setIsSubmitted(true);
-        } else {
-            setError(result.error || "An error occurred");
+            if (result.success) {
+                setIsSubmitted(true);
+            } else {
+                setError(result.error || "An error occurred");
+            }
+        } catch (error: any) {
+            setError(error.message || "A network error occurred while uploading. The file might be corrupted or too large.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
