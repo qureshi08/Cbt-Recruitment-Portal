@@ -55,7 +55,7 @@ export interface Candidate {
     };
     created_at: string;
     updated_at: string;
-    last_action_by?: string;
+    last_action_by?: string | null;
     // Interview scores (joined from interviews table)
     interview_scores?: {
         decision?: string | null;

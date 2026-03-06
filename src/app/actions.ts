@@ -20,7 +20,7 @@ export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Int
 async function logAction(action: string, entityId: string, entityType: string, details: any) {
     try {
         const user = await getCurrentUser();
-        if (!user) return;
+        if (!user) return null;
 
         await supabaseAdmin.from('audit_logs').insert({
             user_id: user.id,
@@ -38,8 +38,10 @@ async function logAction(action: string, entityId: string, entityType: string, d
                 .update({ last_action_by: user.full_name })
                 .eq('id', entityId);
         }
+        return user.full_name;
     } catch (error) {
         console.error("Logging failed:", error);
+        return null;
     }
 }
 
@@ -410,10 +412,14 @@ export async function submitApplication(formData: FormData) {
 
 export async function updateCandidateStatus(candidateId: string, status: string) {
     try {
+        const actingUser = await getCurrentUser();
+        const userName = actingUser?.full_name || 'System User';
+
         const { data: candidate, error } = await supabase
             .from("candidates")
             .update({
                 status,
+                last_action_by: userName,
                 updated_at: new Date().toISOString()
             })
             .eq("id", candidateId)
@@ -443,6 +449,7 @@ export async function updateCandidateStatus(candidateId: string, status: string)
                 console.error("Email delivery failed, but status was updated:", emailError.message);
                 return {
                     success: true,
+                    last_action_by: userName,
                     note: `Status updated, but email failed: ${emailError.message}`
                 };
             }
@@ -450,7 +457,7 @@ export async function updateCandidateStatus(candidateId: string, status: string)
 
         revalidatePath("/admin/applications");
         revalidatePath("/admin");
-        return { success: true };
+        return { success: true, last_action_by: userName };
     } catch (error: any) {
         return { error: error.message };
     }
@@ -785,10 +792,10 @@ export async function uploadAssessmentScore(formData: FormData) {
 
         if (updateError) throw new Error(`Database update failed: ${updateError.message}`);
 
-        await logAction('SCORE_UPLOADED', candidateId, 'candidate', { url: publicUrl });
+        const actingUserName = await logAction('SCORE_UPLOADED', candidateId, 'candidate', { url: publicUrl });
 
         revalidatePath('/admin/applications');
-        return { success: true, publicUrl };
+        return { success: true, publicUrl, last_action_by: actingUserName };
     } catch (error: any) {
         console.error("uploadAssessmentScore error:", error.message);
         return { error: error.message };
@@ -810,11 +817,11 @@ export async function updateCandidate(candidateId: string, updates: Partial<any>
 
         if (error) throw error;
 
-        await logAction('CANDIDATE_UPDATED', candidateId, 'candidate', updates);
+        const actingUserName = await logAction('CANDIDATE_UPDATED', candidateId, 'candidate', updates);
 
         revalidatePath("/admin/applications");
         revalidatePath("/admin/interviews");
-        return { success: true };
+        return { success: true, last_action_by: actingUserName };
     } catch (error: any) {
         return { error: error.message };
     }

@@ -245,7 +245,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
         const result: any = await updateCandidateStatus(id, newStatus);
         if (result.success) {
             setCandidates(prev =>
-                prev.map(c => c.id === id ? { ...c, status: newStatus } : c)
+                prev.map(c => c.id === id ? { ...c, status: newStatus, last_action_by: result.last_action_by } : c)
             );
 
             if (result.note) {
@@ -267,7 +267,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
 
             if (result.success && result.publicUrl) {
                 setCandidates(prev => prev.map(c =>
-                    c.id === candidateId ? { ...c, assessment_score_url: result.publicUrl } : c
+                    c.id === candidateId ? {
+                        ...c,
+                        assessment_score_url: result.publicUrl,
+                        last_action_by: result.last_action_by
+                    } : c
                 ));
                 alert("Score uploaded successfully!");
             } else {
@@ -296,7 +300,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
         const result = await updateCandidate(editingCandidate.id, updates);
         if (result.success) {
             setCandidates(prev => prev.map(c =>
-                c.id === editingCandidate.id ? { ...c, ...updates } : c
+                c.id === editingCandidate.id ? {
+                    ...c,
+                    ...updates,
+                    last_action_by: result.last_action_by
+                } : c
             ));
             setEditingCandidate(null);
             alert("Application updated successfully!");
