@@ -126,24 +126,30 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
 
     const stats = useMemo(() => {
         const total = filteredCandidates.length;
+
+        // 1. Pending Screening: Strictly those in 'Applied'
         const pending = filteredCandidates.filter(c => c.status === 'Applied').length;
 
+        // 2. Test Participants: Everyone who reached/passed the screening phase
         const testParticipants = filteredCandidates.filter(c => {
-            const advancedStatuses: CandidateStatus[] = [
-                'Assessment Completed', 'To Be Interviewed',
-                'Interview Scheduled', 'L2 Interview Required',
+            const inTestPhase: CandidateStatus[] = [
+                'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled',
+                'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled',
+                'L2 Interview Required', 'Recommended', 'Not Recommended'
+            ];
+            return inTestPhase.includes(c.status);
+        }).length;
+
+        // 3. Active Interviews: Everyone who reached/cleared the testing phase
+        const activeInterviews = filteredCandidates.filter(c => {
+            const inInterviewPhase: CandidateStatus[] = [
+                'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required',
                 'Recommended', 'Not Recommended'
             ];
-            return advancedStatuses.includes(c.status);
+            return inInterviewPhase.includes(c.status);
         }).length;
 
-        const activeInterviews = filteredCandidates.filter(c => {
-            const interviewStatuses: CandidateStatus[] = [
-                'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'
-            ];
-            return interviewStatuses.includes(c.status);
-        }).length;
-
+        // 4. Recommended: Final selection
         const recommended = filteredCandidates.filter(c => c.status === 'Recommended').length;
 
         return {
@@ -183,7 +189,9 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
 
             monthlyData[month].total += 1;
             if (c.status === 'Recommended') monthlyData[month].recommended += 1;
-            if (['Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Not Recommended'].includes(c.status)) {
+
+            // Reached test stage: anything pass Applied/Rejected
+            if (!['Applied', 'Rejected'].includes(c.status)) {
                 monthlyData[month].tested += 1;
             }
         });
