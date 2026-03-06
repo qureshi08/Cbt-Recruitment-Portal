@@ -423,47 +423,86 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                 </td>
                                 <td className="px-6 py-4">
                                     {candidate.ai_score !== undefined ? (
-                                        <div
-                                            className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-                                            onClick={() => setSelectedAiReasoning(candidate)}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <div className={cn(
-                                                    "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm",
-                                                    candidate.ai_score >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
-                                                        candidate.ai_score >= 50 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
-                                                            "bg-red-100 text-red-700 border border-red-200"
-                                                )}>
-                                                    {candidate.ai_score}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-1">
-                                                        <span className="text-[10px] font-bold text-gray-700">
-                                                            {candidate.ai_analysis_json?.verdict || 'Start Analyzing'}
-                                                        </span>
-                                                        <Sparkles className="w-2.5 h-2.5 text-primary animate-pulse" />
+                                        <div className="flex flex-col items-start gap-1">
+                                            <div
+                                                className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                                onClick={() => setSelectedAiReasoning(candidate)}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className={cn(
+                                                        "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm",
+                                                        candidate.ai_score >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
+                                                            candidate.ai_score >= 50 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
+                                                                "bg-red-100 text-red-700 border border-red-200"
+                                                    )}>
+                                                        {candidate.ai_score}
                                                     </div>
-                                                    <p className="text-[9px] text-gray-400 truncate max-w-[100px]">
-                                                        {candidate.ai_reasoning}
-                                                    </p>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[10px] font-bold text-gray-700">
+                                                                {candidate.ai_analysis_json?.verdict || 'Start Analyzing'}
+                                                            </span>
+                                                            <Sparkles className="w-2.5 h-2.5 text-primary animate-pulse" />
+                                                        </div>
+                                                        <p className="text-[9px] text-gray-400 truncate max-w-[100px]">
+                                                            {candidate.ai_reasoning}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            {candidate.resume_url && (
+                                                <a
+                                                    href={candidate.resume_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                >
+                                                    <ExternalLink className="w-2.5 h-2.5" />
+                                                    Resume
+                                                </a>
+                                            )}
                                         </div>
                                     ) : (canApprove && (candidate.resume_url)) ? (
-                                        <button
-                                            onClick={() => handleAiAnalysis(candidate.id)}
-                                            disabled={analyzingId === candidate.id}
-                                            className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 text-primary text-[10px] font-bold rounded-lg border border-primary/10 hover:bg-primary/10 transition-all disabled:opacity-50"
-                                        >
-                                            {analyzingId === candidate.id ? (
-                                                <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                            ) : <Sparkles className="w-3 h-3" />}
-                                            AI Analysis
-                                        </button>
+                                        <div className="flex flex-col gap-2 items-start">
+                                            <button
+                                                onClick={() => handleAiAnalysis(candidate.id)}
+                                                disabled={analyzingId === candidate.id}
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 text-primary text-[10px] font-bold rounded-lg border border-primary/10 hover:bg-primary/10 transition-all disabled:opacity-50"
+                                            >
+                                                {analyzingId === candidate.id ? (
+                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                ) : <Sparkles className="w-3 h-3" />}
+                                                AI Analysis
+                                            </button>
+                                            {candidate.resume_url && (
+                                                <a
+                                                    href={candidate.resume_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                >
+                                                    <ExternalLink className="w-2.5 h-2.5" />
+                                                    Resume
+                                                </a>
+                                            )}
+                                        </div>
                                     ) : (
-                                        <span className="text-[10px] text-gray-400 italic">
-                                            {!candidate.resume_url ? 'No resume' : 'No analysis'}
-                                        </span>
+                                        <div className="flex flex-col gap-1 items-start">
+                                            <span className="text-[10px] text-gray-400 italic">
+                                                {!candidate.resume_url ? 'No resume' : 'No analysis'}
+                                            </span>
+                                            {candidate.resume_url && (
+                                                <a
+                                                    href={candidate.resume_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                >
+                                                    <ExternalLink className="w-2.5 h-2.5" />
+                                                    Resume
+                                                </a>
+                                            )}
+                                        </div>
                                     )}
                                 </td>
                                 <td className="px-6 py-4">
@@ -547,15 +586,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             </button>
                                         )}
 
-                                        <a
-                                            href={candidate.resume_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-primary transition-colors"
-                                            title="View Resume"
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                        </a>
+
 
                                         {candidate.status === 'Applied' && canApprove && (
                                             <>
@@ -596,9 +627,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             </button>
                                         )}
 
-                                        <button className="p-1.5 hover:bg-gray-100 rounded text-gray-400">
-                                            <MoreHorizontal className="w-4 h-4" />
-                                        </button>
+
                                     </div>
                                 </td>
                             </tr>
