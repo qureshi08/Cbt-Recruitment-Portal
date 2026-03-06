@@ -11,7 +11,7 @@ import {
     BarChart3,
     Calendar,
     ChevronDown,
-    Briefcase,
+    Layers,
     XCircle
 } from 'lucide-react';
 import {
@@ -112,16 +112,16 @@ const FunnelStep = ({ label, count, previousCount, last, color }: any) => {
 };
 
 export default function RecruitmentPipelineDashboard({ initialCandidates }: RecruitmentPipelineDashboardProps) {
-    const [filterRole, setFilterRole] = useState('All');
+    const [filterBatch, setFilterBatch] = useState('All');
     const [filterPeriod, setFilterPeriod] = useState('All');
 
     const filteredCandidates = useMemo(() => {
         return initialCandidates.filter(c => {
-            const matchesRole = filterRole === 'All' || c.position === filterRole;
+            const matchesBatch = filterBatch === 'All' || c.batch_number === filterBatch;
             // Additional period logic can be added here
-            return matchesRole;
+            return matchesBatch;
         });
-    }, [initialCandidates, filterRole, filterPeriod]);
+    }, [initialCandidates, filterBatch, filterPeriod]);
 
     const stats = useMemo(() => {
         const total = filteredCandidates.length;
@@ -155,9 +155,9 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         };
     }, [filteredCandidates]);
 
-    const roles = useMemo(() => {
-        const set = new Set(initialCandidates.map(c => c.position).filter(Boolean));
-        return ['All', ...Array.from(set)];
+    const batches = useMemo(() => {
+        const set = new Set(initialCandidates.map(c => c.batch_number).filter(Boolean));
+        return ['All', ...Array.from(set).sort()];
     }, [initialCandidates]);
 
     const statusDistributionData = useMemo(() => {
@@ -191,17 +191,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         return Object.values(monthlyData);
     }, [filteredCandidates]);
 
-    const roleDistribution = useMemo(() => {
-        const counts: Record<string, number> = {};
-        filteredCandidates.forEach(c => {
-            const role = c.position || 'Other';
-            counts[role] = (counts[role] || 0) + 1;
-        });
-        return Object.entries(counts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-    }, [filteredCandidates]);
+
 
     return (
         <div className="space-y-10">
@@ -214,16 +204,16 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
 
                 <div className="flex flex-wrap items-center gap-6">
                     <div className="space-y-2">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Job Role</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Batch Number</p>
                         <div className="relative">
-                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <select
-                                value={filterRole}
-                                onChange={(e) => setFilterRole(e.target.value)}
+                                value={filterBatch}
+                                onChange={(e) => setFilterBatch(e.target.value)}
                                 className="bg-white border-2 border-gray-50 rounded-2xl pl-10 pr-10 py-2.5 text-xs font-black text-gray-800 outline-none focus:border-primary/30 appearance-none min-w-[200px] shadow-sm"
                             >
-                                {roles.map(r => (
-                                    <option key={r} value={r}>{r}</option>
+                                {batches.map(b => (
+                                    <option key={b} value={b}>{b === 'All' ? 'All Batches' : `Batch ${b}`}</option>
                                 ))}
                             </select>
                         </div>
@@ -368,27 +358,6 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                 </div>
             </div>
 
-            {/* Bottom Workload Distribution */}
-            <div className="bg-gray-900 p-10 rounded-[48px] shadow-2xl overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 -mr-32 -mt-32 rounded-full blur-[100px]" />
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 relative z-10">
-                    <div>
-                        <h3 className="text-2xl font-black text-white tracking-tight">Role Distribution</h3>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Operational Workload by Position</p>
-                    </div>
-                    <div className="flex flex-wrap gap-4">
-                        {roleDistribution.map((role, i) => (
-                            <div key={i} className="flex items-center gap-4 bg-white/5 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/10 hover:bg-white/10 transition-colors">
-                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">{role.name}</span>
-                                    <span className="text-xl font-black text-white leading-none">{role.value} <span className="text-[10px] text-gray-500">Candidates</span></span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }
