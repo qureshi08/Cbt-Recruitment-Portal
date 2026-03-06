@@ -101,16 +101,7 @@ export default function ApplicationForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Degree Field</label>
-                    <select name="degree_field" required className="input-field min-h-[42px] py-0">
-                        <option value="">Select Degree Field...</option>
-                        <option value="Computer Science / SE">Computer Science / Software Engineering</option>
-                        <option value="Computer Engineering">Computer Engineering</option>
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Business / Management">Business / Management</option>
-                        <option value="Arts / Humanities">Arts / Humanities</option>
-                        <option value="Other Engineering">Other Engineering</option>
-                        <option value="Other">Other</option>
-                    </select>
+                    <input type="text" name="degree_field" required className="input-field" placeholder="e.g. Computer Science, Mechanical Eng." />
                 </div>
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Education Status</label>
@@ -123,10 +114,6 @@ export default function ApplicationForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">University</label>
-                    <input type="text" name="university" required className="input-field" placeholder="e.g. NUST, FAST-NU, GIKI" />
-                </div>
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Graduation Year</label>
                     <input type="text" name="graduation_year" required className="input-field" placeholder="e.g. 2024" />
