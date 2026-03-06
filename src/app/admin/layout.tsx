@@ -40,10 +40,10 @@ export default async function AdminLayout({
                                 {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </div>
                             <div className="flex flex-col text-left">
-                                <span className="text-[11px] font-black text-gray-900 leading-none mb-0.5 uppercase tracking-wide">
+                                <span className="text-[13px] font-semibold text-gray-900 leading-none mb-0.5">
                                     {user.full_name || 'User'}
                                 </span>
-                                <span className="text-[9px] font-bold text-gray-400 leading-none">
+                                <span className="text-[11px] font-medium text-gray-500 leading-none">
                                     {user.email}
                                 </span>
                             </div>

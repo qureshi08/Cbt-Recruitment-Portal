@@ -35,9 +35,9 @@ const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass, isLast 
                 <div className={cn("p-1.5 rounded-lg bg-gray-50 text-gray-400 group-hover:text-primary group-hover:bg-primary/5 transition-colors")}>
                     <Icon className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xl font-black text-gray-900 tracking-tighter">{count}</span>
+                <span className="text-2xl font-semibold text-gray-900">{count}</span>
             </div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-tight">{title}</p>
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide leading-tight">{title}</p>
             <p className="text-[9px] text-gray-400 font-medium mt-0.5 opacity-80">{subtitle}</p>
         </div>
         {!isLast && (
@@ -51,7 +51,7 @@ const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass, isLast 
 const MetricBox = ({ label, value, denominator, numerator, description }: any) => (
     <div className="bg-gray-50/30 p-4 rounded-2xl border border-border/40">
         <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
+            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
             <div className="flex items-center gap-1.5 font-bold">
                 <span className="text-[10px] text-gray-400">{numerator}/{denominator}</span>
                 <div className="p-1 rounded-md bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
@@ -59,7 +59,7 @@ const MetricBox = ({ label, value, denominator, numerator, description }: any) =
                 </div>
             </div>
         </div>
-        <div className="text-xl font-black text-gray-900 tracking-tight">{value}%</div>
+        <div className="text-2xl font-semibold text-gray-900">{value}%</div>
         <p className="text-[10px] text-gray-400 font-medium mt-0.5 italic">{description}</p>
     </div>
 );
@@ -132,8 +132,8 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                         <TrendingUp className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                        <h2 className="text-[13px] font-black text-gray-900 tracking-tight leading-none uppercase">Recruitment Insights</h2>
-                        <p className="text-[10px] text-gray-400 font-bold mt-1 tracking-wide">Operational view of the hiring pipeline</p>
+                        <h2 className="text-[15px] font-semibold text-gray-900 leading-none">Recruitment Insights</h2>
+                        <p className="text-[12px] text-gray-500 mt-1">Operational view of the hiring pipeline</p>
                     </div>
                 </div>
 
@@ -239,7 +239,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                                 </div>
                             </div>
                         </div>
-                        <div className="text-2xl font-black text-gray-900">{efficiency.recRate}%</div>
+                        <div className="text-2xl font-semibold text-gray-900">{efficiency.recRate}%</div>
                         <p className="text-[10px] text-gray-500 font-medium mt-1">Recommended / Total Tested</p>
                     </div>
                 </div>
