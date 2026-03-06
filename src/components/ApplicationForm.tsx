@@ -124,6 +124,10 @@ export default function ApplicationForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">University</label>
+                    <input type="text" name="university" required className="input-field" placeholder="e.g. NUST, FAST-NU, GIKI" />
+                </div>
+                <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Graduation Year</label>
                     <input type="text" name="graduation_year" required className="input-field" placeholder="e.g. 2024" />
                 </div>

@@ -21,10 +21,11 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    LineChart,
-    Line,
+    BarChart,
+    Bar,
     Legend,
-    Label
+    Label,
+    Cell
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { Candidate, CandidateStatus } from '@/types/database';
@@ -148,6 +149,50 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         return Object.values(monthlyData).sort((a, b) => a.key.localeCompare(b.key));
     }, [filteredCandidates]);
 
+    const degreeData = useMemo(() => {
+        const data: Record<string, { name: string, applied: number, tested: number, passed: number, passRate: string }> = {};
+        filteredCandidates.forEach(c => {
+            const degree = (c.degree_field || 'Other').replace(' / ', '/');
+            if (!data[degree]) data[degree] = { name: degree, applied: 0, tested: 0, passed: 0, passRate: '0' };
+            data[degree].applied++;
+            if (c.status === 'Recommended') {
+                data[degree].passed++;
+                data[degree].tested++;
+            } else if (!['Applied', 'Rejected'].includes(c.status)) {
+                data[degree].tested++;
+            }
+        });
+        return Object.values(data).map(d => ({
+            ...d,
+            passRate: d.tested > 0 ? ((d.passed / d.tested) * 100).toFixed(1) : "0"
+        })).sort((a, b) => b.applied - a.applied);
+    }, [filteredCandidates]);
+
+    const uniData = useMemo(() => {
+        const data: Record<string, { name: string, applied: number, tested: number, passed: number, passRate: string }> = {};
+        filteredCandidates.forEach(c => {
+            const uni = c.university || 'Not Specified';
+            if (!data[uni]) data[uni] = { name: uni, applied: 0, tested: 0, passed: 0, passRate: '0' };
+            data[uni].applied++;
+            if (c.status === 'Recommended') {
+                data[uni].passed++;
+                data[uni].tested++;
+            } else if (!['Applied', 'Rejected'].includes(c.status)) {
+                data[uni].tested++;
+            }
+        });
+        return Object.values(data).map(d => ({
+            ...d,
+            passRate: d.tested > 0 ? ((d.passed / d.tested) * 100).toFixed(1) : "0"
+        })).sort((a, b) => b.applied - a.applied).slice(0, 8);
+    }, [filteredCandidates]);
+
+    const chartColors = {
+        applied: '#14b8a6', // Teal
+        tested: '#6366f1',  // Indigo
+        passed: '#10b981'   // Emerald
+    };
+
     return (
         <div className="space-y-6">
             {/* --- Filter Bar --- */}
@@ -240,124 +285,137 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     <div className="space-y-4">
                         <MetricBox label="Screening to Test" value={efficiency.testRate} description="Candidates passing initial screening" />
                         <MetricBox label="Test to Interview" value={efficiency.interviewRate} description="Pass rate of the technical assessment" />
-                        <MetricBox label="Interview Success" value={efficiency.recRate} description="Final recommendation yield" />
+                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Overall Pass Rate</span>
+                                <div className="p-1 rounded bg-white shadow-sm">
+                                    <CheckCircle className="w-3 h-3 text-primary" />
+                                </div>
+                            </div>
+                            <div className="text-2xl font-black text-gray-900">{efficiency.recRate}%</div>
+                            <p className="text-[10px] text-gray-500 font-medium mt-1">Recommended / Total Tested</p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Trend Chart */}
-                <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-border shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Recruitment Pipeline Trends</h3>
-                    </div>
-                    <div className="h-[280px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={trendData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis
-                                    dataKey="month"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }}
-                                >
-                                    <Label value="Month" offset={-10} position="insideBottom" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#9ca3af', textTransform: 'uppercase' }} />
-                                </XAxis>
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }}
-                                    allowDecimals={false}
-                                >
-                                    <Label value="Candidates" angle={-90} position="insideLeft" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#9ca3af', textTransform: 'uppercase' }} />
-                                </YAxis>
-                                <Tooltip content={({ active, payload }) => {
-                                    if (active && payload && payload.length) {
-                                        return (
-                                            <div className="bg-white p-4 rounded-xl shadow-xl border border-border min-w-[160px]">
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 border-b border-border pb-2">
-                                                    {payload[0].payload.month} {payload[0].payload.key.split('-')[0]}
-                                                </p>
-                                                <div className="space-y-2.5">
-                                                    {payload.map((p, i) => (
-                                                        <div key={i} className="flex justify-between items-center gap-6">
+                <div className="lg:col-span-8 space-y-6">
+                    {/* Degree Pipeline Chart */}
+                    <div className="bg-white p-6 rounded-2xl border border-border shadow-sm">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Pipeline by Degree Field</h3>
+                        </div>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={degreeData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="name"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 9, fontWeight: 'bold', fill: '#9ca3af' }}
+                                    >
+                                        <Label value="Degree Program" offset={-10} position="insideBottom" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#9ca3af', textTransform: 'uppercase' }} />
+                                    </XAxis>
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }}
+                                        allowDecimals={false}
+                                    >
+                                        <Label value="Candidates" angle={-90} position="insideLeft" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#9ca3af', textTransform: 'uppercase' }} />
+                                    </YAxis>
+                                    <Tooltip content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            const data = payload[0].payload;
+                                            return (
+                                                <div className="bg-white p-4 rounded-xl shadow-xl border border-border min-w-[200px]">
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 border-b border-border pb-2">{label}</p>
+                                                    <div className="space-y-2">
+                                                        <div className="flex justify-between items-center">
                                                             <div className="flex items-center gap-2">
-                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.name === 'apps' ? '#14b8a6' : p.name === 'tests' ? '#6366f1' : '#10b981' }} />
-                                                                <span className="text-[11px] font-bold text-gray-600">
-                                                                    {p.name === 'apps' ? 'Applied' : p.name === 'tests' ? 'Tested' : 'Passed'}
-                                                                </span>
+                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartColors.applied }} />
+                                                                <span className="text-[11px] font-bold text-gray-600">Applied</span>
                                                             </div>
-                                                            <span className="text-[11px] font-black text-gray-900">{Math.round(Number(p.value))}</span>
+                                                            <span className="text-[11px] font-black">{data.applied}</span>
                                                         </div>
-                                                    ))}
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartColors.tested }} />
+                                                                <span className="text-[11px] font-bold text-gray-600">Tested</span>
+                                                            </div>
+                                                            <span className="text-[11px] font-black">{data.tested}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: chartColors.passed }} />
+                                                                <span className="text-[11px] font-bold text-gray-600">Passed</span>
+                                                            </div>
+                                                            <span className="text-[11px] font-black text-primary">{data.passed}</span>
+                                                        </div>
+                                                        <div className="pt-2 border-t mt-2 flex justify-between items-center italic">
+                                                            <span className="text-[10px] font-bold text-gray-400">Pass Rate</span>
+                                                            <span className="text-[11px] font-bold text-primary">{data.passRate}%</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )
-                                    }
-                                    return null;
-                                }} />
-                                <Legend
-                                    verticalAlign="top"
-                                    align="right"
-                                    height={36}
-                                    iconType="circle"
-                                    formatter={(value) => (
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                                            {value === 'apps' ? 'Applied' : value === 'tests' ? 'Tested' : 'Passed'}
-                                        </span>
-                                    )}
-                                />
-                                <Line
-                                    name="apps"
-                                    type="monotone"
-                                    dataKey="apps"
-                                    stroke="#14b8a6"
-                                    strokeWidth={3}
-                                    dot={false}
-                                    activeDot={{ r: 6, fill: '#14b8a6', strokeWidth: 0 }}
-                                    label={{
-                                        position: 'top',
-                                        fontSize: 10,
-                                        fontWeight: 'bold',
-                                        fill: '#14b8a6',
-                                        offset: 10,
-                                        formatter: (val: any) => Math.round(val)
-                                    }}
-                                />
-                                <Line
-                                    name="tests"
-                                    type="monotone"
-                                    dataKey="tests"
-                                    stroke="#6366f1"
-                                    strokeWidth={3}
-                                    dot={false}
-                                    activeDot={{ r: 6, fill: '#6366f1', strokeWidth: 0 }}
-                                    label={{
-                                        position: 'top',
-                                        fontSize: 10,
-                                        fontWeight: 'bold',
-                                        fill: '#6366f1',
-                                        offset: 10,
-                                        formatter: (val: any) => Math.round(val)
-                                    }}
-                                />
-                                <Line
-                                    name="recs"
-                                    type="monotone"
-                                    dataKey="recs"
-                                    stroke="#10b981"
-                                    strokeWidth={3}
-                                    dot={false}
-                                    activeDot={{ r: 6, fill: '#10b981', strokeWidth: 0 }}
-                                    label={{
-                                        position: 'top',
-                                        fontSize: 10,
-                                        fontWeight: 'bold',
-                                        fill: '#10b981',
-                                        offset: 10,
-                                        formatter: (val: any) => Math.round(val)
-                                    }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
+                                            );
+                                        }
+                                        return null;
+                                    }} />
+                                    <Legend verticalAlign="top" align="right" iconType="circle" />
+                                    <Bar dataKey="applied" name="Applied" fill={chartColors.applied} radius={[4, 4, 0, 0]} barSize={20} />
+                                    <Bar dataKey="tested" name="Tested" fill={chartColors.tested} radius={[4, 4, 0, 0]} barSize={20} />
+                                    <Bar dataKey="passed" name="Passed" fill={chartColors.passed} radius={[4, 4, 0, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* University Pipeline Chart */}
+                    <div className="bg-white p-6 rounded-2xl border border-border shadow-sm">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Pipeline by University</h3>
+                        </div>
+                        <div className="h-[400px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart layout="vertical" data={uniData} margin={{ top: 20, right: 30, left: 40, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                    <XAxis type="number" hide />
+                                    <YAxis
+                                        dataKey="name"
+                                        type="category"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }}
+                                        width={100}
+                                    />
+                                    <Tooltip content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            const data = payload[0].payload;
+                                            return (
+                                                <div className="bg-white p-4 rounded-xl shadow-xl border border-border min-w-[200px]">
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 border-b border-border pb-2">{label}</p>
+                                                    <div className="space-y-2 text-[11px]">
+                                                        <div className="flex justify-between font-bold"><span>Applied</span><span className="text-gray-400">{data.applied}</span></div>
+                                                        <div className="flex justify-between font-bold"><span>Tested</span><span className="text-gray-400">{data.tested}</span></div>
+                                                        <div className="flex justify-between font-black"><span>Passed</span><span className="text-primary">{data.passed}</span></div>
+                                                        <div className="pt-2 border-t mt-2 flex justify-between items-center italic text-primary">
+                                                            <span className="text-[10px] font-bold opacity-70">Pass Rate</span>
+                                                            <span className="font-black">{data.passRate}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }} />
+                                    <Bar dataKey="applied" name="Applied" fill={chartColors.applied} radius={[0, 4, 4, 0]} barSize={12} />
+                                    <Bar dataKey="tested" name="Tested" fill={chartColors.tested} radius={[0, 4, 4, 0]} barSize={12} />
+                                    <Bar dataKey="passed" name="Passed" fill={chartColors.passed} radius={[0, 4, 4, 0]} barSize={12} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -288,6 +288,7 @@ export async function submitApplication(formData: FormData) {
     const education_status = formData.get("education_status") as string;
     const graduation_year = formData.get("graduation_year") as string;
     const degree_field = formData.get("degree_field") as string;
+    const university = formData.get("university") as string;
     const cnic = formData.get("cnic") as string;
     const resume = formData.get("resume") as File;
     const position = formData.get("position") as string || "General Application";
@@ -384,6 +385,7 @@ export async function submitApplication(formData: FormData) {
                 education_status,
                 graduation_year,
                 degree_field,
+                university,
                 cnic: finalCnic,
                 resume_url: publicUrl,
                 position,
