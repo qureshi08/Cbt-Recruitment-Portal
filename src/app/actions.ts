@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
 import mammoth from "mammoth";
+// @ts-ignore
+import { PDFParse as pdf } from "pdf-parse";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -639,8 +641,10 @@ export async function ensureBuckets() {
 
 export async function analyzeCandidateWithAi(candidateId: string, customCriteria?: string) {
     try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error("GEMINI_API_KEY is not configured in .env.local");
+        const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+        const isOpenRouter = apiKey?.startsWith('sk-or-');
+
+        if (!apiKey) throw new Error("API Key (OPENROUTER_API_KEY or GEMINI_API_KEY) is not configured in .env.local");
 
         // 1. Get candidate and resume URL
         const { data: candidate, error: fetchError } = await supabaseAdmin
@@ -658,6 +662,7 @@ export async function analyzeCandidateWithAi(candidateId: string, customCriteria
         const urlParts = candidate.resume_url.split('/');
         const fileName = urlParts[urlParts.length - 1];
         const isWord = fileName.toLowerCase().endsWith('.docx');
+        const isPdf = fileName.toLowerCase().endsWith('.pdf');
 
         const { data: fileData, error: downloadError } = await supabaseAdmin.storage
             .from('resumes')
@@ -665,83 +670,87 @@ export async function analyzeCandidateWithAi(candidateId: string, customCriteria
 
         if (downloadError || !fileData) throw new Error(`Failed to download resume: ${downloadError?.message}`);
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        let prompt = "";
-        let contentToAnalyze: any[] = [];
+        let resumeText = "";
+        const arrayBuffer = await fileData.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
         if (isWord) {
-            // Mammoth for Word files
-            const arrayBuffer = await fileData.arrayBuffer();
-            const { value: text } = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
-
-            prompt = `
-                You are an expert recruiter for a tech company. 
-                Perform a deep analysis of the following candidate's resume content based on specific criteria.
-                
-                POSITION: ${candidate.position || 'Software Engineer'}
-                RECRUITER'S CUSTOM CRITERIA: ${criteria}
-
-                RESUME CONTENT:
-                ${text}
-
-                Perform a structural and qualitative analysis and respond STRICTLY in JSON:
-                {
-                    "score": number (0-100),
-                    "reasoning": "Quick one-sentence summary",
-                    "extracted_skills": ["skill1", "skill2", "..."],
-                    "experience_summary": "3-4 sentence detailed summary of work history",
-                    "matching_analysis": "Detailed breakdown of how they meet or miss the specific criteria mentioned above",
-                    "education_match": boolean,
-                    "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
-                }
-
-                BE OBJECTIVE AND CRITICAL. If they don't match the criteria, score them lower.
-            `;
-            contentToAnalyze = [prompt];
+            const { value: text } = await mammoth.extractRawText({ buffer: buffer });
+            resumeText = text;
+        } else if (isPdf) {
+            const parser = new pdf({ data: buffer });
+            const pdfData = await parser.getText();
+            resumeText = pdfData.text;
+            await parser.destroy();
         } else {
-            // Native PDF for Gemini
-            const arrayBuffer = await fileData.arrayBuffer();
-            const base64Data = Buffer.from(arrayBuffer).toString("base64");
-
-            prompt = `
-                You are an expert recruiter for a tech company. 
-                Perform a deep analysis of the attached resume based on specific criteria.
-                
-                POSITION: ${candidate.position || 'Software Engineer'}
-                RECRUITER'S CUSTOM CRITERIA: ${criteria}
-
-                Perform a structural and qualitative analysis and respond STRICTLY in JSON:
-                {
-                    "score": number (0-100),
-                    "reasoning": "Quick one-sentence summary",
-                    "extracted_skills": ["skill1", "skill2", "..."],
-                    "experience_summary": "3-4 sentence detailed summary of work history",
-                    "matching_analysis": "Detailed breakdown of how they meet or miss the specific criteria mentioned above",
-                    "education_match": boolean,
-                    "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
-                }
-
-                BE OBJECTIVE AND CRITICAL. If they don't match the criteria, score them lower.
-            `;
-            contentToAnalyze = [
-                { text: prompt },
-                {
-                    inlineData: {
-                        data: base64Data,
-                        mimeType: "application/pdf"
-                    }
-                }
-            ];
+            resumeText = buffer.toString('utf8');
         }
 
-        const result = await model.generateContent(contentToAnalyze);
-        const responseText = result.response.text();
-        const cleanedResponse = responseText.replace(/```json|```/g, '').trim();
-        const analysis = JSON.parse(cleanedResponse);
+        if (!resumeText || resumeText.trim().length < 50) {
+            throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
+        }
 
-        // 5. Update record
+        const prompt = `
+            You are an expert recruiter for a tech company. 
+            Perform a deep analysis of the following candidate's resume content based on specific criteria.
+            
+            POSITION: ${candidate.position || 'Software Engineer'}
+            RECRUITER'S CUSTOM CRITERIA: ${criteria}
+
+            RESUME CONTENT:
+            ${resumeText}
+
+            Perform a structural and qualitative analysis and respond STRICTLY in JSON:
+            {
+                "score": number (0-100),
+                "reasoning": "Quick one-sentence summary",
+                "extracted_skills": ["skill1", "skill2", "..."],
+                "experience_summary": "3-4 sentence detailed summary of work history",
+                "matching_analysis": "Detailed breakdown of how they meet or miss the specific criteria mentioned above",
+                "education_match": boolean,
+                "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
+            }
+
+            BE OBJECTIVE AND CRITICAL. If they don't match the criteria, score them lower.
+        `;
+
+        let analysis;
+
+        if (isOpenRouter) {
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://localhost:3000",
+                    "X-Title": "CBT Recruitment Portal"
+                },
+                body: JSON.stringify({
+                    "model": "google/gemini-2.0-flash-001",
+                    "messages": [
+                        { "role": "user", "content": prompt }
+                    ],
+                    "response_format": { "type": "json_object" }
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(`OpenRouter Error: ${errData.error?.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            const responseContent = data.choices[0].message.content;
+            analysis = JSON.parse(responseContent);
+        } else {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent(prompt);
+            const responseText = result.response.text();
+            const cleanedResponse = responseText.replace(/\`\`\`json|\`\`\`/g, '').trim();
+            analysis = JSON.parse(cleanedResponse);
+        }
+
         const { error: updateError } = await supabaseAdmin
             .from('candidates')
             .update({
