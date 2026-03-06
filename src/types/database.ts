@@ -22,6 +22,10 @@ export interface Candidate {
     resume_url: string;
     cover_letter: string;
     status: CandidateStatus;
+    location?: string;
+    education_status?: string;
+    graduation_year?: string;
+    degree_field?: string;
     batch_number?: string;
     assessment_score_url?: string;
     ai_score?: number;

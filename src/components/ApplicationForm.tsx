@@ -84,9 +84,48 @@ export default function ApplicationForm() {
                     <label className="text-sm font-medium text-gray-700">Phone Number</label>
                     <input type="tel" name="phone" required className="input-field" placeholder="+92 3XX XXXXXXX" />
                 </div>
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Current Location (City/Area)</label>
+                    <input type="text" name="location" required className="input-field" placeholder="e.g. Rawalpindi, Gulberg Greens" />
+                </div>
             </div>
 
-            <div className="space-y-1 font-medium text-gray-600 bg-gray-50 p-3 rounded border border-gray-100 flex items-center gap-2">
+            <div className="space-y-1">
+                <h3 className="text-sm font-bold text-gray-800 pb-2 border-b">Educational Background</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Degree Field</label>
+                    <select name="degree_field" required className="input-field min-h-[42px] py-0">
+                        <option value="">Select Degree Field...</option>
+                        <option value="Computer Science / SE">Computer Science / Software Engineering</option>
+                        <option value="Computer Engineering">Computer Engineering</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Business / Management">Business / Management</option>
+                        <option value="Arts / Humanities">Arts / Humanities</option>
+                        <option value="Other Engineering">Other Engineering</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Education Status</label>
+                    <select name="education_status" required className="input-field min-h-[42px] py-0">
+                        <option value="">Select Status...</option>
+                        <option value="Graduated">Graduated</option>
+                        <option value="Currently Enrolled">Currently Enrolled</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Graduation Year</label>
+                    <input type="text" name="graduation_year" required className="input-field" placeholder="e.g. 2024" />
+                </div>
+            </div>
+
+            <div className="space-y-1 font-medium text-gray-600 bg-gray-50 p-3 rounded border border-gray-100 flex items-center gap-2 mt-4">
                 <span className="text-sm">Applying For:</span>
                 <span className="text-primary font-bold">Convergent Graduate Academy Program (CGAP)</span>
                 <input type="hidden" name="position" value="CGAP" />

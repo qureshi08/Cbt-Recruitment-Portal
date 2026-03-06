@@ -239,6 +239,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     <thead>
                         <tr className="bg-white border-b border-border">
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate / Contact</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Demographics</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Batch</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Analysis</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -261,6 +262,35 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 </span>
                                             )}
                                         </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex flex-col gap-1 max-w-[200px]">
+                                        {candidate.location && (
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide truncate">
+                                                📍 {candidate.location}
+                                            </span>
+                                        )}
+                                        {candidate.degree_field && (
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                                <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100/50">
+                                                    {candidate.degree_field}
+                                                </span>
+                                                {candidate.graduation_year && (
+                                                    <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-1.5 py-0.5 rounded-sm">
+                                                        '{candidate.graduation_year.slice(-2)}
+                                                    </span>
+                                                )}
+                                                {candidate.education_status && candidate.education_status !== 'Graduated' && (
+                                                    <span className="text-[10px] text-yellow-600 font-bold bg-yellow-50 px-1.5 py-0.5 rounded-sm">
+                                                        Student
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {!candidate.location && !candidate.degree_field && (
+                                            <span className="text-xs text-gray-400 italic">Not provided</span>
+                                        )}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-center">

@@ -223,6 +223,10 @@ export async function submitApplication(formData: FormData) {
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
+    const location = formData.get("location") as string;
+    const education_status = formData.get("education_status") as string;
+    const graduation_year = formData.get("graduation_year") as string;
+    const degree_field = formData.get("degree_field") as string;
     const resume = formData.get("resume") as File;
     const position = formData.get("position") as string || "General Application";
 
@@ -247,6 +251,10 @@ export async function submitApplication(formData: FormData) {
                 name,
                 email,
                 phone,
+                location,
+                education_status,
+                graduation_year,
+                degree_field,
                 resume_url: publicUrl,
                 position,
                 status: "Applied"
@@ -718,6 +726,12 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             
             POSITION: ${candidate.position || 'Software Engineer'}
             RECRUITER'S CUSTOM CRITERIA: ${criteria}
+
+            CANDIDATE SELF-REPORTED DETAILS (High Priority overrides):
+            - Location: ${candidate.location || "Not specified"}
+            - Education Status: ${candidate.education_status || "Not specified"}
+            - Graduation Year: ${candidate.graduation_year || "Not specified"}
+            - Degree Field: ${candidate.degree_field || "Not specified"}
 
             RESUME CONTENT:
             ${resumeText}
