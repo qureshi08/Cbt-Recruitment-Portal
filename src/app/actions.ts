@@ -490,14 +490,15 @@ export async function completeAssessment(candidateId: string) {
     }
 }
 
-export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string) {
+export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string, l1FeedbackJson?: object) {
     try {
         // 1. Save L1 feedback and mark as needing L2 review (same record, no duplicate)
         const { error: updateError } = await supabaseAdmin
             .from("interviews")
             .update({
                 decision: "L2 Interview Required",
-                feedback: `L1: ${l1Feedback}`
+                feedback: `L1: ${l1Feedback}`,
+                l1_feedback_json: l1FeedbackJson || null,
             })
             .eq("id", interviewId);
 
