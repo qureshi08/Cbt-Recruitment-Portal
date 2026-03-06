@@ -4,9 +4,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
-import mammoth from "mammoth";
-// @ts-ignore
-import { PDFParse as pdf } from "pdf-parse";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -675,10 +672,12 @@ export async function analyzeCandidateWithAi(candidateId: string, customCriteria
         const buffer = Buffer.from(arrayBuffer);
 
         if (isWord) {
+            const mammoth = (await import("mammoth")).default;
             const { value: text } = await mammoth.extractRawText({ buffer: buffer });
             resumeText = text;
         } else if (isPdf) {
-            const parser = new pdf({ data: buffer });
+            const { PDFParse } = await import("pdf-parse");
+            const parser = new PDFParse({ data: buffer });
             const pdfData = await parser.getText();
             resumeText = pdfData.text;
             await parser.destroy();
