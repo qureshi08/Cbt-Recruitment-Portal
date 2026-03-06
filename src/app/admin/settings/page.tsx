@@ -1,15 +1,18 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { fetchAllUsers, getAllRoles } from "@/app/actions";
+import { fetchAllUsers, getAllRoles, getAiCriteria } from "@/app/actions";
 import UserManager from "@/components/UserManager";
+import AiCriteriaManager from "@/components/AiCriteriaManager";
 import { ShieldAlert } from "lucide-react";
 
 export default async function SettingsPage() {
     const user = await getCurrentUser();
 
-    // Safety check: Only Master users can access user management
+    // Permissions check
     const isMaster = user?.roles.includes('Master');
+    const isApprover = user?.roles.includes('Approver');
+    const canAccessSettings = isMaster || isApprover;
 
-    if (!isMaster) {
+    if (!canAccessSettings) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                 <div className="p-4 bg-red-50 rounded-full">
@@ -17,26 +20,34 @@ export default async function SettingsPage() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800">Access Denied</h2>
                 <p className="text-gray-500 text-center max-w-md">
-                    You do not have the required permissions to access User Management.
+                    You do not have the required permissions to access Settings.
                     Please contact the System Administrator if you believe this is an error.
                 </p>
             </div>
         );
     }
 
-    const [users, roles] = await Promise.all([
-        fetchAllUsers(),
-        getAllRoles()
+    const [users, roles, aiCriteria] = await Promise.all([
+        isMaster ? fetchAllUsers() : Promise.resolve([]),
+        isMaster ? getAllRoles() : Promise.resolve([]),
+        getAiCriteria()
     ]);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div>
-                <h2 className="text-2xl font-bold text-gray-800">Admin Settings</h2>
-                <p className="text-sm text-gray-500">Configure system roles and manage administrative access.</p>
+                <h2 className="text-2xl font-bold text-gray-800">System Settings</h2>
+                <p className="text-sm text-gray-500">Configure core behaviors and manage administrative access.</p>
             </div>
 
-            <UserManager initialUsers={users} availableRoles={roles} />
+            <AiCriteriaManager initialCriteria={aiCriteria} />
+
+            {isMaster && (
+                <>
+                    <h3 className="text-xl font-bold text-gray-800 mt-8 border-t pt-8">User Management</h3>
+                    <UserManager initialUsers={users} availableRoles={roles} />
+                </>
+            )}
         </div>
     );
 }

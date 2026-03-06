@@ -76,9 +76,32 @@ export async function getUserRoles(userId: string): Promise<UserRole[]> {
 }
 
 export async function getAllRoles() {
-    const { data, error } = await supabase.from('roles').select('*');
+    const { data, error } = await supabase.from('roles').select('*').neq('name', '_SYSTEM_AI_CRITERIA_');
     if (error) throw error;
     return data;
+}
+
+export async function getAiCriteria(): Promise<string> {
+    const { data } = await supabaseAdmin
+        .from('roles')
+        .select('description')
+        .eq('name', '_SYSTEM_AI_CRITERIA_')
+        .single();
+
+    return data?.description || "Software Engineer with technical excellence, strong problem-solving skills, and good communication.";
+}
+
+export async function updateAiCriteria(newCriteria: string) {
+    const { error } = await supabaseAdmin
+        .from('roles')
+        .upsert(
+            { name: '_SYSTEM_AI_CRITERIA_', description: newCriteria },
+            { onConflict: 'name' }
+        );
+
+    if (error) return { error: error.message };
+    revalidatePath('/admin/settings');
+    return { success: true };
 }
 
 export async function fetchAllUsers() {
@@ -636,7 +659,7 @@ export async function ensureBuckets() {
     }
 }
 
-export async function analyzeCandidateWithAi(candidateId: string, customCriteria?: string) {
+export async function analyzeCandidateWithAi(candidateId: string) {
     try {
         const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
         const isOpenRouter = apiKey?.startsWith('sk-or-');
@@ -653,7 +676,7 @@ export async function analyzeCandidateWithAi(candidateId: string, customCriteria
         if (fetchError || !candidate) throw new Error("Candidate not found");
         if (!candidate.resume_url) throw new Error("No resume found for this candidate");
 
-        const criteria = customCriteria || candidate.analysis_criteria || "Software Engineer with technical excellence.";
+        const criteria = await getAiCriteria();
 
         // 2. Download resume
         const urlParts = candidate.resume_url.split('/');

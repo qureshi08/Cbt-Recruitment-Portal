@@ -53,7 +53,6 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [selectedAiReasoning, setSelectedAiReasoning] = useState<Candidate | null>(null);
-    const [globalCriteria, setGlobalCriteria] = useState("Software Engineer with technical excellence, strong problem-solving skills, and good communication.");
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -67,15 +66,14 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const handleAiAnalysis = async (candidateId: string) => {
         setAnalyzingId(candidateId);
         try {
-            const result = await analyzeCandidateWithAi(candidateId, globalCriteria);
+            const result = await analyzeCandidateWithAi(candidateId);
             if (result.success && result.analysis) {
                 setCandidates(prev => prev.map(c =>
                     c.id === candidateId ? {
                         ...c,
                         ai_score: result.analysis.score,
                         ai_reasoning: result.analysis.reasoning,
-                        ai_analysis_json: result.analysis,
-                        analysis_criteria: globalCriteria
+                        ai_analysis_json: result.analysis
                     } : c
                 ));
             } else {
@@ -235,25 +233,6 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     </div>
                 </div>
             </div>
-
-            {/* AI Analysis Criteria Bar */}
-            {canApprove && (
-                <div className="mx-4 p-4 bg-gradient-to-r from-primary/5 to-transparent border border-primary/10 rounded-2xl flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                            <h4 className="text-xs font-black text-gray-700 uppercase tracking-wider">AI Analysis Criteria (Subjective)</h4>
-                        </div>
-                        <span className="text-[10px] text-gray-400 font-medium italic">Gemini will use this to score and reason</span>
-                    </div>
-                    <textarea
-                        className="w-full bg-white border border-primary/10 rounded-xl p-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[60px] shadow-inner"
-                        placeholder="Describe what you are looking for (e.g. 'Senior React dev with at least 5 years exp, MUST have cloud exposure...')"
-                        value={globalCriteria}
-                        onChange={(e) => setGlobalCriteria(e.target.value)}
-                    />
-                </div>
-            )}
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -491,115 +470,117 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 )
             }
             {/* AI Reasoning Modal */}
-            {selectedAiReasoning && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedAiReasoning(null)} />
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[90vh]">
-                        {/* Header */}
-                        <div className="p-8 border-b border-border flex justify-between items-start bg-gradient-to-br from-primary/10 via-white to-transparent">
-                            <div className="flex items-center gap-5">
-                                <div className={cn(
-                                    "w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black shadow-xl border-4 border-white",
-                                    (selectedAiReasoning.ai_score || 0) >= 80 ? "bg-green-100 text-green-700 shadow-green-100" :
-                                        (selectedAiReasoning.ai_score || 0) >= 50 ? "bg-yellow-100 text-yellow-700 shadow-yellow-100" :
-                                            "bg-red-100 text-red-700 shadow-red-100"
-                                )}>
-                                    {selectedAiReasoning.ai_score}
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-2xl text-gray-900 tracking-tight">{selectedAiReasoning.name}</h3>
-                                    <p className="text-gray-500 font-medium text-sm mt-1">{selectedAiReasoning.position || 'Software Engineer'}</p>
-                                    <div className="flex items-center gap-2 mt-3">
-                                        <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border border-primary/5">
-                                            <Sparkles className="w-3 h-3" />
-                                            AI Assessment: {selectedAiReasoning.ai_analysis_json?.verdict || 'Processed'}
+            {
+                selectedAiReasoning && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedAiReasoning(null)} />
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+                            {/* Header */}
+                            <div className="p-8 border-b border-border flex justify-between items-start bg-gradient-to-br from-primary/10 via-white to-transparent">
+                                <div className="flex items-center gap-5">
+                                    <div className={cn(
+                                        "w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black shadow-xl border-4 border-white",
+                                        (selectedAiReasoning.ai_score || 0) >= 80 ? "bg-green-100 text-green-700 shadow-green-100" :
+                                            (selectedAiReasoning.ai_score || 0) >= 50 ? "bg-yellow-100 text-yellow-700 shadow-yellow-100" :
+                                                "bg-red-100 text-red-700 shadow-red-100"
+                                    )}>
+                                        {selectedAiReasoning.ai_score}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-2xl text-gray-900 tracking-tight">{selectedAiReasoning.name}</h3>
+                                        <p className="text-gray-500 font-medium text-sm mt-1">{selectedAiReasoning.position || 'Software Engineer'}</p>
+                                        <div className="flex items-center gap-2 mt-3">
+                                            <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border border-primary/5">
+                                                <Sparkles className="w-3 h-3" />
+                                                AI Assessment: {selectedAiReasoning.ai_analysis_json?.verdict || 'Processed'}
+                                            </div>
                                         </div>
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedAiReasoning(null)} className="p-2.5 hover:bg-gray-100 rounded-full text-gray-400 transition-all hover:rotate-90">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+                                <div className="space-y-8">
+                                    {/* Criteria Used */}
+                                    <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-3 opacity-5">
+                                            <Search className="w-12 h-12 text-primary" />
+                                        </div>
+                                        <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Analysis Criteria Used</h4>
+                                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                                            {selectedAiReasoning.analysis_criteria || "Software Engineer with technical excellence."}
+                                        </p>
+                                    </div>
+
+                                    {/* Skills Grid */}
+                                    <div>
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Extracted Key Skills</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedAiReasoning.ai_analysis_json?.extracted_skills.map((skill, i) => (
+                                                <span key={i} className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700 shadow-sm hover:border-primary/30 transition-colors">
+                                                    {skill}
+                                                </span>
+                                            )) || <span className="text-xs italic text-gray-400">None extracted</span>}
+                                        </div>
+                                    </div>
+
+                                    {/* Detailed Summary */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Experience Summary</h4>
+                                            <div className="bg-blue-50/30 p-5 rounded-2xl border border-blue-100/50">
+                                                <p className="text-sm text-gray-700 leading-relaxed">
+                                                    {selectedAiReasoning.ai_analysis_json?.experience_summary || "No manual extraction available."}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 text-primary">Matching Analysis</h4>
+                                            <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10">
+                                                <p className="text-sm text-gray-800 leading-relaxed italic">
+                                                    "{selectedAiReasoning.ai_analysis_json?.matching_analysis || "No specific match details."}"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Reasoning Footer */}
+                                    <div className="p-5 rounded-2xl bg-gray-900 text-white shadow-xl shadow-gray-200">
+                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Final Reasoning</h4>
+                                        <p className="text-sm leading-relaxed text-gray-200">
+                                            {selectedAiReasoning.ai_reasoning}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                            <button onClick={() => setSelectedAiReasoning(null)} className="p-2.5 hover:bg-gray-100 rounded-full text-gray-400 transition-all hover:rotate-90">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
 
-                        {/* Content */}
-                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
-                            <div className="space-y-8">
-                                {/* Criteria Used */}
-                                <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-3 opacity-5">
-                                        <Search className="w-12 h-12 text-primary" />
-                                    </div>
-                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Analysis Criteria Used</h4>
-                                    <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                                        {selectedAiReasoning.analysis_criteria || "Software Engineer with technical excellence."}
-                                    </p>
-                                </div>
-
-                                {/* Skills Grid */}
-                                <div>
-                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Extracted Key Skills</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedAiReasoning.ai_analysis_json?.extracted_skills.map((skill, i) => (
-                                            <span key={i} className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700 shadow-sm hover:border-primary/30 transition-colors">
-                                                {skill}
-                                            </span>
-                                        )) || <span className="text-xs italic text-gray-400">None extracted</span>}
-                                    </div>
-                                </div>
-
-                                {/* Detailed Summary */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Experience Summary</h4>
-                                        <div className="bg-blue-50/30 p-5 rounded-2xl border border-blue-100/50">
-                                            <p className="text-sm text-gray-700 leading-relaxed">
-                                                {selectedAiReasoning.ai_analysis_json?.experience_summary || "No manual extraction available."}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 text-primary">Matching Analysis</h4>
-                                        <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10">
-                                            <p className="text-sm text-gray-800 leading-relaxed italic">
-                                                "{selectedAiReasoning.ai_analysis_json?.matching_analysis || "No specific match details."}"
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Reasoning Footer */}
-                                <div className="p-5 rounded-2xl bg-gray-900 text-white shadow-xl shadow-gray-200">
-                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Final Reasoning</h4>
-                                    <p className="text-sm leading-relaxed text-gray-200">
-                                        {selectedAiReasoning.ai_reasoning}
-                                    </p>
-                                </div>
+                            {/* Footer Actions */}
+                            <div className="p-8 bg-gray-50 border-t border-border flex gap-4">
+                                <button
+                                    onClick={() => setSelectedAiReasoning(null)}
+                                    className="flex-1 px-6 py-4 bg-white border border-gray-200 text-gray-700 text-sm font-black rounded-2xl hover:bg-gray-100 transition-all shadow-sm"
+                                >
+                                    Close Report
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleAiAnalysis(selectedAiReasoning.id);
+                                        setSelectedAiReasoning(null);
+                                    }}
+                                    className="flex-[2] btn-primary py-4 rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    Re-Analyze with Current Criteria
+                                </button>
                             </div>
-                        </div>
-
-                        {/* Footer Actions */}
-                        <div className="p-8 bg-gray-50 border-t border-border flex gap-4">
-                            <button
-                                onClick={() => setSelectedAiReasoning(null)}
-                                className="flex-1 px-6 py-4 bg-white border border-gray-200 text-gray-700 text-sm font-black rounded-2xl hover:bg-gray-100 transition-all shadow-sm"
-                            >
-                                Close Report
-                            </button>
-                            <button
-                                onClick={() => {
-                                    handleAiAnalysis(selectedAiReasoning.id);
-                                    setSelectedAiReasoning(null);
-                                }}
-                                className="flex-[2] btn-primary py-4 rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                            >
-                                <Sparkles className="w-4 h-4" />
-                                Re-Analyze with Current Criteria
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div >
     );
 }
