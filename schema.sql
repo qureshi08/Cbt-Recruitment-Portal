@@ -50,7 +50,8 @@ create table public.candidates (
   ai_reasoning text,
   analysis_criteria text,
   ai_analysis_json jsonb,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- ASSESSMENT SLOTS TABLE

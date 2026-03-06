@@ -54,6 +54,7 @@ export interface Candidate {
         verdict: string;
     };
     created_at: string;
+    updated_at: string;
     // Interview scores (joined from interviews table)
     interview_scores?: {
         decision?: string | null;

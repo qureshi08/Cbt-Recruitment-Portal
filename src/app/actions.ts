@@ -233,6 +233,63 @@ export async function submitApplication(formData: FormData) {
 
     try {
         if (!resume || resume.size === 0) throw new Error("Resume is required");
+        if (!cnic) throw new Error("CNIC Number is required");
+
+        // --- Reapplication Logic Based on CNIC ---
+        // 1. Check if there's any previous application with this CNIC
+        const { data: pastApps, error: pastAppError } = await supabaseAdmin
+            .from('candidates')
+            .select('id, status, created_at, updated_at')
+            .eq('cnic', cnic)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (pastAppError) {
+            console.error("Error checking past applications:", pastAppError);
+        } else if (pastApps && pastApps.length > 0) {
+            const lastApp = pastApps[0];
+
+            // If an active application exists, block
+            const activeStatuses = ['Applied', 'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'];
+            if (activeStatuses.includes(lastApp.status)) {
+                return {
+                    error: "You already have an active application in the system. Please wait for your current application process to conclude."
+                };
+            }
+
+            // If rejected, check time restrictions
+            if (lastApp.status === 'Rejected' || lastApp.status === 'Not Recommended') {
+                // Check if they reached interview stage (existed in interviews table)
+                const { count, error: countError } = await supabaseAdmin
+                    .from('interviews')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('candidate_id', lastApp.id);
+
+                if (countError) console.error("Error checking interviews:", countError);
+
+                const isInterviewPhase = (count || 0) > 0 || lastApp.status === 'Not Recommended';
+                const requiredWaitMonths = isInterviewPhase ? 6 : 3;
+
+                // Use the later of created_at or updated_at (updated_at would be when the rejection was set)
+                const lastActivityDate = new Date(lastApp.updated_at || lastApp.created_at);
+                const now = new Date();
+
+                // Calculate difference in months accurately
+                const diffTime = Math.abs(now.getTime() - lastActivityDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffMonths = diffDays / 30.44; // Avg days per month
+
+                if (diffMonths < requiredWaitMonths) {
+                    const remainingMonths = Math.ceil(requiredWaitMonths - diffMonths);
+                    const phaseName = isInterviewPhase ? "interview phase" : "initial filtering phase";
+                    return {
+                        error: `Candidates rejected at the ${phaseName} can reapply after ${requiredWaitMonths} months. Based on your previous application, you can reapply in approximately ${remainingMonths} month(s).`
+                    };
+                }
+            }
+        }
+        // -----------------------------------------
+
 
         const fileExt = resume.name.split(".").pop();
         const fileName = `${Math.random()}.${fileExt}`;
@@ -285,7 +342,10 @@ export async function updateCandidateStatus(candidateId: string, status: string)
     try {
         const { data: candidate, error } = await supabase
             .from("candidates")
-            .update({ status })
+            .update({
+                status,
+                updated_at: new Date().toISOString()
+            })
             .eq("id", candidateId)
             .select()
             .single();
@@ -607,7 +667,10 @@ export async function updateCandidate(candidateId: string, updates: Partial<any>
     try {
         const { error } = await supabase
             .from("candidates")
-            .update(updates)
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString()
+            })
             .eq("id", candidateId);
 
         if (error) throw error;
