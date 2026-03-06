@@ -1,5 +1,6 @@
 "use server";
 
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createClient } from "@/lib/supabase-server";
@@ -631,6 +632,95 @@ export async function ensureBuckets() {
         return { success: true };
     } catch (error: any) {
         console.error("Initialization error:", error.message);
+        return { error: error.message };
+    }
+}
+
+export async function analyzeCandidateWithAi(candidateId: string) {
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new Error("GEMINI_API_KEY is not configured in .env.local");
+
+        // 1. Get candidate and resume URL
+        const { data: candidate, error: fetchError } = await supabaseAdmin
+            .from('candidates')
+            .select('*')
+            .eq('id', candidateId)
+            .single();
+
+        if (fetchError || !candidate) throw new Error("Candidate not found");
+        if (!candidate.resume_url) throw new Error("No resume found for this candidate");
+
+        // 2. Download resume from Supabase Storage
+        // Extract filename from URL
+        const urlParts = candidate.resume_url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+
+        const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+            .from('resumes')
+            .download(fileName);
+
+        if (downloadError || !fileData) throw new Error(`Failed to download resume: ${downloadError?.message}`);
+
+        // 3. Prepare PDF for Gemini
+        const buffer = Buffer.from(await fileData.arrayBuffer());
+        const base64Data = buffer.toString("base64");
+
+        // 4. Send to Gemini
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `
+            You are an expert recruiter for a tech company. 
+            Analyze the attached resume for the position of: ${candidate.position || 'Software Engineer'}.
+            
+            Candidate Name: ${candidate.name}
+
+            Please provide:
+            1. A score from 0 to 100 based on how well the candidate fits the role.
+            2. A brief reasoning (2-3 sentences) explaining the score. Focus on skills, experience, and educational background.
+
+            Format your response strictly as a JSON object:
+            {
+                "score": 85,
+                "reasoning": "Strong technical background with 5 years of React experience. Has worked on relevant projects but lacks specific cloud infrastructure knowledge required for this role."
+            }
+        `;
+
+        const result = await model.generateContent([
+            { text: prompt },
+            {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: "application/pdf"
+                }
+            }
+        ]);
+        const responseText = result.response.text();
+
+        // Clean up response if Gemini adds markdown code blocks
+        const cleanedResponse = responseText.replace(/```json|```/g, '').trim();
+        const analysis = JSON.parse(cleanedResponse);
+
+        // 5. Update candidate record
+        const { error: updateError } = await supabaseAdmin
+            .from('candidates')
+            .update({
+                ai_score: analysis.score,
+                ai_reasoning: analysis.reasoning
+            })
+            .eq('id', candidateId);
+
+        if (updateError) throw updateError;
+
+        revalidatePath('/admin/applications');
+        return {
+            success: true,
+            score: analysis.score,
+            reasoning: analysis.reasoning
+        };
+    } catch (error: any) {
+        console.error("AI Analysis error:", error);
         return { error: error.message };
     }
 }

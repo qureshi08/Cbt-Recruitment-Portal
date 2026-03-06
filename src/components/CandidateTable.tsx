@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Candidate, CandidateStatus } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi } from "@/app/actions";
 import {
     ExternalLink,
     CheckCircle,
@@ -16,7 +16,8 @@ import {
     Upload,
     Edit2,
     X,
-    MoreHorizontal
+    MoreHorizontal,
+    Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -50,6 +51,8 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [batchFilter, setBatchFilter] = useState<string>("All");
     const [uploadingScore, setUploadingScore] = useState<string | null>(null);
     const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
+    const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+    const [selectedAiReasoning, setSelectedAiReasoning] = useState<{ name: string, reasoning: string, score: number } | null>(null);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -59,6 +62,24 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const canApprove = isMaster || isApprover;
     const canDelete = isMaster;
     const canViewOnly = isHR || isInterviewer;
+
+    const handleAiAnalysis = async (candidateId: string) => {
+        setAnalyzingId(candidateId);
+        try {
+            const result = await analyzeCandidateWithAi(candidateId);
+            if (result.success) {
+                setCandidates(prev => prev.map(c =>
+                    c.id === candidateId ? { ...c, ai_score: result.score, ai_reasoning: result.reasoning } : c
+                ));
+            } else {
+                alert("AI Analysis failed: " + result.error);
+            }
+        } catch (err: any) {
+            alert("AI Analysis error: " + err.message);
+        } finally {
+            setAnalyzingId(null);
+        }
+    };
 
     const handleDelete = async (id: string) => {
         if (!canDelete) return;
@@ -214,6 +235,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         <tr className="bg-white border-b border-border">
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate / Contact</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Batch</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Analysis</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Assessment Score</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
@@ -240,6 +262,48 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
                                         #{candidate.batch_number || 'N/A'}
                                     </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {candidate.ai_score !== undefined ? (
+                                        <div
+                                            className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                            onClick={() => setSelectedAiReasoning({
+                                                name: candidate.name,
+                                                reasoning: candidate.ai_reasoning || "No reasoning provided.",
+                                                score: candidate.ai_score!
+                                            })}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className={cn(
+                                                    "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black",
+                                                    candidate.ai_score >= 80 ? "bg-green-100 text-green-700" :
+                                                        candidate.ai_score >= 50 ? "bg-yellow-100 text-yellow-700" :
+                                                            "bg-red-100 text-red-700"
+                                                )}>
+                                                    {candidate.ai_score}
+                                                </div>
+                                                <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+                                            </div>
+                                            <p className="text-[9px] text-gray-400 truncate max-w-[100px]">
+                                                {candidate.ai_reasoning}
+                                            </p>
+                                        </div>
+                                    ) : (canApprove && candidate.resume_url) ? (
+                                        <button
+                                            onClick={() => handleAiAnalysis(candidate.id)}
+                                            disabled={analyzingId === candidate.id}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 text-primary text-[10px] font-bold rounded-lg border border-primary/10 hover:bg-primary/10 transition-all disabled:opacity-50"
+                                        >
+                                            {analyzingId === candidate.id ? (
+                                                <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                            ) : <Sparkles className="w-3 h-3" />}
+                                            AI Analysis
+                                        </button>
+                                    ) : (
+                                        <span className="text-[10px] text-gray-400 italic">
+                                            {!candidate.resume_url ? 'No resume' : 'No analysis'}
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
@@ -357,41 +421,110 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         )}
                     </tbody>
                 </table>
-            </div>
+            </div >
 
             {/* Edit Candidate Modal */}
-            {editingCandidate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditingCandidate(null)} />
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-200">
-                        <div className="p-4 border-b border-border flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-800">Edit Application: {editingCandidate.name}</h3>
-                            <button onClick={() => setEditingCandidate(null)} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-4 h-4" />
+            {
+                editingCandidate && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditingCandidate(null)} />
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-200">
+                            <div className="p-4 border-b border-border flex justify-between items-center bg-gray-50">
+                                <h3 className="font-bold text-gray-800">Edit Application: {editingCandidate.name}</h3>
+                                <button onClick={() => setEditingCandidate(null)} className="text-gray-400 hover:text-gray-600">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <form onSubmit={handleEditSave} className="p-6 space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+                                    <input name="name" defaultValue={editingCandidate.name} required className="input-field" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
+                                    <input name="email" type="email" defaultValue={editingCandidate.email} required className="input-field" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
+                                    <input name="phone" defaultValue={editingCandidate.phone} required className="input-field" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Batch Number</label>
+                                    <input name="batch_number" defaultValue={editingCandidate.batch_number} placeholder="e.g. 26" className="input-field" />
+                                </div>
+                                <div className="flex gap-3 pt-4">
+                                    <button type="button" onClick={() => setEditingCandidate(null)} className="btn-secondary flex-1">Cancel</button>
+                                    <button type="submit" className="btn-primary flex-1">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+            {/* AI Reasoning Modal */}
+            {selectedAiReasoning && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md" onClick={() => setSelectedAiReasoning(null)} />
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden">
+                        <div className="p-6 border-b border-border flex justify-between items-start bg-gradient-to-r from-primary/5 to-transparent">
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black shadow-inner",
+                                    selectedAiReasoning.score >= 80 ? "bg-green-100 text-green-700" :
+                                        selectedAiReasoning.score >= 50 ? "bg-yellow-100 text-yellow-700" :
+                                            "bg-red-100 text-red-700"
+                                )}>
+                                    {selectedAiReasoning.score}
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">{selectedAiReasoning.name}</h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <div className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                            <Sparkles className="w-2.5 h-2.5" />
+                                            AI Assessment
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedAiReasoning(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <form onSubmit={handleEditSave} className="p-6 space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
-                                <input name="name" defaultValue={editingCandidate.name} required className="input-field" />
+                        <div className="p-8">
+                            <div className="space-y-6">
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">AI Reasoning</h4>
+                                    <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 relative">
+                                        <p className="text-gray-700 leading-relaxed italic">
+                                            "{selectedAiReasoning.reasoning}"
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-xl border border-border bg-gray-50/50">
+                                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Fit Level</p>
+                                        <p className="font-bold text-gray-900">
+                                            {selectedAiReasoning.score >= 80 ? "Excellent" :
+                                                selectedAiReasoning.score >= 50 ? "Moderate" : "Low"}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 rounded-xl border border-border bg-gray-50/50">
+                                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Status</p>
+                                        <p className="font-bold text-primary flex items-center gap-1.5">
+                                            Ready for Review
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
-                                <input name="email" type="email" defaultValue={editingCandidate.email} required className="input-field" />
+                            <div className="mt-8">
+                                <button
+                                    onClick={() => setSelectedAiReasoning(null)}
+                                    className="w-full btn-primary py-3 rounded-xl shadow-lg shadow-primary/20"
+                                >
+                                    Dismiss
+                                </button>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
-                                <input name="phone" defaultValue={editingCandidate.phone} required className="input-field" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Batch Number</label>
-                                <input name="batch_number" defaultValue={editingCandidate.batch_number} placeholder="e.g. 26" className="input-field" />
-                            </div>
-                            <div className="flex gap-3 pt-4">
-                                <button type="button" onClick={() => setEditingCandidate(null)} className="btn-secondary flex-1">Cancel</button>
-                                <button type="submit" className="btn-primary flex-1">Save Changes</button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}

@@ -24,6 +24,8 @@ export interface Candidate {
     status: CandidateStatus;
     batch_number?: string;
     assessment_score_url?: string;
+    ai_score?: number;
+    ai_reasoning?: string;
     created_at: string;
 }
 
