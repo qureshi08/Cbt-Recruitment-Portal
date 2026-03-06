@@ -79,7 +79,7 @@ export default function Home() {
 
             {/* About Section */}
             <div id="about" className="py-20 px-6 bg-white">
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+                <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
                     <div className="lg:col-span-7 space-y-6">
                         <h2 className="text-3xl font-bold text-gray-900">About The Program</h2>
                         <p className="text-lg text-gray-600 leading-relaxed">
@@ -117,7 +117,7 @@ export default function Home() {
 
             {/* Tracks Section */}
             <div id="curriculum" className="py-20 px-6 bg-gray-50">
-                <div className="max-w-6xl mx-auto space-y-12">
+                <div className="max-w-4xl mx-auto space-y-12">
                     <div className="text-center space-y-4">
                         <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Technical Training Tracks</h2>
                         <p className="text-gray-500 max-w-2xl mx-auto text-lg">Our comprehensive curriculum empowers you to acquire essential skills across modern technical pillars.</p>
@@ -150,7 +150,7 @@ export default function Home() {
 
             {/* Footer */}
             <footer className="bg-gray-900 text-gray-400 py-16 px-6">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 border-b border-gray-800 pb-12 mb-12">
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 border-b border-gray-800 pb-12 mb-12">
                     <div className="space-y-4 max-w-sm">
                         <div className="flex items-center gap-2 text-white">
                             <div className="w-8 h-8 rounded bg-primary flex items-center justify-center font-bold text-xs">CBT</div>
@@ -176,7 +176,7 @@ export default function Home() {
                         </div>
                     </div>
                 </div>
-                <div className="max-w-6xl mx-auto text-center text-xs flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="max-w-4xl mx-auto text-center text-xs flex flex-col md:flex-row justify-between items-center gap-4">
                     <p>&copy; {new Date().getFullYear()} Convergent Business Technologies. All rights reserved.</p>
                     <p>Powered by <span className="text-white font-bold">cbtx</span> | Illustrations from storyset.com</p>
                 </div>

@@ -25,8 +25,8 @@ export default function Logo({ className, withText = true }: LogoProps) {
                 />
             </div>
             {withText && (
-                <span className="text-xl font-bold text-gray-800 tracking-tight">
-                    Recruitment Portal
+                <span className="text-lg font-black text-gray-900 tracking-tighter uppercase">
+                    Portal
                 </span>
             )}
         </Link>

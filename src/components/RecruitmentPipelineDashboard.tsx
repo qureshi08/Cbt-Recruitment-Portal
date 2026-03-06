@@ -29,38 +29,38 @@ const BRAND_PRIMARY = '#009245';
 
 const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass, isLast }: any) => (
     <div className="flex-1 flex items-center group">
-        <div className="flex-1 bg-white p-5 rounded-xl border border-border shadow-sm hover:border-primary/20 transition-all relative overflow-hidden">
+        <div className="flex-1 bg-white p-4 rounded-2xl border border-border/40 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all relative overflow-hidden">
             <div className={cn("absolute top-0 left-0 w-1 h-full", colorClass)} />
-            <div className="flex items-center justify-between mb-3">
-                <div className={cn("p-2 rounded-lg bg-gray-50 text-gray-400 group-hover:text-primary group-hover:bg-primary/5 transition-colors")}>
-                    <Icon className="w-4 h-4" />
+            <div className="flex items-center justify-between mb-2">
+                <div className={cn("p-1.5 rounded-lg bg-gray-50 text-gray-400 group-hover:text-primary group-hover:bg-primary/5 transition-colors")}>
+                    <Icon className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-2xl font-bold text-gray-900 tracking-tight">{count}</span>
+                <span className="text-xl font-black text-gray-900 tracking-tighter">{count}</span>
             </div>
-            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{title}</p>
-            <p className="text-[10px] text-gray-400 font-medium mt-1">{subtitle}</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-tight">{title}</p>
+            <p className="text-[9px] text-gray-400 font-medium mt-0.5 opacity-80">{subtitle}</p>
         </div>
         {!isLast && (
-            <div className="hidden lg:flex px-2 text-gray-300">
-                <ChevronRight className="w-5 h-5" />
+            <div className="hidden xl:flex px-1.5 text-gray-200">
+                <ChevronRight className="w-4 h-4" />
             </div>
         )}
     </div>
 );
 
 const MetricBox = ({ label, value, denominator, numerator, description }: any) => (
-    <div className="bg-gray-50/50 p-4 rounded-xl border border-border">
-        <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{label}</span>
-            <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-gray-400">{numerator}/{denominator}</span>
-                <div className="p-1 rounded bg-white shadow-sm">
-                    <Percent className="w-3 h-3 text-primary" />
+    <div className="bg-gray-50/30 p-4 rounded-2xl border border-border/40">
+        <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
+            <div className="flex items-center gap-1.5 font-bold">
+                <span className="text-[10px] text-gray-400">{numerator}/{denominator}</span>
+                <div className="p-1 rounded-md bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
+                    <Percent className="w-2.5 h-2.5 text-primary" />
                 </div>
             </div>
         </div>
-        <div className="text-2xl font-bold text-gray-900">{value}%</div>
-        <p className="text-[10px] text-gray-400 font-medium mt-1">{description}</p>
+        <div className="text-xl font-black text-gray-900 tracking-tight">{value}%</div>
+        <p className="text-[10px] text-gray-400 font-medium mt-0.5 italic">{description}</p>
     </div>
 );
 
@@ -124,22 +124,22 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
 
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* --- Filter Bar --- */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-border shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-5 py-3.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-border/40 min-h-[64px]">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-primary" />
+                    <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold text-gray-900 tracking-tight leading-none">Recruitment Insights</h2>
-                        <p className="text-xs text-gray-400 font-medium mt-1">Operational view of the hiring pipeline</p>
+                        <h2 className="text-[13px] font-black text-gray-900 tracking-tight leading-none uppercase">Recruitment Insights</h2>
+                        <p className="text-[10px] text-gray-400 font-bold mt-1 tracking-wide">Operational view of the hiring pipeline</p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 bg-gray-50 border border-border px-3 py-1.5 rounded-lg">
-                        <Layers className="w-3.5 h-3.5 text-gray-400" />
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-white border border-gray-100 px-2.5 py-1 rounded-lg">
+                        <Layers className="w-3 h-3 text-gray-400" />
                         <select
                             value={filterBatch}
                             onChange={(e) => setFilterBatch(e.target.value)}

@@ -35,9 +35,9 @@ export default function Sidebar({ userRoles }: SidebarProps) {
     );
 
     return (
-        <aside className="w-64 bg-white border-r border-border flex flex-col h-screen fixed left-0 top-0">
-            <div className="p-6 border-b border-border">
-                <Logo />
+        <aside className="w-60 glass border-r border-border flex flex-col h-screen fixed left-0 top-0 z-30">
+            <div className="p-5 border-b border-border/40">
+                <Logo withText={true} />
             </div>
 
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -48,17 +48,17 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                             key={item.name}
                             href={item.href}
                             className={cn(
-                                "flex items-center justify-between px-3 py-2 rounded transition-colors group",
+                                "flex items-center justify-between px-3 py-2 rounded-xl transition-all group",
                                 isActive
-                                    ? "bg-primary/10 text-primary font-medium"
-                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold"
+                                    : "text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-sm"
                             )}
                         >
                             <div className="flex items-center gap-3">
-                                <item.icon className={cn("w-5 h-5", isActive ? "text-primary" : "text-gray-400 group-hover:text-gray-600")} />
-                                <span>{item.name}</span>
+                                <item.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-gray-400 group-hover:text-primary transition-colors")} />
+                                <span className="text-[13px] tracking-tight">{item.name}</span>
                             </div>
-                            {isActive && <ChevronRight className="w-4 h-4" />}
+                            {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-80" />}
                         </Link>
                     );
                 })}
