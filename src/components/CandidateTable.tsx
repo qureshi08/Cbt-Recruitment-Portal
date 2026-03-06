@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Candidate, CandidateStatus } from "@/types/database";
+import { Candidate, CandidateStatus, InterviewFeedbackJson } from "@/types/database";
 import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi } from "@/app/actions";
 import {
     ExternalLink,
@@ -17,10 +17,131 @@ import {
     Edit2,
     X,
     MoreHorizontal,
-    Sparkles
+    Sparkles,
+    ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+
+// ─── Interview Score helpers ──────────────────────────────────────────────────
+
+const SCORE_CATS: { key: keyof Omit<InterviewFeedbackJson, 'overall_notes'>; label: string }[] = [
+    { key: 'technical', label: 'Technical' },
+    { key: 'communication', label: 'Communication' },
+    { key: 'masters_plans', label: "Master's Plans" },
+    { key: 'analytical', label: 'Analytical' },
+    { key: 'personality', label: 'Personality' },
+];
+
+function calcAvg(fb: InterviewFeedbackJson): number {
+    const scores = SCORE_CATS.map(c => fb[c.key].score).filter(s => s > 0);
+    return scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+}
+
+function ScoreBar({ score }: { score: number }) {
+    const colors = ['', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-lime-500', 'bg-green-500'];
+    return (
+        <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map(n => (
+                <div key={n} className={cn("h-1 w-4 rounded-full", n <= score ? colors[score] : 'bg-gray-200')} />
+            ))}
+        </div>
+    );
+}
+
+function InterviewFeedbackModal({ candidate, onClose }: { candidate: Candidate; onClose: () => void }) {
+    const s = candidate.interview_scores;
+    if (!s) return null;
+    const l1 = s.l1_feedback_json;
+    const l2 = s.l2_feedback_json;
+    const l1Avg = l1 ? calcAvg(l1) : null;
+    const l2Avg = l2 ? calcAvg(l2) : null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
+                {/* Header */}
+                <div className="p-5 border-b flex justify-between items-start shrink-0">
+                    <div>
+                        <h3 className="font-black text-gray-900 text-lg">Interview Scorecard</h3>
+                        <p className="text-sm text-gray-500">{candidate.name}</p>
+                        {s.decision && (
+                            <span className={cn(
+                                "mt-2 inline-block text-xs font-black px-2.5 py-1 rounded-full",
+                                s.decision === 'Recommended' ? "bg-green-100 text-green-700" :
+                                    s.decision === 'Not Recommended' ? "bg-red-100 text-red-700" :
+                                        "bg-blue-100 text-blue-700"
+                            )}>
+                                {s.decision}
+                            </span>
+                        )}
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 shrink-0">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto p-5 space-y-4 flex-1">
+                    {/* Summary row */}
+                    {(l1Avg !== null || l2Avg !== null) && (
+                        <div className="flex gap-3 flex-wrap">
+                            {l1Avg !== null && (
+                                <div className="flex-1 min-w-[120px] bg-blue-50 border border-blue-100 rounded-xl p-3 text-center">
+                                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">L1 Average</p>
+                                    <p className="text-2xl font-black text-blue-700">{l1Avg.toFixed(1)}<span className="text-sm text-blue-400">/5</span></p>
+                                </div>
+                            )}
+                            {l2Avg !== null && (
+                                <div className="flex-1 min-w-[120px] bg-purple-50 border border-purple-100 rounded-xl p-3 text-center">
+                                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">L2 Average</p>
+                                    <p className="text-2xl font-black text-purple-700">{l2Avg.toFixed(1)}<span className="text-sm text-purple-400">/5</span></p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Per-category breakdown */}
+                    {[{ label: 'L1 Feedback', fb: l1, color: 'blue' }, { label: 'L2 Feedback', fb: l2, color: 'purple' }].map(({ label, fb, color }) => {
+                        if (!fb) return null;
+                        const palette = color === 'blue'
+                            ? { header: 'bg-blue-50 border-blue-100 text-blue-700', sub: 'text-blue-600', bar: 'border-blue-200' }
+                            : { header: 'bg-purple-50 border-purple-100 text-purple-700', sub: 'text-purple-600', bar: 'border-purple-200' };
+                        return (
+                            <div key={label} className={cn("rounded-xl border p-4 space-y-3", palette.header)}>
+                                <p className={cn("text-[11px] font-black uppercase tracking-widest", palette.sub)}>{label}</p>
+                                {SCORE_CATS.map(cat => {
+                                    const d = fb[cat.key];
+                                    if (!d || d.score === 0) return null;
+                                    return (
+                                        <div key={cat.key} className="space-y-0.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-black text-gray-700">{cat.label}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <ScoreBar score={d.score} />
+                                                    <span className="text-[10px] font-bold text-gray-500 w-6 text-right">{d.score}/5</span>
+                                                </div>
+                                            </div>
+                                            {d.notes && (
+                                                <p className={cn("text-xs text-gray-500 leading-relaxed pl-2 border-l-2", palette.bar)}>{d.notes}</p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                                {fb.overall_notes && (
+                                    <div className="pt-2 border-t border-gray-200">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Overall Notes</p>
+                                        <p className="text-xs text-gray-600 leading-relaxed">{fb.overall_notes}</p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+}
 
 interface CandidateTableProps {
     initialCandidates: Candidate[];
@@ -53,6 +174,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [selectedAiReasoning, setSelectedAiReasoning] = useState<Candidate | null>(null);
+    const [selectedInterviewScores, setSelectedInterviewScores] = useState<Candidate | null>(null);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -242,6 +364,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Demographics</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Batch</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Analysis</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Interview</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Assessment Score</th>
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
@@ -316,7 +439,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-1">
                                                         <span className="text-[10px] font-bold text-gray-700">
-                                                            {candidate.ai_analysis_json?.verdict || 'Analyzed'}
+                                                            {candidate.ai_analysis_json?.verdict || 'Start Analyzing'}
                                                         </span>
                                                         <Sparkles className="w-2.5 h-2.5 text-primary animate-pulse" />
                                                     </div>
@@ -341,6 +464,36 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         <span className="text-[10px] text-gray-400 italic">
                                             {!candidate.resume_url ? 'No resume' : 'No analysis'}
                                         </span>
+                                    )}
+                                </td>
+                                {/* Interview Scores */}
+                                <td className="px-6 py-4">
+                                    {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
+                                        <div className="flex flex-col gap-1.5">
+                                            {candidate.interview_scores.l1_feedback_json && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[9px] font-black text-blue-500 uppercase">L1</span>
+                                                    <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l1_feedback_json))} />
+                                                    <span className="text-[10px] font-black text-blue-700">{calcAvg(candidate.interview_scores.l1_feedback_json).toFixed(1)}</span>
+                                                </div>
+                                            )}
+                                            {candidate.interview_scores.l2_feedback_json && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[9px] font-black text-purple-500 uppercase">L2</span>
+                                                    <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l2_feedback_json))} />
+                                                    <span className="text-[10px] font-black text-purple-700">{calcAvg(candidate.interview_scores.l2_feedback_json).toFixed(1)}</span>
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={() => setSelectedInterviewScores(candidate)}
+                                                className="flex items-center gap-1 text-[9px] font-bold text-gray-500 hover:text-primary transition-colors mt-0.5"
+                                            >
+                                                <ClipboardList className="w-2.5 h-2.5" />
+                                                View Report
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <span className="text-[10px] text-gray-300 italic">—</span>
                                     )}
                                 </td>
                                 <td className="px-6 py-4">
@@ -611,6 +764,13 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     </div>
                 )
             }
+            {/* Interview Scores Modal */}
+            {selectedInterviewScores && (
+                <InterviewFeedbackModal
+                    candidate={selectedInterviewScores}
+                    onClose={() => setSelectedInterviewScores(null)}
+                />
+            )}
         </div >
     );
 }

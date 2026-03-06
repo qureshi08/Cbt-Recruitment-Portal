@@ -7,15 +7,31 @@ export default async function ApplicationsPage() {
     const user = await getCurrentUser();
     const roles = user?.roles || [];
 
-    // Fetch candidates from Supabase
-    const { data: candidates, error } = await supabase
-        .from("candidates")
-        .select("*")
-        .order("created_at", { ascending: false });
+    // Fetch candidates + their latest interview scores in parallel
+    const [{ data: candidates, error }, { data: interviews }] = await Promise.all([
+        supabase.from("candidates").select("*").order("created_at", { ascending: false }),
+        supabase.from("interviews").select("candidate_id, decision, l1_feedback_json, l2_feedback_json"),
+    ]);
 
     if (error) {
         return <div>Error loading applications: {error.message}</div>;
     }
+
+    // Build a lookup Map of interview scores per candidate
+    const scoreMap = new Map<string, { decision?: string | null; l1_feedback_json?: any; l2_feedback_json?: any }>();
+    for (const iv of interviews || []) {
+        scoreMap.set(iv.candidate_id, {
+            decision: iv.decision,
+            l1_feedback_json: iv.l1_feedback_json,
+            l2_feedback_json: iv.l2_feedback_json,
+        });
+    }
+
+    // Merge interview scores into candidate objects
+    const enrichedCandidates: Candidate[] = (candidates || []).map((c: any) => ({
+        ...c,
+        interview_scores: scoreMap.get(c.id) ?? undefined,
+    }));
 
     return (
         <div className="space-y-6">
@@ -27,7 +43,7 @@ export default async function ApplicationsPage() {
             </div>
 
             <div className="card !p-0 overflow-hidden">
-                <CandidateTable initialCandidates={candidates || []} userRoles={roles} />
+                <CandidateTable initialCandidates={enrichedCandidates} userRoles={roles} />
             </div>
         </div>
     );

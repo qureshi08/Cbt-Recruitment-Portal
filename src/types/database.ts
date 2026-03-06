@@ -1,3 +1,17 @@
+export interface InterviewScoreCategory {
+    score: number;
+    notes: string;
+}
+
+export interface InterviewFeedbackJson {
+    technical: InterviewScoreCategory;
+    communication: InterviewScoreCategory;
+    masters_plans: InterviewScoreCategory;
+    analytical: InterviewScoreCategory;
+    personality: InterviewScoreCategory;
+    overall_notes: string;
+}
+
 export type CandidateStatus =
     | 'Applied'
     | 'Rejected'
@@ -39,6 +53,12 @@ export interface Candidate {
         verdict: string;
     };
     created_at: string;
+    // Interview scores (joined from interviews table)
+    interview_scores?: {
+        decision?: string | null;
+        l1_feedback_json?: InterviewFeedbackJson | null;
+        l2_feedback_json?: InterviewFeedbackJson | null;
+    };
 }
 
 export interface Application {

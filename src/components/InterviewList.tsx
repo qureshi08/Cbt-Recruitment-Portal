@@ -144,29 +144,54 @@ function FeedbackViewer({ interview }: { interview: Interview }) {
     return (
         <div className="mt-1">
             <button
-                onClick={() => setOpen(!open)}
+                onClick={() => setOpen(true)}
                 className="flex items-center gap-1.5 text-[10px] font-bold text-primary/80 hover:text-primary transition-colors"
             >
                 <Eye className="w-3 h-3" />
-                {open ? 'Hide' : 'View'} Feedback
+                View Report
                 {l1Avg !== null && (
-                    <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-black">L1 {l1Avg.toFixed(1)}</span>
+                    <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-black tracking-tight">L1 {l1Avg.toFixed(1)}</span>
                 )}
                 {l2Avg !== null && (
-                    <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-black">L2 {l2Avg.toFixed(1)}</span>
+                    <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-black tracking-tight">L2 {l2Avg.toFixed(1)}</span>
                 )}
-                {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
 
             {open && (
-                <div className="mt-2 space-y-3 animate-in fade-in duration-200 max-w-sm">
-                    {hasL1 && <FeedbackPanel label="L1 Interview Feedback" fb={interview.l1_feedback_json!} color="blue" />}
-                    {hasL2 && <FeedbackPanel label="L2 Interview Feedback" fb={interview.l2_feedback_json!} color="purple" />}
-                    {hasLegacy && (
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{interview.feedback}</p>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
+                        {/* Header */}
+                        <div className="p-5 border-b flex justify-between items-center shrink-0">
+                            <div>
+                                <h3 className="font-black text-gray-900 text-lg">Interview Report</h3>
+                                <p className="text-sm text-gray-500">{interview.candidates?.name}</p>
+                            </div>
+                            <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
-                    )}
+
+                        <div className="overflow-y-auto p-5 space-y-4 flex-1">
+                            {hasL1 && <FeedbackPanel label="L1 Interview Feedback" fb={interview.l1_feedback_json!} color="blue" />}
+                            {hasL2 && <FeedbackPanel label="L2 Interview Feedback" fb={interview.l2_feedback_json!} color="purple" />}
+                            {hasLegacy && (
+                                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Legacy Feedback</p>
+                                    <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{interview.feedback}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-5 border-t border-border flex justify-end bg-gray-50 rounded-b-2xl">
+                            <button
+                                onClick={() => setOpen(false)}
+                                className="px-6 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-black rounded-xl hover:bg-gray-100 transition-all shadow-sm"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
