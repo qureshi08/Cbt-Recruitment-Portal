@@ -21,10 +21,10 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    ComposedChart,
-    Area,
-    Bar,
-    Line
+    LineChart,
+    Line,
+    Legend,
+    Label
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { Candidate, CandidateStatus } from '@/types/database';
@@ -247,73 +247,94 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                 {/* Trend Chart */}
                 <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-border shadow-sm">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Recruitment Velocity</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-2.5 h-1 bg-gray-200 rounded-full" />
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Applied</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-2.5 h-0.5 bg-indigo-500 border-t border-dashed border-indigo-500" />
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Tested</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-2.5 h-0.5 bg-primary" />
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Passed</span>
-                            </div>
-                        </div>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Recruitment Pipeline Trends</h3>
                     </div>
                     <div className="h-[280px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={trendData}>
-                                <defs>
-                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={BRAND_PRIMARY} stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor={BRAND_PRIMARY} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
+                            <LineChart data={trendData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }} />
+                                <XAxis
+                                    dataKey="month"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }}
+                                >
+                                    <Label value="Month" offset={-10} position="insideBottom" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#9ca3af', textTransform: 'uppercase' }} />
+                                </XAxis>
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 10, fontWeight: 'medium', fill: '#9ca3af' }}
+                                >
+                                    <Label value="Candidates" angle={-90} position="insideLeft" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#9ca3af', textTransform: 'uppercase' }} />
+                                </YAxis>
                                 <Tooltip content={({ active, payload }) => {
                                     if (active && payload && payload.length) {
-                                        const values: Record<string, number> = {};
-                                        payload.forEach(p => { values[p.dataKey as string] = p.value as number });
                                         return (
-                                            <div className="bg-white p-3 rounded-xl shadow-xl border border-border min-w-[140px]">
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 border-b border-border pb-2">{payload[0].payload.month} {payload[0].payload.key.split('-')[0]}</p>
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center gap-4">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                                            <span className="text-[11px] font-bold text-gray-600">Applied</span>
+                                            <div className="bg-white p-4 rounded-xl shadow-xl border border-border min-w-[160px]">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 border-b border-border pb-2">
+                                                    {payload[0].payload.month} {payload[0].payload.key.split('-')[0]}
+                                                </p>
+                                                <div className="space-y-2.5">
+                                                    {payload.map((p, i) => (
+                                                        <div key={i} className="flex justify-between items-center gap-6">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                                                                <span className="text-[11px] font-bold text-gray-600">
+                                                                    {p.name === 'apps' ? 'Applied' : p.name === 'tests' ? 'Tested' : 'Passed'}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[11px] font-black text-gray-900">{p.value}</span>
                                                         </div>
-                                                        <span className="text-[11px] font-black text-gray-900">{values.apps || 0}</span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center gap-4">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                                            <span className="text-[11px] font-bold text-gray-600">Tested</span>
-                                                        </div>
-                                                        <span className="text-[11px] font-black text-gray-900">{values.tests || 0}</span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center gap-4">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                                            <span className="text-[11px] font-bold text-gray-600">Passed</span>
-                                                        </div>
-                                                        <span className="text-[11px] font-black text-primary">{values.recs || 0}</span>
-                                                    </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         )
                                     }
                                     return null;
                                 }} />
-                                <Bar dataKey="apps" fill="#f1f5f9" radius={[4, 4, 0, 0]} barSize={40} />
-                                <Line type="monotone" dataKey="tests" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-                                <Area type="monotone" dataKey="recs" stroke={BRAND_PRIMARY} strokeWidth={3} fill="url(#chartGradient)" />
-                            </ComposedChart>
+                                <Legend
+                                    verticalAlign="top"
+                                    align="right"
+                                    height={36}
+                                    iconType="circle"
+                                    formatter={(value) => (
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                            {value === 'apps' ? 'Applied' : value === 'tests' ? 'Tested' : 'Passed'}
+                                        </span>
+                                    )}
+                                />
+                                <Line
+                                    name="apps"
+                                    type="monotone"
+                                    dataKey="apps"
+                                    stroke="#3b82f6"
+                                    strokeWidth={3}
+                                    dot={false}
+                                    activeDot={{ r: 6, fill: '#3b82f6', strokeWidth: 0 }}
+                                    label={{ position: 'top', fontSize: 10, fontWeight: 'bold', fill: '#3b82f6', offset: 10 }}
+                                />
+                                <Line
+                                    name="tests"
+                                    type="monotone"
+                                    dataKey="tests"
+                                    stroke="#6366f1"
+                                    strokeWidth={3}
+                                    dot={false}
+                                    activeDot={{ r: 6, fill: '#6366f1', strokeWidth: 0 }}
+                                    label={{ position: 'top', fontSize: 10, fontWeight: 'bold', fill: '#6366f1', offset: 10 }}
+                                />
+                                <Line
+                                    name="recs"
+                                    type="monotone"
+                                    dataKey="recs"
+                                    stroke={BRAND_PRIMARY}
+                                    strokeWidth={3}
+                                    dot={false}
+                                    activeDot={{ r: 6, fill: BRAND_PRIMARY, strokeWidth: 0 }}
+                                    label={{ position: 'top', fontSize: 10, fontWeight: 'bold', fill: BRAND_PRIMARY, offset: 10 }}
+                                />
+                            </LineChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
