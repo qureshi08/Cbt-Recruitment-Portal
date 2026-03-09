@@ -287,8 +287,8 @@ export async function submitApplication(formData: FormData) {
     const location = formData.get("location") as string;
     const education_status = formData.get("education_status") as string;
     const graduation_year = formData.get("graduation_year") as string;
-    const degree_field = formData.get("degree_field") as string;
-    const university = formData.get("university") as string;
+    const degree_field = (formData.get("degree_field") as string) || "Not Specified";
+    const university = (formData.get("university") as string) || "Not Specified";
     const cnic = formData.get("cnic") as string;
     const resume = formData.get("resume") as File;
     const position = formData.get("position") as string || "General Application";

@@ -19,6 +19,28 @@ export default function ApplicationForm() {
         }
     };
 
+    const handleCnicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, ''); // Extract only numbers
+        if (value.length > 5) {
+            value = value.substring(0, 5) + '-' + value.substring(5);
+        }
+        if (value.length > 13) {
+            value = value.substring(0, 13) + '-' + value.substring(13, 14);
+        }
+        e.target.value = value;
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Keep '+' sign at start, extract numbers
+        let value = e.target.value;
+        const hasPlus = value.startsWith('+');
+        value = value.replace(/\D/g, '');
+        if (hasPlus) {
+            value = '+' + value;
+        }
+        e.target.value = value;
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -82,7 +104,7 @@ export default function ApplicationForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Phone Number</label>
-                    <input type="tel" name="phone" required className="input-field" placeholder="+92 3XX XXXXXXX" />
+                    <input type="tel" name="phone" required className="input-field" placeholder="+923001234567 or 03001234567" pattern="^((\+92)?(0092)?(0)?)(3[0-9]{2})[0-9]{7}$" title="Enter a valid Pakistani phone number e.g. 03001234567 or +923001234567" onChange={handlePhoneChange} minLength={11} maxLength={15} />
                 </div>
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Current Location (City/Area)</label>
@@ -90,7 +112,7 @@ export default function ApplicationForm() {
                 </div>
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">CNIC Number</label>
-                    <input type="text" name="cnic" required className="input-field" placeholder="e.g. 61101-XXXXXXX-X" />
+                    <input type="text" name="cnic" required className="input-field" placeholder="XXXXX-XXXXXXX-X" pattern="^\d{5}-\d{7}-\d{1}$" title="CNIC must be in the format XXXXX-XXXXXXX-X" onChange={handleCnicChange} maxLength={15} />
                 </div>
             </div>
 
@@ -100,10 +122,6 @@ export default function ApplicationForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Degree Field</label>
-                    <input type="text" name="degree_field" required className="input-field" placeholder="e.g. Computer Science, Mechanical Eng." />
-                </div>
-                <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Education Status</label>
                     <select name="education_status" required className="input-field min-h-[42px] py-0">
                         <option value="">Select Status...</option>
@@ -111,14 +129,13 @@ export default function ApplicationForm() {
                         <option value="Currently Enrolled">Currently Enrolled</option>
                     </select>
                 </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Graduation Year</label>
-                    <input type="text" name="graduation_year" required className="input-field" placeholder="e.g. 2024" />
+                    <input type="text" name="graduation_year" required className="input-field" placeholder="e.g. 2024" pattern="^20[0-9]{2}$" title="Enter a valid graduation year e.g. 2024" maxLength={4} />
                 </div>
             </div>
+
+
 
             <div className="space-y-1 font-medium text-gray-600 bg-gray-50 p-3 rounded border border-gray-100 flex items-center gap-2 mt-4">
                 <span className="text-sm">Applying For:</span>
