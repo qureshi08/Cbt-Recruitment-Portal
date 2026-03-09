@@ -27,9 +27,9 @@ const BRAND_PRIMARY = '#009245';
 
 // --- Sub-components ---
 
-const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass, isLast }: any) => (
-    <div className="flex-1 flex items-center group">
-        <div className="flex-1 bg-white p-4 rounded-2xl border border-border/40 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all relative overflow-hidden">
+const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass }: any) => (
+    <div className="group">
+        <div className="bg-white p-4 rounded-2xl border border-border/40 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all relative overflow-hidden h-full">
             <div className={cn("absolute top-0 left-0 w-1 h-full", colorClass)} />
             <div className="flex items-center justify-between mb-2">
                 <div className={cn("p-1.5 rounded-lg bg-gray-50 text-gray-400 group-hover:text-primary group-hover:bg-primary/5 transition-colors")}>
@@ -40,11 +40,6 @@ const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass, isLast 
             <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide leading-tight">{title}</p>
             <p className="text-[9px] text-gray-400 font-medium mt-0.5 opacity-80">{subtitle}</p>
         </div>
-        {!isLast && (
-            <div className="hidden xl:flex px-1.5 text-gray-200">
-                <ChevronRight className="w-4 h-4" />
-            </div>
-        )}
     </div>
 );
 
@@ -162,7 +157,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             </div>
 
             {/* --- Main Pipeline View (Combined KPI & Flow) --- */}
-            <div className="flex flex-col lg:flex-row gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                 <PipelineStage
                     title="Total Applications"
                     count={stats.total}
@@ -197,7 +192,6 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     subtitle="Successful candidacies"
                     icon={CheckCircle}
                     colorClass="bg-primary"
-                    isLast
                 />
             </div>
 

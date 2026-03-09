@@ -28,9 +28,9 @@ export default async function AdminLayout({
     return (
         <div className="flex min-h-screen bg-[#FAFBFC]">
             <Sidebar userRoles={roles} />
-            <div className="flex-1 ml-60 flex flex-col">
-                <header className="h-16 glass sticky top-0 z-20 flex items-center justify-between px-10 shadow-[0_1px_0_0_rgba(0,0,0,0.02)]">
-                    <div></div>
+            <div className="flex-1 ml-0 md:ml-60 flex flex-col min-w-0">
+                <header className="h-16 glass sticky top-0 z-20 flex items-center justify-end md:justify-between px-4 md:px-10 shadow-[0_1px_0_0_rgba(0,0,0,0.02)]">
+                    <div className="hidden md:block"></div>
 
                     <div className="flex items-center gap-6">
                         <NotificationBell />
@@ -50,7 +50,7 @@ export default async function AdminLayout({
                         </div>
                     </div>
                 </header>
-                <main className="p-10 lg:p-12 max-w-[1280px] w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <main className="p-4 md:p-8 lg:p-10 max-w-[1280px] w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
                     {children}
                 </main>
             </div>

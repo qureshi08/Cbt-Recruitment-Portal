@@ -37,7 +37,7 @@ export default async function ApplicationsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">Applications</h2>
                     <p className="text-sm text-gray-500">Manage all recruitment applications in one place.</p>

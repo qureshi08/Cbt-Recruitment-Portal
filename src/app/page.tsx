@@ -61,11 +61,11 @@ export default function Home() {
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
                         Now Accepting Applications
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
+                    <h1 className="text-3xl md:text-6xl font-extrabold text-gray-900 leading-tight">
                         Convergent Graduate <br />
                         <span className="text-primary italic">Academy Program</span> (CGAP)
                     </h1>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
                         A six months, paid training program. Designed to fill the gap between Academia and Industry for Data Analytics consultancy.
                     </p>
                     <div className="flex flex-wrap justify-center gap-4 pt-4">
@@ -78,8 +78,8 @@ export default function Home() {
             </div>
 
             {/* About Section */}
-            <div id="about" className="py-20 px-6 bg-white">
-                <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+            <div id="about" className="py-12 md:py-20 px-4 md:px-6 bg-white">
+                <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16 items-center">
                     <div className="lg:col-span-7 space-y-6">
                         <h2 className="text-3xl font-bold text-gray-900">About The Program</h2>
                         <p className="text-lg text-gray-600 leading-relaxed">
@@ -116,15 +116,15 @@ export default function Home() {
             </div>
 
             {/* Tracks Section */}
-            <div id="curriculum" className="py-20 px-6 bg-gray-50">
-                <div className="max-w-4xl mx-auto space-y-12">
+            <div id="curriculum" className="py-12 md:py-20 px-4 md:px-6 bg-gray-50">
+                <div className="max-w-4xl mx-auto space-y-8 md:space-y-12">
                     <div className="text-center space-y-4">
                         <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Technical Training Tracks</h2>
                         <p className="text-gray-500 max-w-2xl mx-auto text-lg">Our comprehensive curriculum empowers you to acquire essential skills across modern technical pillars.</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {tracks.map((track) => (
-                            <div key={track.title} className="card p-8 bg-white hover:border-primary/50 transition-all hover:shadow-xl group">
+                            <div key={track.title} className="card p-6 md:p-8 bg-white hover:border-primary/50 transition-all hover:shadow-xl group">
                                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
                                     <track.icon className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                                 </div>
@@ -137,7 +137,7 @@ export default function Home() {
             </div>
 
             {/* Application Form Section */}
-            <div id="apply" className="py-24 px-6 bg-white relative">
+            <div id="apply" className="py-12 md:py-24 px-4 md:px-6 bg-white relative">
                 <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-gray-50 to-white" />
                 <div className="max-w-4xl mx-auto relative">
                     <div className="text-center mb-12">
