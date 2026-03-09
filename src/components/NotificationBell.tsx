@@ -77,7 +77,7 @@ export default function NotificationBell() {
                         className="fixed inset-0 z-40"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-border z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                    <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 bg-white rounded-xl shadow-xl border border-border z-50 overflow-hidden animate-in fade-in zoom-in duration-200 sm:origin-top-right">
                         <div className="p-4 border-b border-border flex justify-between items-center bg-gray-50">
                             <h3 className="font-bold text-gray-800">Notifications</h3>
                             <button
@@ -87,7 +87,7 @@ export default function NotificationBell() {
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="max-h-96 overflow-y-auto">
+                        <div className="max-h-[70vh] sm:max-h-96 overflow-y-auto">
                             {notifications.length > 0 ? (
                                 notifications.map((n) => (
                                     <div key={n.id} className={cn(
