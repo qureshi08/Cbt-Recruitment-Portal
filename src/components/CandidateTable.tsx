@@ -795,32 +795,88 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </div>
                                     </div>
 
-                                    {/* Detailed Summary */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Experience Summary</h4>
-                                            <div className="bg-blue-50/30 p-5 rounded-2xl border border-blue-100/50">
-                                                <p className="text-sm text-gray-700 leading-relaxed">
-                                                    {selectedAiReasoning.ai_analysis_json?.experience_summary || "No manual extraction available."}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 text-primary">Matching Analysis</h4>
-                                            <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10">
-                                                <p className="text-sm text-gray-800 leading-relaxed italic">
-                                                    "{selectedAiReasoning.ai_analysis_json?.matching_analysis || "No specific match details."}"
-                                                </p>
-                                            </div>
+                                    {/* Extracted Info Section */}
+                                    <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-1">Candidate Profile Insight (AI Extracted)</h4>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
+                                            {selectedAiReasoning.ai_analysis_json?.extracted_info && Object.entries(selectedAiReasoning.ai_analysis_json.extracted_info).map(([k, v]: [string, any]) => (
+                                                <div key={k} className="flex flex-col gap-1.5">
+                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">{k.replace(/_/g, " ")}</span>
+                                                    <span className="text-[11px] font-bold text-gray-800 truncate" title={v || '—'}>{v || '—'}</span>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
 
-                                    {/* Reasoning Footer */}
-                                    <div className="p-5 rounded-2xl bg-gray-900 text-white shadow-xl shadow-gray-200">
-                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Final Reasoning</h4>
-                                        <p className="text-sm leading-relaxed text-gray-200">
-                                            {selectedAiReasoning.ai_reasoning}
-                                        </p>
+                                    {/* Experience Summary */}
+                                    <div>
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3">Experience Summary</h4>
+                                        <div className="bg-blue-50/20 p-5 rounded-2xl border border-blue-100/50">
+                                            <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                                                {selectedAiReasoning.ai_analysis_json?.experience_summary || "No manual extraction available."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Matching Analysis */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between px-1">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-primary">Matching Analysis</h4>
+                                            {selectedAiReasoning.ai_analysis_json?.hard_filter_failed && (
+                                                <div className="px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-[10px] font-black uppercase tracking-wider border border-red-200 animate-pulse">
+                                                    FAILED: {selectedAiReasoning.ai_analysis_json.hard_filter_failed}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {selectedAiReasoning.ai_analysis_json?.matching_analysis && typeof selectedAiReasoning.ai_analysis_json.matching_analysis === 'object' ? (
+                                                Object.entries(selectedAiReasoning.ai_analysis_json.matching_analysis).map(([key, val]: [string, any]) => (
+                                                    <div key={key} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all hover:shadow-md hover:border-primary/20">
+                                                        <div className="flex justify-between items-start mb-2 gap-2">
+                                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">
+                                                                {key.replace(/_/g, " ")}
+                                                            </span>
+                                                            <span className={cn(
+                                                                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0",
+                                                                ["PASS", "STRONG", "HIGH"].includes(String(val.status).toUpperCase()) ? "bg-green-100 text-green-700 border border-green-200" :
+                                                                    ["FAIL", "WEAK", "NONE"].includes(String(val.status).toUpperCase()) ? "bg-red-100 text-red-700 border border-red-200" :
+                                                                        "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                                                            )}>
+                                                                {val.status}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-600 leading-relaxed font-medium">{val.detail}</p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-2 bg-primary/5 p-5 rounded-2xl border border-primary/10 italic text-sm text-gray-800">
+                                                    "{typeof selectedAiReasoning.ai_analysis_json?.matching_analysis === 'string' ? selectedAiReasoning.ai_analysis_json.matching_analysis : "Check details in the breakdown above."}"
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Flags & Final Reasoning */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="p-5 rounded-2xl bg-gray-900 text-white shadow-xl shadow-gray-200 border border-gray-800">
+                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Final Reasoning</h4>
+                                            <p className="text-sm leading-relaxed text-gray-200 font-medium">
+                                                {selectedAiReasoning.ai_reasoning}
+                                            </p>
+                                        </div>
+                                        {selectedAiReasoning.ai_analysis_json?.flags && selectedAiReasoning.ai_analysis_json.flags.length > 0 && (
+                                            <div className="p-5 rounded-2xl bg-yellow-50 text-yellow-800 border border-yellow-100 shadow-sm">
+                                                <h4 className="text-[10px] font-black text-yellow-600/60 uppercase tracking-widest mb-2">Flags & Inferences</h4>
+                                                <ul className="space-y-2">
+                                                    {selectedAiReasoning.ai_analysis_json.flags.map((flag: string, idx: number) => (
+                                                        <li key={idx} className="text-[11px] leading-relaxed font-bold flex gap-2">
+                                                            <span className="text-yellow-400 mt-0.5 opacity-50">•</span>
+                                                            {flag}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

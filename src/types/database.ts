@@ -48,10 +48,30 @@ export interface Candidate {
     ai_reasoning?: string;
     analysis_criteria?: string;
     ai_analysis_json?: {
+        score: number;
+        reasoning: string;
+        extracted_info: {
+            name: string;
+            location: string;
+            degree: string;
+            degree_field: string;
+            university: string;
+            graduation_year: string;
+            years_of_experience: string;
+            email: string;
+            phone: string;
+        };
         extracted_skills: string[];
         experience_summary: string;
-        matching_analysis: string;
+        matching_analysis: {
+            [key: string]: {
+                status: string;
+                detail: string;
+            };
+        };
+        hard_filter_failed: string | null;
         education_match: boolean;
+        flags: string[];
         verdict: string;
     };
     created_at: string;

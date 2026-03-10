@@ -972,9 +972,12 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
         }
 
-        // TARGETED STRIPPING: Remove structural noise without nuking slashes like C/C++
+        // TARGETED STRIPPING: Normalize and clean structural noise
         resumeText = resumeText
-            .replace(/<<[\s\S]*?>>/g, ' ')                  // Remove Dict blocks
+            .replace(/\r\n/g, "\n")                        // Normalize line endings (from guide)
+            .replace(/\n{3,}/g, "\n\n")                    // Collapse excessive blank lines (from guide)
+            .replace(/[ \t]{2,}/g, " ")                    // Collapse multiple spaces (from guide)
+            .replace(/<<[\s\S]*?>>/g, ' ')                 // Remove Dict blocks
             .replace(/[a-zA-Z0-9]{45,}/g, '')              // Remove long hex/encoded strings
             .replace(/\/Type\s+\/\w+/g, '')                // Remove /Type /Page etc
             .replace(/\/Length\s+\d+/g, '')                // Remove /Length 123
@@ -1000,43 +1003,64 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const prompt = `
-            You are a World-Class Recruitment Intelligence AI. 
-            Analyze the following resume content according to the criteria.
+            You are an expert recruitment screening assistant for the Convergent Graduate Academy Program (CGAP) 
+            at Convergent Business Technologies (CBT), Islamabad.
 
-            [IMPORTANT: TEXT QUALITY ADVISORY]
-            The resume text below might be messy, fragmented, or contain technical PDF noise. 
-            YOU MUST:
-            1. Use DEDUCTIVE RECONSTRUCTION to rebuild the candidate's professional timeline.
-            2. Identify common resume sections (Experience, Summary, Projects) even if headers are fragmented.
-            3. CRITICAL: Do NOT claim info is "missing" if a human could reasonably infer it from the word clusters.
-            4. Extraction Priority: If the database field is "Not specified", YOU MUST FIND the answer in the text.
+            Perform a deep analysis of the following candidate's resume based on the recruiter's criteria.
 
-            [ADMINISTRATOR'S SCREENING CRITERIA]
+            POSITION: CGAP — Convergent Graduate Academy Program
+            RECRUITER'S CUSTOM CRITERIA:
             ${criteria}
 
-            [CANDIDATE SELF-REPORTED DATA]
+            CANDIDATE SELF-REPORTED DETAILS (treat as high-priority override if present):
+            - Full Name: ${candidate.name || "Not specified"}
             - Location: ${candidate.location || "Not specified"}
             - Education Status: ${candidate.education_status || "Not specified"}
             - Graduation Year: ${candidate.graduation_year || "Not specified"}
             - Degree Field: ${candidate.degree_field || "Not specified"}
 
-            [RESUME CONTENT]
+            RESUME CONTENT:
             ${resumeText}
 
-            [TASK]
-            1. Extract key skills.
-            2. Summarize experience/projects. RECONSTRUCT this even from partial fragments.
-            3. Detailed Matching Analysis against Priority 1, 2, and 3 criteria provided above.
+            INSTRUCTIONS:
+            1. Apply the recruiter's criteria strictly in the order listed.
+            2. If any HARD FILTER fails, set score to 0 and verdict to "Not Recommended". State which filter failed.
+            3. For passing candidates, score secondary criteria holistically.
+            4. Infer missing fields (e.g., location, graduation year) from resume content where possible.
+            5. Flag anything inferred vs. explicitly stated.
+            6. Assess English proficiency from the quality of the resume writing itself.
 
-            Respond STRICTLY in JSON format:
+            Respond STRICTLY in JSON format with no extra text, no markdown, no backticks:
             {
-                "score": number (0-100),
-                "reasoning": "A direct summary focusing on the match/mismatch based on the criteria.",
+                "score": 0-100,
+                "reasoning": "One concise sentence summarizing the overall assessment.",
+                "extracted_info": {
+                    "name": "full name from resume",
+                    "location": "extracted or inferred location",
+                    "degree": "degree name",
+                    "degree_field": "field of study",
+                    "university": "university name",
+                    "graduation_year": "year or expected year",
+                    "years_of_experience": "number or 'Fresh Graduate'",
+                    "email": "email if present",
+                    "phone": "phone if present"
+                },
                 "extracted_skills": ["skill1", "skill2"],
-                "experience_summary": "Extracted and reconstructed summary of their career and projects.",
-                "matching_analysis": "Step-by-step breakdown using the Priority 1, 2, 3 and Secondary sections as provided in the instructions above.",
+                "experience_summary": "3-4 sentence summary of academic and work history.",
+                "matching_analysis": {
+                    "location_check": { "status": "PASS | FAIL | UNVERIFIABLE", "detail": "explanation" },
+                    "degree_field_check": { "status": "PASS | FAIL", "detail": "explanation" },
+                    "graduation_check": { "status": "PASS | FAIL", "detail": "explanation" },
+                    "analytical_thinking": { "status": "STRONG | AVERAGE | WEAK", "detail": "explanation" },
+                    "english_proficiency": { "status": "STRONG | AVERAGE | WEAK", "detail": "explanation" },
+                    "commitment_signals": { "status": "STRONG | AVERAGE | WEAK", "detail": "explanation" },
+                    "field_relevance": { "status": "HIGH | MODERATE | LOW", "detail": "explanation" },
+                    "portfolio_projects": { "status": "STRONG | AVERAGE | WEAK | NONE", "detail": "explanation" }
+                },
+                "hard_filter_failed": "name of failed filter or null",
                 "education_match": boolean,
-                "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
+                "flags": ["any warnings or inferences made"],
+                "verdict": "Highly Recommended | Recommended | Potential | Not Recommended"
             }
         `;
         let analysis;
@@ -1066,13 +1090,15 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
             const data = await response.json();
             const responseContent = data.choices[0].message.content;
-            analysis = JSON.parse(responseContent);
+            // Protective stripping of markdown fences
+            const cleanedContent = responseContent.replace(/```json/gi, "").replace(/```/g, "").trim();
+            analysis = JSON.parse(cleanedContent);
         } else {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
             const result = await model.generateContent(prompt);
             const responseText = result.response.text();
-            const cleanedResponse = responseText.replace(/\`\`\`json|\`\`\`/g, '').trim();
+            const cleanedResponse = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
             analysis = JSON.parse(cleanedResponse);
         }
 
