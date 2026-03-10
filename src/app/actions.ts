@@ -919,22 +919,33 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             resumeText = text;
         } else if (isPdf) {
             try {
-                // pdfjs-dist (used internally by pdf-parse) requires DOMMatrix which
-                // doesn't exist in Node.js. Polyfill it before importing.
-                if (typeof (globalThis as any).DOMMatrix === 'undefined') {
-                    (globalThis as any).DOMMatrix = class DOMMatrix {
-                        constructor() { }
-                        transformPoint(p: any) { return p; }
-                        multiply() { return this; }
-                        translate() { return this; }
-                        scale() { return this; }
-                        rotate() { return this; }
-                        inverse() { return this; }
-                    };
+                // Ensure browser-like objects exist for pdfjs-dist
+                const polyfill = (name: string, cls: any) => {
+                    if (typeof (globalThis as any)[name] === 'undefined') {
+                        (globalThis as any)[name] = cls;
+                    }
+                };
+
+                class MockMatrix {
+                    constructor() { }
+                    transformPoint(p: any) { return p; }
+                    multiply() { return this; }
+                    translate() { return this; }
+                    scale() { return this; }
+                    rotate() { return this; }
+                    inverse() { return this; }
                 }
+                polyfill('DOMMatrix', MockMatrix);
+                polyfill('DOMMatrixReadOnly', MockMatrix);
+                polyfill('SVGMatrix', MockMatrix);
+
                 const { PDFParse } = await import("pdf-parse");
                 const parser = new PDFParse({ data: buffer });
-                const pdfData = await parser.getText();
+                // Use relaxed thresholds to handle vertical resumes better
+                const pdfData = await parser.getText({
+                    lineThreshold: 10,
+                    cellThreshold: 10
+                });
                 resumeText = pdfData.text;
                 await parser.destroy();
             } catch (pdfErr: any) {
@@ -949,40 +960,65 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
         }
 
-        // Truncate text if it's extremely long to avoid token limit issues (OpenRouter/Gemini)
-        // 25,000 characters is ~6,000-8,000 tokens, which is plenty for any resume.
+        // Clean up common PDF extraction junk (e.g. font descriptors, CID mappings)
+        // This junk often confuses LLMs into thinking the document is a technical spec.
+        const containsJunk = (resumeText.includes('FontDescriptor') || resumeText.includes('CIDInit')) && resumeText.length > 2000;
+        if (containsJunk) {
+            resumeText = resumeText.split('\n')
+                .filter(line => {
+                    const l = line.trim();
+                    return !l.includes('FontDescriptor') &&
+                        !l.includes('CIDInit') &&
+                        !l.includes('/Type /Font') &&
+                        !l.startsWith('/Font') &&
+                        !l.includes('Encoding /');
+                })
+                .join('\n');
+        }
+
+        // Truncate text if it's extremely long to avoid token limit issues
         if (resumeText.length > 25000) {
             resumeText = resumeText.substring(0, 25000) + "... [Text Truncated]";
         }
 
+        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
         const prompt = `
             You are an expert recruiter for a tech company. 
-            Perform a deep analysis of the following candidate's resume content based on specific criteria.
+            TODAY'S DATE: ${currentDate}
+
+            Perform a deep, intelligent analysis of the following candidate's resume content based on specific screening criteria.
             
             POSITION: ${candidate.position || 'Software Engineer'}
             RECRUITER'S CUSTOM CRITERIA: ${criteria}
 
-            CANDIDATE SELF-REPORTED DETAILS (High Priority overrides):
+            CANDIDATE SELF-REPORTED DETAILS:
             - Location: ${candidate.location || "Not specified"}
             - Education Status: ${candidate.education_status || "Not specified"}
             - Graduation Year: ${candidate.graduation_year || "Not specified"}
             - Degree Field: ${candidate.degree_field || "Not specified"}
 
+            CRITICAL INSTRUCTIONS:
+            1. If a field above is "Not specified", YOU MUST FIND IT IN THE RESUME CONTENT.
+            2. For example, if Degree Field is "Not specified" in the list but the resume says "Bachelors in Computer Science", you MUST accept it as CS.
+            3. Do NOT reject a candidate simply because a self-reported field is "Not specified". The Resume is the primary source of truth.
+            4. If the resume content looks structured like a font descriptor or character map, ignore that technical noise and extract the professional text instead.
+
             RESUME CONTENT:
             ${resumeText}
 
-            Perform a structural and qualitative analysis and respond STRICTLY in JSON:
+            Respond STRICTLY in JSON format:
             {
                 "score": number (0-100),
-                "reasoning": "Quick one-sentence summary",
+                "reasoning": "One sentence summary focusing on the key match/mismatch",
                 "extracted_skills": ["skill1", "skill2", "..."],
                 "experience_summary": "3-4 sentence detailed summary of work history",
-                "matching_analysis": "Detailed breakdown of how they meet or miss the specific criteria mentioned above",
+                "matching_analysis": "Detailed breakdown. Mention if you found Degree or Year in the resume that was missing in self-reports.",
                 "education_match": boolean,
                 "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
             }
 
-            BE OBJECTIVE AND CRITICAL. If they don't match the criteria, score them lower.
+            NOTE: Be critical but fair. If today is ${currentDate}, a 2025 graduate IS a fresh graduate.
         `;
 
         let analysis;
