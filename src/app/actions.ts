@@ -918,11 +918,29 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             const { value: text } = await mammoth.extractRawText({ buffer: buffer });
             resumeText = text;
         } else if (isPdf) {
-            const { PDFParse } = await import("pdf-parse");
-            const parser = new PDFParse({ data: buffer });
-            const pdfData = await parser.getText();
-            resumeText = pdfData.text;
-            await parser.destroy();
+            try {
+                // pdfjs-dist (used internally by pdf-parse) requires DOMMatrix which
+                // doesn't exist in Node.js. Polyfill it before importing.
+                if (typeof (globalThis as any).DOMMatrix === 'undefined') {
+                    (globalThis as any).DOMMatrix = class DOMMatrix {
+                        constructor() { }
+                        transformPoint(p: any) { return p; }
+                        multiply() { return this; }
+                        translate() { return this; }
+                        scale() { return this; }
+                        rotate() { return this; }
+                        inverse() { return this; }
+                    };
+                }
+                const { PDFParse } = await import("pdf-parse");
+                const parser = new PDFParse({ data: buffer });
+                const pdfData = await parser.getText();
+                resumeText = pdfData.text;
+                await parser.destroy();
+            } catch (pdfErr: any) {
+                console.warn("pdf-parse failed, falling back to raw buffer text:", pdfErr.message);
+                resumeText = buffer.toString('utf8');
+            }
         } else {
             resumeText = buffer.toString('utf8');
         }
