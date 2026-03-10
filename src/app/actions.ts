@@ -16,7 +16,7 @@ import { getCurrentUser } from "@/lib/auth-utils";
 import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
 import sharp from 'sharp';
 // @ts-ignore
-import pdf from 'pdf-parse';
+import pdf from 'pdf-parse/lib/pdf-parse.js';
 
 export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer';
 
