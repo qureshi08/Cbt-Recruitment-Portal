@@ -944,8 +944,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
                 // Try high-fidelity extraction first
                 const pdfData = await parser.getText({
-                    lineThreshold: 10,
-                    cellThreshold: 10
+                    lineThreshold: 8,
+                    cellThreshold: 8
                 });
 
                 let extractedText = pdfData.text || "";
@@ -973,12 +973,14 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
         }
 
-        // Clean up common PDF extraction junk (e.g. font descriptors, CID mappings)
-        // This junk often confuses LLMs into thinking the document is a technical spec.
-        resumeText = resumeText.split('\n')
+        // AGGRESSIVE CLEANING: Strip PDF internal syntax that confuses LLMs
+        resumeText = resumeText
+            .replace(/\/([a-zA-Z0-9]+)\s+([^\/]+)/g, '') // Remove /Key Value pairs
+            .replace(/<<[\s\S]*?>>/g, '')               // Remove << >> blocks
+            .split('\n')
             .filter(line => {
                 const l = line.trim();
-                return l.length > 0 &&
+                return l.length > 2 &&
                     !l.includes('FontDescriptor') &&
                     !l.includes('CIDInit') &&
                     !l.includes('/Type /Font') &&
@@ -1014,10 +1016,10 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
             CRITICAL INTELLIGENCE TASK:
             1. DATABASE OVERRIDES: If any field above is "Not specified", use the resume text below as the ULTIMATE source of truth.
-            2. NOISE HANDLING: The resume text below may contain technical PDF metadata (e.g., /Font, /Encoding). IGNORE ALL TECHNICAL NOISE. 
-            3. PATTERN MATCHING: Search for professional patterns even if the text is messy. Reconstruct the candidate's degree (e.g., "BS CS", "Bachelors IT") and graduation status.
-            4. BIAS CHECK: Do NOT reject based on a "Not specified" override if the information exists in the text fragments.
-            5. GRADUATION YEAR: If today is ${currentDate}, then a 2024 or 2025 graduate IS a fresh graduate.
+            2. NOISE REDUCTION: Ignore technical PDF metadata (e.g., "TrueType", "/Font", "Encoding"). Focus on human words.
+            3. FRESH GRADUATE DEFINITION: Since today is ${currentDate}, any 2024, 2025, or 2026 graduate IS a fresh graduate. 
+            4. DEGREE VALIDATION: "Information Technology" (IT), "Computer Science", and "Engineering" are ALL accepted technical degrees.
+            5. BIAS CHECK: Do NOT reject based on a "Not specified" override if the info exists in the resume. 
 
             RESUME CONTENT:
             ${resumeText}
@@ -1025,7 +1027,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             Respond STRICTLY in JSON format:
             {
                 "score": number (0-100),
-                "reasoning": "Direct and insightful reasoning about the candidate's core profile.",
+                "reasoning": "Direct summary of why they match or fail.",
                 "extracted_skills": ["skill1", "skill2", "..."],
                 "experience_summary": "3-4 sentence summary of their work and academic projects.",
                 "matching_analysis": "Detailed match against PRIORITY 1, 2, and 3 criteria. Be explicit about fields you recovered from the text.",
