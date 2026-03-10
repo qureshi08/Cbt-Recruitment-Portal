@@ -135,6 +135,17 @@ export default function ApplicationForm() {
                 </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Degree Field</label>
+                    <input type="text" name="degree_field" required className="input-field" placeholder="e.g. Computer Science" />
+                </div>
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">University</label>
+                    <input type="text" name="university" required className="input-field" placeholder="e.g. NUST, FAST" />
+                </div>
+            </div>
+
 
 
             <div className="space-y-1 font-medium text-gray-600 bg-gray-50 p-3 rounded border border-gray-100 flex items-center gap-2 mt-4">

@@ -13,6 +13,8 @@ import {
     sendNotRecommendedEmail
 } from "@/lib/email";
 import { getCurrentUser } from "@/lib/auth-utils";
+import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
+import sharp from 'sharp';
 
 export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer';
 
@@ -396,6 +398,13 @@ export async function submitApplication(formData: FormData) {
             .single();
 
         if (candidateError) throw candidateError;
+
+        // Auto-trigger AI Analysis
+        try {
+            await analyzeCandidateWithAi(candidate.id);
+        } catch (aiErr) {
+            console.error("Background AI Analysis failed for new applicant:", candidate.id, aiErr);
+        }
 
         // Create notification for admin
         await supabase.from('notifications').insert({
@@ -961,14 +970,60 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 resumeText = text;
                 await parser.destroy();
             } catch (pdfErr: any) {
-                console.warn("pdf-parse failed, falling back to raw buffer text:", pdfErr.message);
-                resumeText = buffer.toString('utf8');
+                console.warn("pdf-parse failed:", pdfErr.message);
+            }
+
+            // VISION FALLBACK: If text extraction is still poor, try extracting images for Vision processing
+            let pdfImages: string[] = [];
+            if (resumeText.trim().length < 400) {
+                try {
+                    const pdfDoc = await PDFDocument.load(buffer);
+                    const pages = pdfDoc.getPages();
+                    for (let i = 0; i < Math.min(pages.length, 3); i++) {
+                        const page = pages[i];
+                        const { node } = page as any;
+                        const resources = node.Resources();
+                        if (!resources) continue;
+                        const xObjects = resources.get(PDFName.of('XObject'));
+                        if (!xObjects) continue;
+                        const xObjectDict = pdfDoc.context.lookup(xObjects) as PDFDict;
+                        for (const [name, ref] of xObjectDict.entries()) {
+                            const xObject = pdfDoc.context.lookup(ref);
+                            if (xObject instanceof PDFRawStream) {
+                                const subtype = xObject.dict.get(PDFName.of('Subtype'));
+                                if (subtype === PDFName.of('Image')) {
+                                    const filter = xObject.dict.get(PDFName.of('Filter'));
+                                    // Most scanned PDFs use DCTDecode (JPEG) or FlateDecode
+                                    let content = xObject.contents;
+                                    if (filter === PDFName.of('DCTDecode') || !filter) {
+                                        pdfImages.push(Buffer.from(content).toString('base64'));
+                                    } else {
+                                        // Try converting other formats with sharp if possible
+                                        try {
+                                            const imageBuffer = await sharp(content).toFormat('jpeg').toBuffer();
+                                            pdfImages.push(imageBuffer.toString('base64'));
+                                        } catch (e) {
+                                            console.warn("Could not convert embedded image object:", e);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (vErr) {
+                    console.error("Vision extraction failed:", vErr);
+                }
+            }
+
+            if (pdfImages.length > 0) {
+                (candidate as any)._vision_images = pdfImages;
+                if (resumeText.length < 50) resumeText = "[Image-based PDF: Processing via Vision]";
             }
         } else {
             resumeText = buffer.toString('utf8');
         }
 
-        if (!resumeText || resumeText.trim().length < 50) {
+        if (!resumeText || (resumeText.trim().length < 50 && !(candidate as any)._vision_images)) {
             throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
         }
 
@@ -1066,6 +1121,22 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         let analysis;
 
         if (isOpenRouter) {
+            const visionImages = (candidate as any)._vision_images || [];
+            let content: any = prompt;
+
+            if (visionImages.length > 0) {
+                content = [
+                    {
+                        type: "text",
+                        text: `${prompt}\n\nThe resume is provided as image(s) below. Extract ALL visible information carefully including name, contact details, education, experience, skills, and any other relevant fields.`
+                    },
+                    ...visionImages.map((b64: string) => ({
+                        type: "image_url",
+                        image_url: { url: `data:image/jpeg;base64,${b64}` }
+                    }))
+                ];
+            }
+
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -1077,8 +1148,9 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 body: JSON.stringify({
                     "model": "google/gemini-2.0-flash-001",
                     "messages": [
-                        { "role": "user", "content": prompt }
+                        { "role": "user", "content": content }
                     ],
+                    "max_tokens": 2500,
                     "response_format": { "type": "json_object" }
                 })
             });
@@ -1096,7 +1168,19 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         } else {
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-            const result = await model.generateContent(prompt);
+            const visionImages = (candidate as any)._vision_images || [];
+
+            let result;
+            if (visionImages.length > 0) {
+                const promptPart = { text: `${prompt}\n\nThe resume is provided as image(s) below. Extract ALL visible information carefully.` };
+                const imageParts = visionImages.map((b64: string) => ({
+                    inlineData: { data: b64, mimeType: "image/jpeg" }
+                }));
+                result = await model.generateContent([promptPart, ...imageParts]);
+            } else {
+                result = await model.generateContent(prompt);
+            }
+
             const responseText = result.response.text();
             const cleanedResponse = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
             analysis = JSON.parse(cleanedResponse);
