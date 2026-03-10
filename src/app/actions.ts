@@ -946,14 +946,16 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 const pdfData = await parser.getText();
                 let text = pdfData.text || "";
 
-                // If text is messy/empty, perform a "Printable String" recovery from the raw buffer
-                if (text.trim().length < 200 || text.includes('/FontDescriptor') || text.includes('TrueType')) {
-                    // Filter for printable characters and basic whitespace only
-                    const printableOnly = buffer.toString('binary')
-                        .replace(/[^\x20-\x7E\r\n\t]/g, ' ')
+                // SURGICAL RECOVERY: If standard parse yields technical junk, sweep for readable ASCII fragments
+                if (text.trim().length < 400 || text.includes('FontDescriptor')) {
+                    const rawBufferString = buffer.toString('binary');
+                    // Look for sequences of 4+ characters that look like human words (letters, spaces, basic symbols)
+                    const humanWords = rawBufferString.match(/[a-zA-Z0-9\s\.\,\-\@\:]{4,}/g) || [];
+                    const recoveredText = humanWords
+                        .filter(s => s.trim().length > 6 && /[a-zA-Z]{2,}/.test(s))
+                        .join(' ')
                         .replace(/\s+/g, ' ');
-
-                    text = text + "\n" + printableOnly;
+                    text += "\n\n--- RECOVERED DOCUMENT FRAGMENTS ---\n" + recoveredText;
                 }
 
                 resumeText = text;
@@ -970,23 +972,25 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
         }
 
-        // AGGRESSIVE STRIPPING: Remove all PDF internal structural noise
+        // TARGETED STRIPPING: Remove structural noise without nuking slashes like C/C++
         resumeText = resumeText
-            .replace(/\/([a-zA-Z0-9]+)\s+([^\/\s]+)/g, '') // Remove /Property /Value
-            .replace(/<<[\s\S]*?>>/g, '')                  // Remove Dict blocks
-            .replace(/[a-zA-Z0-9]{30,}/g, '')              // Remove long hex/encoded strings
+            .replace(/<<[\s\S]*?>>/g, ' ')                  // Remove Dict blocks
+            .replace(/[a-zA-Z0-9]{45,}/g, '')              // Remove long hex/encoded strings
+            .replace(/\/Type\s+\/\w+/g, '')                // Remove /Type /Page etc
+            .replace(/\/Length\s+\d+/g, '')                // Remove /Length 123
+            .replace(/\/Filter\s+\/\w+/g, '')              // Remove /Filter /FlateDecode
+            .replace(/\/FontDescriptor/g, '')
             .split('\n')
             .filter(line => {
                 const l = line.trim();
                 return l.length > 3 &&
-                    !l.includes('FontDescriptor') &&
                     !l.includes('Encoding') &&
                     !l.includes('ProcSet') &&
-                    !l.includes('TrueType');
+                    !l.includes('XObject');
             })
             .join(' ')
             .replace(/\s+/g, ' ')
-            .substring(0, 25000);
+            .substring(0, 26000);
 
         // Truncate to a safe but generous token limit
         if (resumeText.length > 28000) {
@@ -996,10 +1000,18 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const prompt = `
-            You are a highly intelligent AI Recruiter. 
-            Analyze the following candidate's resume content according to the specific criteria provided.
+            You are a World-Class Recruitment Intelligence AI. 
+            Analyze the following resume content according to the criteria.
 
-            [ADMINISTRATOR'S ANALYSIS CRITERIA]
+            [IMPORTANT: TEXT QUALITY ADVISORY]
+            The resume text below might be messy, fragmented, or contain technical PDF noise. 
+            YOU MUST:
+            1. Use DEDUCTIVE RECONSTRUCTION to rebuild the candidate's professional timeline.
+            2. Identify common resume sections (Experience, Summary, Projects) even if headers are fragmented.
+            3. CRITICAL: Do NOT claim info is "missing" if a human could reasonably infer it from the word clusters.
+            4. Extraction Priority: If the database field is "Not specified", YOU MUST FIND the answer in the text.
+
+            [ADMINISTRATOR'S SCREENING CRITERIA]
             ${criteria}
 
             [CANDIDATE SELF-REPORTED DATA]
@@ -1012,19 +1024,17 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             ${resumeText}
 
             [TASK]
-            1. Extract the key professional and technical skills. Focus on actual candidate capabilities.
-            2. Summarize work experience and academic projects.
-            3. Perform a detailed "Matching Analysis" by subjectively checking the candidate against the priority filters and secondary criteria provided above. 
-            4. If any fields (like Degree or Year) are "Not specified" above, YOU MUST EXTRACT THEM FROM THE RESUME CONTENT. Do not penalize for "Not specified" if the info is present in the resume.
-            5. IGNORE any technical PDF metadata noise (e.g. "TrueType", "Font") still present in the text and focus on the professional credentials.
+            1. Extract key skills.
+            2. Summarize experience/projects. RECONSTRUCT this even from partial fragments.
+            3. Detailed Matching Analysis against Priority 1, 2, and 3 criteria provided above.
 
             Respond STRICTLY in JSON format:
             {
                 "score": number (0-100),
-                "reasoning": "A direct summary focusing on the key match/mismatch based on the criteria.",
+                "reasoning": "A direct summary focusing on the match/mismatch based on the criteria.",
                 "extracted_skills": ["skill1", "skill2"],
-                "experience_summary": "3-4 sentence summary of professional/academic projects.",
-                "matching_analysis": "Step-by-step breakdown using the Priority 1, 2, 3 and Secondary criteria sections exactly as provided in the instructions above.",
+                "experience_summary": "Extracted and reconstructed summary of their career and projects.",
+                "matching_analysis": "Step-by-step breakdown using the Priority 1, 2, 3 and Secondary sections as provided in the instructions above.",
                 "education_match": boolean,
                 "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
             }
