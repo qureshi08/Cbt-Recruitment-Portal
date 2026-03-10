@@ -949,6 +949,12 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
         }
 
+        // Truncate text if it's extremely long to avoid token limit issues (OpenRouter/Gemini)
+        // 25,000 characters is ~6,000-8,000 tokens, which is plenty for any resume.
+        if (resumeText.length > 25000) {
+            resumeText = resumeText.substring(0, 25000) + "... [Text Truncated]";
+        }
+
         const prompt = `
             You are an expert recruiter for a tech company. 
             Perform a deep analysis of the following candidate's resume content based on specific criteria.
