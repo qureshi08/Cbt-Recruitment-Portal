@@ -941,12 +941,25 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
                 const { PDFParse } = await import("pdf-parse");
                 const parser = new PDFParse({ data: buffer });
-                // Use relaxed thresholds to handle vertical resumes better
+
+                // Try high-fidelity extraction first
                 const pdfData = await parser.getText({
                     lineThreshold: 10,
                     cellThreshold: 10
                 });
-                resumeText = pdfData.text;
+
+                let extractedText = pdfData.text || "";
+
+                // If it looks like pure technical junk or is suspiciously small, append a raw bypass
+                const isLikelyBroken = (extractedText.includes('FontDescriptor') || extractedText.includes('CIDInit')) || extractedText.trim().length < 300;
+
+                if (isLikelyBroken) {
+                    // Raw string bypass: strip non-printable but keep the essence
+                    const rawData = buffer.toString('ascii').replace(/[^\x20-\x7E\r\n\t]/g, ' ');
+                    extractedText += "\n\n--- RAW DATA RECOVERY ---\n" + rawData;
+                }
+
+                resumeText = extractedText;
                 await parser.destroy();
             } catch (pdfErr: any) {
                 console.warn("pdf-parse failed, falling back to raw buffer text:", pdfErr.message);
@@ -962,23 +975,24 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
         // Clean up common PDF extraction junk (e.g. font descriptors, CID mappings)
         // This junk often confuses LLMs into thinking the document is a technical spec.
-        const containsJunk = (resumeText.includes('FontDescriptor') || resumeText.includes('CIDInit')) && resumeText.length > 2000;
-        if (containsJunk) {
-            resumeText = resumeText.split('\n')
-                .filter(line => {
-                    const l = line.trim();
-                    return !l.includes('FontDescriptor') &&
-                        !l.includes('CIDInit') &&
-                        !l.includes('/Type /Font') &&
-                        !l.startsWith('/Font') &&
-                        !l.includes('Encoding /');
-                })
-                .join('\n');
-        }
+        resumeText = resumeText.split('\n')
+            .filter(line => {
+                const l = line.trim();
+                return l.length > 0 &&
+                    !l.includes('FontDescriptor') &&
+                    !l.includes('CIDInit') &&
+                    !l.includes('/Type /Font') &&
+                    !l.startsWith('/Font') &&
+                    !l.includes('Encoding /') &&
+                    !l.includes('ProcSet') &&
+                    !l.includes('XObject');
+            })
+            .join('\n')
+            .replace(/\s+/g, ' '); // Collapse into a more readable flow for the LLM
 
-        // Truncate text if it's extremely long to avoid token limit issues
-        if (resumeText.length > 25000) {
-            resumeText = resumeText.substring(0, 25000) + "... [Text Truncated]";
+        // Truncate to a safe but generous token limit
+        if (resumeText.length > 28000) {
+            resumeText = resumeText.substring(0, 28000) + "... [Truncated]";
         }
 
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -987,7 +1001,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             You are an expert recruiter for a tech company. 
             TODAY'S DATE: ${currentDate}
 
-            Perform a deep, intelligent analysis of the following candidate's resume content based on specific screening criteria.
+            Perform a deep, intelligent analysis of the following candidate's resume content.
             
             POSITION: ${candidate.position || 'Software Engineer'}
             RECRUITER'S CUSTOM CRITERIA: ${criteria}
@@ -998,11 +1012,12 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             - Graduation Year: ${candidate.graduation_year || "Not specified"}
             - Degree Field: ${candidate.degree_field || "Not specified"}
 
-            CRITICAL INSTRUCTIONS:
-            1. If a field above is "Not specified", YOU MUST FIND IT IN THE RESUME CONTENT.
-            2. For example, if Degree Field is "Not specified" in the list but the resume says "Bachelors in Computer Science", you MUST accept it as CS.
-            3. Do NOT reject a candidate simply because a self-reported field is "Not specified". The Resume is the primary source of truth.
-            4. If the resume content looks structured like a font descriptor or character map, ignore that technical noise and extract the professional text instead.
+            CRITICAL INTELLIGENCE TASK:
+            1. DATABASE OVERRIDES: If any field above is "Not specified", use the resume text below as the ULTIMATE source of truth.
+            2. NOISE HANDLING: The resume text below may contain technical PDF metadata (e.g., /Font, /Encoding). IGNORE ALL TECHNICAL NOISE. 
+            3. PATTERN MATCHING: Search for professional patterns even if the text is messy. Reconstruct the candidate's degree (e.g., "BS CS", "Bachelors IT") and graduation status.
+            4. BIAS CHECK: Do NOT reject based on a "Not specified" override if the information exists in the text fragments.
+            5. GRADUATION YEAR: If today is ${currentDate}, then a 2024 or 2025 graduate IS a fresh graduate.
 
             RESUME CONTENT:
             ${resumeText}
@@ -1010,15 +1025,13 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             Respond STRICTLY in JSON format:
             {
                 "score": number (0-100),
-                "reasoning": "One sentence summary focusing on the key match/mismatch",
+                "reasoning": "Direct and insightful reasoning about the candidate's core profile.",
                 "extracted_skills": ["skill1", "skill2", "..."],
-                "experience_summary": "3-4 sentence detailed summary of work history",
-                "matching_analysis": "Detailed breakdown. Mention if you found Degree or Year in the resume that was missing in self-reports.",
+                "experience_summary": "3-4 sentence summary of their work and academic projects.",
+                "matching_analysis": "Detailed match against PRIORITY 1, 2, and 3 criteria. Be explicit about fields you recovered from the text.",
                 "education_match": boolean,
                 "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
             }
-
-            NOTE: Be critical but fair. If today is ${currentDate}, a 2025 graduate IS a fresh graduate.
         `;
 
         let analysis;
