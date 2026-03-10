@@ -15,6 +15,8 @@ import {
 import { getCurrentUser } from "@/lib/auth-utils";
 import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
 import sharp from 'sharp';
+// @ts-ignore
+import pdf from 'pdf-parse';
 
 export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer';
 
@@ -928,103 +930,85 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             resumeText = text;
         } else if (isPdf) {
             try {
-                // Browser-like polyfills for pdfjs-dist
-                const polyfill = (name: string, cls: any) => {
-                    if (typeof (globalThis as any)[name] === 'undefined') {
-                        (globalThis as any)[name] = cls;
-                    }
-                };
+                console.log(`[AI Analysis] Starting PDF Extraction (ID: ${candidateId}, Buffer: ${buffer.length} bytes)`);
 
-                class MockMatrix {
-                    constructor() { }
-                    transformPoint(p: any) { return p; }
-                    multiply() { return this; }
-                    translate() { return this; }
-                    scale() { return this; }
-                    rotate() { return this; }
-                    inverse() { return this; }
+                // Stage 1: Standard pdf-parse
+                let text = "";
+                try {
+                    const pdfData = await pdf(buffer);
+                    text = pdfData.text || "";
+                    console.log(`[AI Analysis] Stage 1 (Standard): ${text.length} characters.`);
+                } catch (pdfErr: any) {
+                    console.warn("[AI Analysis] Stage 1 Error:", pdfErr.message);
                 }
-                polyfill('DOMMatrix', MockMatrix);
-                polyfill('DOMMatrixReadOnly', MockMatrix);
-                polyfill('SVGMatrix', MockMatrix);
 
-                const pdfModule: any = await import("pdf-parse");
-                const pdf = pdfModule.default || pdfModule;
-                const pdfData = await pdf(buffer);
-                let text = pdfData.text || "";
-
-                // SURGICAL RECOVERY: If standard parse yields technical junk, sweep for readable ASCII fragments
-                if (text.trim().length < 400 || text.includes('FontDescriptor')) {
+                // Stage 2: Robust String Sweep (fallback for corrupted layers)
+                if (text.trim().length < 100) {
                     const rawBufferString = buffer.toString('binary');
-                    // Look for sequences of 4+ characters that look like human words (letters, spaces, basic symbols)
-                    const humanWords = rawBufferString.match(/[a-zA-Z0-9\s\.\,\-\@\:]{4,}/g) || [];
-                    const recoveredText = humanWords
-                        .filter(s => s.trim().length > 6 && /[a-zA-Z]{2,}/.test(s))
+                    const tokens = rawBufferString.match(/[a-zA-Z0-9\s\.\,\-\@\:]{3,}/g) || [];
+                    const sweptText = tokens
+                        .filter(s => s.trim().length > 3 && /[a-zA-Z]{1,}/.test(s))
                         .join(' ')
                         .replace(/\s+/g, ' ');
 
-                    if (recoveredText.length > 50) {
-                        text += "\n\n--- RECOVERED DOCUMENT FRAGMENTS ---\n" + recoveredText;
+                    if (sweptText.length > 50) {
+                        text += "\n\n--- RECOVERY SWEEP ---\n" + sweptText;
+                        console.log(`[AI Analysis] Stage 2 (Sweep): ${sweptText.length} characters.`);
                     }
                 }
 
                 resumeText = text;
-            } catch (pdfErr: any) {
-                console.warn("pdf-parse failed:", pdfErr.message);
-            }
 
-            // VISION FALLBACK: If text extraction is still poor, try extracting images for Vision processing
-            let pdfImages: string[] = [];
-            if (resumeText.trim().length < 400) {
-                try {
-                    const pdfDoc = await PDFDocument.load(buffer);
-                    const pages = pdfDoc.getPages();
-                    for (let i = 0; i < Math.min(pages.length, 3); i++) {
-                        const page = pages[i];
-                        const { node } = page as any;
-                        const resources = node.Resources();
-                        if (!resources) continue;
-                        const xObjects = resources.get(PDFName.of('XObject'));
-                        if (!xObjects) continue;
-                        const xObjectDict = pdfDoc.context.lookup(xObjects) as PDFDict;
-                        for (const [name, ref] of xObjectDict.entries()) {
-                            const xObject = pdfDoc.context.lookup(ref);
-                            if (xObject instanceof PDFRawStream) {
-                                const subtype = xObject.dict.get(PDFName.of('Subtype'));
-                                if (subtype === PDFName.of('Image')) {
-                                    const filter = xObject.dict.get(PDFName.of('Filter'));
-                                    // Most scanned PDFs use DCTDecode (JPEG) or FlateDecode
-                                    let content = xObject.contents;
-                                    if (filter === PDFName.of('DCTDecode') || !filter) {
-                                        pdfImages.push(Buffer.from(content).toString('base64'));
-                                    } else {
-                                        // Try converting other formats with sharp if possible
-                                        try {
-                                            const imageBuffer = await sharp(content).toFormat('jpeg').toBuffer();
-                                            pdfImages.push(imageBuffer.toString('base64'));
-                                        } catch (e) {
-                                            console.warn("Could not convert embedded image object:", e);
-                                        }
+                // Stage 3: Vision Fallback (for image-based PDFs)
+                let pdfImages: string[] = [];
+                if (resumeText.trim().length < 400) {
+                    try {
+                        const pdfDoc = await PDFDocument.load(buffer);
+                        const pages = pdfDoc.getPages();
+                        for (let i = 0; i < Math.min(pages.length, 3); i++) {
+                            const page = (pages[i] as any);
+                            const resources = page.node.Resources();
+                            if (!resources) continue;
+                            const xObjects = resources.get(PDFName.of('XObject'));
+                            if (!xObjects) continue;
+                            const xObjectDict = pdfDoc.context.lookup(xObjects) as PDFDict;
+
+                            for (const [name, ref] of xObjectDict.entries()) {
+                                const xObject = pdfDoc.context.lookup(ref);
+                                if (xObject instanceof PDFRawStream) {
+                                    const subtype = xObject.dict.get(PDFName.of('Subtype'));
+                                    if (subtype === PDFName.of('Image')) {
+                                        const width = xObject.dict.get(PDFName.of('Width')) as any;
+                                        if (width && width.numberValue && width.numberValue < 100) continue; // skip icons
+
+                                        const imageBuffer = await sharp(xObject.contents).toFormat('jpeg').toBuffer();
+                                        pdfImages.push(imageBuffer.toString('base64'));
                                     }
                                 }
                             }
                         }
+                        console.log(`[AI Analysis] Stage 3 (Vision): Found ${pdfImages.length} images.`);
+                    } catch (vErr) {
+                        console.warn("[AI Analysis] Stage 3 Vision attempt failed:", vErr);
                     }
-                } catch (vErr) {
-                    console.error("Vision extraction failed:", vErr);
                 }
-            }
 
-            if (pdfImages.length > 0) {
-                (candidate as any)._vision_images = pdfImages;
-                if (resumeText.length < 50) resumeText = "[Image-based PDF: Processing via Vision]";
+                if (pdfImages.length > 0) {
+                    (candidate as any)._vision_images = pdfImages;
+                    if (resumeText.length < 100) resumeText = `[SCAN-DETECTION: Analyzing ${pdfImages.length} images via Vision API]`;
+                }
+            } catch (err: any) {
+                console.error("[AI Analysis] Fatal Extraction Block Error:", err.message);
             }
         } else {
             resumeText = buffer.toString('utf8');
         }
 
-        if (!resumeText || (resumeText.trim().length < 50 && !(candidate as any)._vision_images)) {
-            throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
+        const charCount = resumeText?.length || 0;
+        const imgCount = (candidate as any)._vision_images?.length || 0;
+
+        if (charCount < 50 && imgCount === 0) {
+            throw new Error(`AI Analysis failed: Empty resume detected. (Extracted: ${charCount} chars, ${imgCount} images). Please ensure the file is a valid PDF or Word document.`);
         }
 
         // TARGETED STRIPPING: Normalize and clean structural noise
