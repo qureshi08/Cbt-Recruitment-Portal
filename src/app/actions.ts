@@ -948,11 +948,9 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 polyfill('DOMMatrixReadOnly', MockMatrix);
                 polyfill('SVGMatrix', MockMatrix);
 
-                const { PDFParse } = await import("pdf-parse");
-                const parser = new PDFParse({ data: buffer });
-
-                // standard extraction
-                const pdfData = await parser.getText();
+                const pdfModule: any = await import("pdf-parse");
+                const pdf = pdfModule.default || pdfModule;
+                const pdfData = await pdf(buffer);
                 let text = pdfData.text || "";
 
                 // SURGICAL RECOVERY: If standard parse yields technical junk, sweep for readable ASCII fragments
@@ -964,11 +962,13 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                         .filter(s => s.trim().length > 6 && /[a-zA-Z]{2,}/.test(s))
                         .join(' ')
                         .replace(/\s+/g, ' ');
-                    text += "\n\n--- RECOVERED DOCUMENT FRAGMENTS ---\n" + recoveredText;
+
+                    if (recoveredText.length > 50) {
+                        text += "\n\n--- RECOVERED DOCUMENT FRAGMENTS ---\n" + recoveredText;
+                    }
                 }
 
                 resumeText = text;
-                await parser.destroy();
             } catch (pdfErr: any) {
                 console.warn("pdf-parse failed:", pdfErr.message);
             }
