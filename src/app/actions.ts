@@ -919,7 +919,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             resumeText = text;
         } else if (isPdf) {
             try {
-                // Ensure browser-like objects exist for pdfjs-dist
+                // Browser-like polyfills for pdfjs-dist
                 const polyfill = (name: string, cls: any) => {
                     if (typeof (globalThis as any)[name] === 'undefined') {
                         (globalThis as any)[name] = cls;
@@ -942,24 +942,21 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 const { PDFParse } = await import("pdf-parse");
                 const parser = new PDFParse({ data: buffer });
 
-                // Try high-fidelity extraction first
-                const pdfData = await parser.getText({
-                    lineThreshold: 8,
-                    cellThreshold: 8
-                });
+                // standard extraction
+                const pdfData = await parser.getText();
+                let text = pdfData.text || "";
 
-                let extractedText = pdfData.text || "";
+                // If text is messy/empty, perform a "Printable String" recovery from the raw buffer
+                if (text.trim().length < 200 || text.includes('/FontDescriptor') || text.includes('TrueType')) {
+                    // Filter for printable characters and basic whitespace only
+                    const printableOnly = buffer.toString('binary')
+                        .replace(/[^\x20-\x7E\r\n\t]/g, ' ')
+                        .replace(/\s+/g, ' ');
 
-                // If it looks like pure technical junk or is suspiciously small, append a raw bypass
-                const isLikelyBroken = (extractedText.includes('FontDescriptor') || extractedText.includes('CIDInit')) || extractedText.trim().length < 300;
-
-                if (isLikelyBroken) {
-                    // Raw string bypass: strip non-printable but keep the essence
-                    const rawData = buffer.toString('ascii').replace(/[^\x20-\x7E\r\n\t]/g, ' ');
-                    extractedText += "\n\n--- RAW DATA RECOVERY ---\n" + rawData;
+                    text = text + "\n" + printableOnly;
                 }
 
-                resumeText = extractedText;
+                resumeText = text;
                 await parser.destroy();
             } catch (pdfErr: any) {
                 console.warn("pdf-parse failed, falling back to raw buffer text:", pdfErr.message);
@@ -973,24 +970,23 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             throw new Error("Could not extract enough text from the resume. Please ensure it's a valid document.");
         }
 
-        // AGGRESSIVE CLEANING: Strip PDF internal syntax that confuses LLMs
+        // AGGRESSIVE STRIPPING: Remove all PDF internal structural noise
         resumeText = resumeText
-            .replace(/\/([a-zA-Z0-9]+)\s+([^\/]+)/g, '') // Remove /Key Value pairs
-            .replace(/<<[\s\S]*?>>/g, '')               // Remove << >> blocks
+            .replace(/\/([a-zA-Z0-9]+)\s+([^\/\s]+)/g, '') // Remove /Property /Value
+            .replace(/<<[\s\S]*?>>/g, '')                  // Remove Dict blocks
+            .replace(/[a-zA-Z0-9]{30,}/g, '')              // Remove long hex/encoded strings
             .split('\n')
             .filter(line => {
                 const l = line.trim();
-                return l.length > 2 &&
+                return l.length > 3 &&
                     !l.includes('FontDescriptor') &&
-                    !l.includes('CIDInit') &&
-                    !l.includes('/Type /Font') &&
-                    !l.startsWith('/Font') &&
-                    !l.includes('Encoding /') &&
+                    !l.includes('Encoding') &&
                     !l.includes('ProcSet') &&
-                    !l.includes('XObject');
+                    !l.includes('TrueType');
             })
-            .join('\n')
-            .replace(/\s+/g, ' '); // Collapse into a more readable flow for the LLM
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .substring(0, 25000);
 
         // Truncate to a safe but generous token limit
         if (resumeText.length > 28000) {
@@ -1000,42 +996,39 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const prompt = `
-            You are an expert recruiter for a tech company. 
-            TODAY'S DATE: ${currentDate}
+            You are a highly intelligent AI Recruiter. 
+            Analyze the following candidate's resume content according to the specific criteria provided.
 
-            Perform a deep, intelligent analysis of the following candidate's resume content.
-            
-            POSITION: ${candidate.position || 'Software Engineer'}
-            RECRUITER'S CUSTOM CRITERIA: ${criteria}
+            [ADMINISTRATOR'S ANALYSIS CRITERIA]
+            ${criteria}
 
-            CANDIDATE SELF-REPORTED DETAILS:
+            [CANDIDATE SELF-REPORTED DATA]
             - Location: ${candidate.location || "Not specified"}
             - Education Status: ${candidate.education_status || "Not specified"}
             - Graduation Year: ${candidate.graduation_year || "Not specified"}
             - Degree Field: ${candidate.degree_field || "Not specified"}
 
-            CRITICAL INTELLIGENCE TASK:
-            1. DATABASE OVERRIDES: If any field above is "Not specified", use the resume text below as the ULTIMATE source of truth.
-            2. NOISE REDUCTION: Ignore technical PDF metadata (e.g., "TrueType", "/Font", "Encoding"). Focus on human words.
-            3. FRESH GRADUATE DEFINITION: Since today is ${currentDate}, any 2024, 2025, or 2026 graduate IS a fresh graduate. 
-            4. DEGREE VALIDATION: "Information Technology" (IT), "Computer Science", and "Engineering" are ALL accepted technical degrees.
-            5. BIAS CHECK: Do NOT reject based on a "Not specified" override if the info exists in the resume. 
-
-            RESUME CONTENT:
+            [RESUME CONTENT]
             ${resumeText}
+
+            [TASK]
+            1. Extract the key professional and technical skills. Focus on actual candidate capabilities.
+            2. Summarize work experience and academic projects.
+            3. Perform a detailed "Matching Analysis" by subjectively checking the candidate against the priority filters and secondary criteria provided above. 
+            4. If any fields (like Degree or Year) are "Not specified" above, YOU MUST EXTRACT THEM FROM THE RESUME CONTENT. Do not penalize for "Not specified" if the info is present in the resume.
+            5. IGNORE any technical PDF metadata noise (e.g. "TrueType", "Font") still present in the text and focus on the professional credentials.
 
             Respond STRICTLY in JSON format:
             {
                 "score": number (0-100),
-                "reasoning": "Direct summary of why they match or fail.",
-                "extracted_skills": ["skill1", "skill2", "..."],
-                "experience_summary": "3-4 sentence summary of their work and academic projects.",
-                "matching_analysis": "Detailed match against PRIORITY 1, 2, and 3 criteria. Be explicit about fields you recovered from the text.",
+                "reasoning": "A direct summary focusing on the key match/mismatch based on the criteria.",
+                "extracted_skills": ["skill1", "skill2"],
+                "experience_summary": "3-4 sentence summary of professional/academic projects.",
+                "matching_analysis": "Step-by-step breakdown using the Priority 1, 2, 3 and Secondary criteria sections exactly as provided in the instructions above.",
                 "education_match": boolean,
                 "verdict": "Highly Recommended" | "Recommended" | "Potential" | "Not Recommended"
             }
         `;
-
         let analysis;
 
         if (isOpenRouter) {
@@ -1058,7 +1051,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(`OpenRouter Error: ${errData.error?.message || response.statusText}`);
+                throw new Error(`OpenRouter Error: ${errData.error?.message || response.statusText} `);
             }
 
             const data = await response.json();
