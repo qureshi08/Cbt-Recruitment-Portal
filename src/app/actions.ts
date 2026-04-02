@@ -768,6 +768,21 @@ export async function markNotificationsAsRead() {
     }
 }
 
+export async function markSingleNotificationAsRead(id: string) {
+    try {
+        const { error } = await supabase
+            .from("notifications")
+            .update({ is_read: true })
+            .eq("id", id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+
 // Force-refresh build comment: v3.1
 export async function uploadAssessmentScore(formData: FormData) {
     try {
