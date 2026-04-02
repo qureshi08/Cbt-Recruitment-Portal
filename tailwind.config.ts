@@ -9,32 +9,43 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Segoe UI"', '-apple-system', 'BlinkMacSystemFont', 'Roboto', '"Helvetica Neue"', 'sans-serif'],
+        heading: ['"Playfair Display"', 'serif'],
+        sans: ['"DM Sans"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
         primary: {
-          DEFAULT: "#009245",
+          DEFAULT: "#00994D", // Botanical Green
           foreground: "#ffffff",
-          50: "#e6f9ed",
-          100: "#ccefd7",
-          200: "#99dfb0",
-          300: "#66cf88",
-          400: "#33bf61",
-          500: "#009245",
-          600: "#007a3a",
-          700: "#00612e",
-          800: "#004922",
-          900: "#003117",
+          soft: "rgba(0, 153, 77, 0.05)",
+          muted: "rgba(0, 153, 77, 0.12)",
         },
-        surface: "#FFFFFF",
-        border: "#E0E0E0",
+        heading: "#0C1A10", // Ink
+        surface: "#F7F8F7", // Bone
+        border: "#E2E8E4", // Muted Grey
         text: {
-          DEFAULT: "#333333",
-          light: "#666666",
+          DEFAULT: "#374151", // Graphite
+          muted: "#6B7280",  // Steel
         }
       },
+      spacing: {
+        '1': '4px',
+        '2': '8px',
+        '3': '12px',
+        '4': '16px',
+        '5': '20px',
+        '6': '24px',
+        '8': '32px',
+        '10': '40px',
+        '12': '48px',
+        '16': '64px',
+        '20': '80px',
+        '24': '96px',
+      },
       borderRadius: {
-        DEFAULT: "4px",
+        'sm': '4px',
+        'md': '6px',
+        'lg': '12px',
       },
     },
   },
