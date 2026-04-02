@@ -91,7 +91,15 @@ export default function ApplicationForm() {
                 </div>
                 <div className="space-y-1">
                     <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Email Address</label>
-                    <input type="email" name="email" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="john@example.com" />
+                    <input
+                        type="email"
+                        name="email"
+                        required
+                        className="input-field !py-2 !px-3 !text-[13px]"
+                        placeholder="john@example.com"
+                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid email address')}
+                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
+                    />
                 </div>
             </div>
 

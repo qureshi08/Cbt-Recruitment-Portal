@@ -19,7 +19,7 @@ export default async function AdminDashboard() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Recruitment Dashboard</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Recruiter Dashboard</h1>
                     <p className="text-sm text-gray-500 font-medium">Monitoring candidate flow and pipeline health</p>
                 </div>
                 <div className="flex gap-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -10,6 +10,7 @@ export default function NotificationBell() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
+    const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Fetch real notifications and listen for new applicants
     useEffect(() => {
@@ -28,7 +29,6 @@ export default function NotificationBell() {
 
         fetchNotifications();
 
-        // Subscribe to new candidate real-time inserts for a real notification feel
         const subscription = supabase
             .channel('any')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'candidates' }, (payload: any) => {
@@ -46,6 +46,7 @@ export default function NotificationBell() {
 
         return () => {
             supabase.removeChannel(subscription);
+            if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
         };
     }, []);
 
@@ -57,11 +58,28 @@ export default function NotificationBell() {
         }
     };
 
+    const handleMouseEnter = () => {
+        if (unreadCount > 0) {
+            hoverTimerRef.current = setTimeout(() => {
+                markAllAsRead();
+            }, 3000);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (hoverTimerRef.current) {
+            clearTimeout(hoverTimerRef.current);
+        }
+    };
+
     return (
         <div className="relative">
             <div
                 onClick={() => setIsOpen(!isOpen)}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
                 className="relative cursor-pointer group p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Hover for 3s to mark all as read"
             >
                 <Bell className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
                 {unreadCount > 0 && (
@@ -107,16 +125,6 @@ export default function NotificationBell() {
                                 </div>
                             )}
                         </div>
-                        {unreadCount > 0 && (
-                            <div className="p-3 text-center bg-gray-50 border-t border-border">
-                                <button
-                                    onClick={markAllAsRead}
-                                    className="text-xs text-primary font-bold hover:underline"
-                                >
-                                    Mark all as read
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </>
             )}
