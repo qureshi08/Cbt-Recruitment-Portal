@@ -87,7 +87,7 @@ export default function ApplicationForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 <div className="space-y-1">
                     <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Full Name</label>
-                    <input type="text" name="name" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="John Doe" />
+                    <input type="text" name="name" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="John Doe" onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter your full name')} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                 </div>
                 <div className="space-y-1">
                     <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Email Address</label>
@@ -97,7 +97,7 @@ export default function ApplicationForm() {
                         required
                         className="input-field !py-2 !px-3 !text-[13px]"
                         placeholder="john@example.com"
-                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid email address')}
+                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid email address to continue')}
                         onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                 </div>
@@ -106,7 +106,7 @@ export default function ApplicationForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 <div className="space-y-1">
                     <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Phone Number</label>
-                    <input type="tel" name="phone" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="+923001234567" pattern="^((\+92)?(0092)?(0)?)(3[0-9]{2})[0-9]{7}$" onChange={handlePhoneChange} minLength={11} maxLength={15} />
+                    <input type="tel" name="phone" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="+923001234567" pattern="^((\+92)?(0092)?(0)?)(3[0-9]{2})[0-9]{7}$" onChange={handlePhoneChange} minLength={11} maxLength={15} onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid Pakistani phone number')} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                 </div>
                 <div className="space-y-1">
                     <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">City/Area</label>
@@ -114,7 +114,7 @@ export default function ApplicationForm() {
                 </div>
                 <div className="space-y-1">
                     <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">CNIC Number</label>
-                    <input type="text" name="cnic" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="XXXXX-XXXXXXX-X" pattern="^\d{5}-\d{7}-\d{1}$" onChange={handleCnicChange} maxLength={15} />
+                    <input type="text" name="cnic" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="XXXXX-XXXXXXX-X" pattern="^\d{5}-\d{7}-\d{1}$" onChange={handleCnicChange} maxLength={15} onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid CNIC in the format XXXXX-XXXXXXX-X')} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                 </div>
             </div>
 
