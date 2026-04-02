@@ -84,11 +84,7 @@ export default function ApplicationForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto card !p-5 md:!p-6">
-            <div className="space-y-1">
-                <h1 className="text-2xl font-bold text-gray-800">Apply for a Position</h1>
-                <p className="text-sm text-gray-500">Please fill out the form below to join CBT.</p>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto card !p-5 md:!p-6 border border-gray-100 shadow-xl shadow-primary/5">
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
