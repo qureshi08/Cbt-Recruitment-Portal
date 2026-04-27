@@ -13,7 +13,7 @@ export default function Logo({ className, withText = true }: LogoProps) {
     return (
         <Link href="/" className={cn("flex items-center gap-3", className)}>
             <div className="flex items-center gap-2">
-                {/* CBT Logo */}
+                {/* CBT Logo (Wide) */}
                 <div className="relative h-6 w-24">
                     <Image
                         src="/logo.png"
@@ -24,8 +24,8 @@ export default function Logo({ className, withText = true }: LogoProps) {
                     />
                 </div>
 
-                {/* Vertical Separator */}
-                <div className="h-5 w-[1px] bg-border/60" />
+                {/* Vertical Separator 1 */}
+                <div className="h-5 w-[1px] bg-border/60 mx-1" />
 
                 {/* CGAP Logo */}
                 <div className="relative h-6 w-20">
@@ -40,16 +40,17 @@ export default function Logo({ className, withText = true }: LogoProps) {
             </div>
 
             {withText && (
-                <div className="h-4 w-[1px] bg-border/40 hidden xl:block" />
+                <div className="h-4 w-[1px] bg-border/40 hidden md:block" />
             )}
 
             {withText && (
-                <span className="text-[13px] font-bold text-heading tracking-tight hidden xl:block uppercase">
-                    Portal
+                <span className="text-[12px] font-black text-heading tracking-widest hidden md:block uppercase">
+                    Recruitment Portal
                 </span>
             )}
         </Link>
     );
 }
+
 
 
