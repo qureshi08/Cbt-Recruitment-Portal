@@ -8,8 +8,8 @@ export default function Home() {
     return (
         <div className="min-h-screen bg-white selection:bg-primary/5">
             {/* Ultra-Minimal Header */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface">
-                <div className="max-w-7xl mx-auto px-6 md:px-12 py-3 flex items-center justify-between">
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface px-6 md:px-12">
+                <div className="max-w-7xl mx-auto py-3">
                     <Logo withText={false} />
                 </div>
             </header>

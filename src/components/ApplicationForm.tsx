@@ -83,7 +83,7 @@ export default function ApplicationForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-3.5 max-w-2xl mx-auto card !p-5 md:!p-6 border border-border shadow-lg shadow-primary/5">
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 <div className="space-y-1">
                     <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Full Name</label>
