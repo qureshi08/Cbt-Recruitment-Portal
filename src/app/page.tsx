@@ -31,7 +31,7 @@ export default function Home() {
                                     </div>
                                 </h1>
                                 <p className="text-lg text-text-muted max-w-xl leading-relaxed">
-                                    Nine months of structured learning, senior mentorship, and real stakes. Start your recruitment journey today by filling out the form below.
+                                    Nine months of structured learning, senior mentorship, and real stakes. Start your career journey today by filling out the form below.
                                 </p>
                             </div>
 
