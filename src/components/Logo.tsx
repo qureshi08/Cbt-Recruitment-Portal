@@ -11,9 +11,9 @@ interface LogoProps {
 
 export default function Logo({ className, withText = true }: LogoProps) {
     return (
-        <Link href="/" className={cn("flex items-center gap-2.5 group", className)}>
+        <Link href="/" className={cn("flex items-center group", className)}>
             <div className="flex items-center">
-                {/* CBT Full Logo - Bigger & Cohesive */}
+                {/* CBT Full Logo */}
                 <div className="relative h-8 w-34 transition-transform duration-300 group-hover:scale-[1.01]">
                     <Image
                         src="/logo.png"
@@ -26,11 +26,11 @@ export default function Logo({ className, withText = true }: LogoProps) {
             </div>
 
             {withText && (
-                <div className="flex flex-col min-w-0 -ml-0.5">
+                <div className="flex flex-col min-w-0 -ml-2">
                     <span className="text-[11px] font-black text-heading tracking-tight uppercase leading-[1.1] truncate">
                         Recruitment
                     </span>
-                    <span className="text-[10px] font-bold text-primary/80 tracking-[0.1em] uppercase leading-none truncate">
+                    <span className="text-[10px] font-bold text-primary tracking-[0.1em] uppercase leading-none truncate mt-0.5">
                         Portal
                     </span>
                 </div>
@@ -38,6 +38,7 @@ export default function Logo({ className, withText = true }: LogoProps) {
         </Link>
     );
 }
+
 
 
 
