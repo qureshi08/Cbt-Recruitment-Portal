@@ -9,7 +9,7 @@ export default function Home() {
         <div className="min-h-screen bg-white">
             {/* Ultra-Minimal Header */}
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface px-6 md:px-12 py-3 flex items-center justify-between">
-                <Logo withText={false} />
+                <Logo />
             </header>
 
             <main className="pt-12 md:pt-20 pb-32 px-4 md:px-12">
