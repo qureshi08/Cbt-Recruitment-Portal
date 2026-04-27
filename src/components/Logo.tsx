@@ -11,10 +11,10 @@ interface LogoProps {
 
 export default function Logo({ className, withText = true }: LogoProps) {
     return (
-        <Link href="/" className={cn("flex items-center gap-3 group", className)}>
+        <Link href="/" className={cn("flex items-center group", className)}>
             <div className="flex items-center">
-                {/* CBT Full Logo */}
-                <div className="relative h-10 w-44 transition-transform duration-300 group-hover:scale-[1.01]">
+                {/* CBT Full Logo - Scaled for sidebar fit */}
+                <div className="relative h-7 w-32 transition-transform duration-300 group-hover:scale-[1.01]">
                     <Image
                         src="/logo.png"
                         alt="CBT Logo"
@@ -26,13 +26,13 @@ export default function Logo({ className, withText = true }: LogoProps) {
             </div>
 
             {withText && (
-                <div className="flex items-center gap-3">
-                    <div className="w-[1px] h-6 bg-border group-hover:bg-primary/20 transition-colors" />
+                <div className="flex items-center gap-2 -ml-1">
+                    <div className="w-[1px] h-5 bg-border group-hover:bg-primary/20 transition-colors" />
                     <div className="flex flex-col min-w-0">
-                        <span className="text-[12px] font-black text-heading tracking-tight uppercase leading-tight italic">
+                        <span className="text-[10px] font-black text-heading tracking-tight uppercase leading-tight italic">
                             Recruitment
                         </span>
-                        <span className="text-[11px] font-bold text-primary tracking-[0.05em] uppercase leading-none mt-0.5">
+                        <span className="text-[9px] font-bold text-primary tracking-[0.05em] uppercase leading-none mt-0.5">
                             Portal
                         </span>
                     </div>

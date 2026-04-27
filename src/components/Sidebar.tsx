@@ -62,7 +62,7 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                     isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 )}
             >
-                <div className="p-4 px-6 border-b border-border/40 flex items-center bg-white/50">
+                <div className="p-4 px-4 border-b border-border/40 flex items-center bg-white/50">
                     <Logo withText={true} className="scale-90 origin-left" />
                     <button onClick={() => setIsOpen(false)} className="md:hidden ml-auto p-1 rounded-md hover:bg-gray-100">
                         <X className="w-5 h-5 text-gray-500" />
