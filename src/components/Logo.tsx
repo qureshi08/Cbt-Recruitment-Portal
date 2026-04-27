@@ -11,10 +11,10 @@ interface LogoProps {
 
 export default function Logo({ className, withText = true }: LogoProps) {
     return (
-        <Link href="/" className={cn("flex items-center gap-2 group", className)}>
+        <Link href="/" className={cn("flex items-center gap-1.5 group", className)}>
             <div className="flex items-center">
-                {/* CBT Full Logo - Enlarged */}
-                <div className="relative h-9 w-36 pb-0.5">
+                {/* CBT Full Logo - Optimized for Sidebar */}
+                <div className="relative h-7 w-28 pb-0.5">
                     <Image
                         src="/logo.png"
                         alt="CBT Logo"
@@ -26,15 +26,15 @@ export default function Logo({ className, withText = true }: LogoProps) {
             </div>
 
             {withText && (
-                <div className="h-7 w-[1.5px] bg-border/40 hidden md:block mx-1" />
+                <div className="h-6 w-[1px] bg-border/40 hidden md:block mx-1" />
             )}
 
             {withText && (
-                <div className="hidden md:flex flex-col min-w-0">
-                    <span className="text-[12px] font-black text-heading tracking-[0.02em] uppercase leading-none truncate">
+                <div className="hidden md:flex flex-col min-w-0 pr-1">
+                    <span className="text-[11px] font-black text-heading tracking-tight uppercase leading-none truncate">
                         Recruitment
                     </span>
-                    <span className="text-[10px] font-medium text-text-muted tracking-[0.15em] uppercase mt-0.5 truncate">
+                    <span className="text-[10px] font-medium text-text-muted tracking-[0.1em] uppercase mt-0.5 truncate">
                         Portal
                     </span>
                 </div>
@@ -42,6 +42,7 @@ export default function Logo({ className, withText = true }: LogoProps) {
         </Link>
     );
 }
+
 
 
 
