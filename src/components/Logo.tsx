@@ -11,46 +11,38 @@ interface LogoProps {
 
 export default function Logo({ className, withText = true }: LogoProps) {
     return (
-        <Link href="/" className={cn("flex items-center gap-3", className)}>
-            <div className="flex items-center gap-2">
-                {/* CBT Logo (Wide) */}
-                <div className="relative h-6 w-24">
+        <Link href="/" className={cn("flex items-center gap-3 group", className)}>
+            <div className="flex items-center gap-4">
+                {/* CBT Full Logo */}
+                <div className="relative h-7 w-32 pb-0.5">
                     <Image
                         src="/logo.png"
                         alt="CBT Logo"
                         fill
-                        className="object-contain object-left"
-                        priority
-                    />
-                </div>
-
-                {/* Vertical Separator 1 */}
-                <div className="h-5 w-[1px] bg-border/60 mx-1" />
-
-                {/* CGAP Logo */}
-                <div className="relative h-6 w-20">
-                    <Image
-                        src="/cgap-logo.png"
-                        alt="CGAP Logo"
-                        fill
-                        className="object-contain object-left"
+                        className="object-contain object-left transition-transform duration-300 group-hover:scale-[1.02]"
                         priority
                     />
                 </div>
             </div>
 
             {withText && (
-                <div className="h-4 w-[1px] bg-border/40 hidden md:block" />
+                <div className="h-6 w-[1.5px] bg-border/40 hidden md:block mx-1" />
             )}
 
             {withText && (
-                <span className="text-[12px] font-black text-heading tracking-widest hidden md:block uppercase">
-                    Recruitment Portal
-                </span>
+                <div className="hidden md:flex flex-col">
+                    <span className="text-[13px] font-black text-heading tracking-[0.05em] uppercase leading-none">
+                        Recruitment
+                    </span>
+                    <span className="text-[11px] font-medium text-text-muted tracking-[0.2em] uppercase mt-0.5">
+                        Portal
+                    </span>
+                </div>
             )}
         </Link>
     );
 }
+
 
 
 
