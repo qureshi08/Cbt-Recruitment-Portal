@@ -6,13 +6,15 @@ import { CheckCircle2, Star, Briefcase, GraduationCap, Calendar } from "lucide-r
 
 export default function Home() {
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white selection:bg-primary/5">
             {/* Ultra-Minimal Header */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface px-6 md:px-12 py-3 flex items-center justify-between">
-                <Logo />
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface">
+                <div className="max-w-7xl mx-auto px-6 md:px-12 py-3 flex items-center justify-between">
+                    <Logo withText={false} />
+                </div>
             </header>
 
-            <main className="pt-12 md:pt-20 pb-32 px-4 md:px-12">
+            <main className="pt-12 md:pt-20 pb-24 px-6 md:px-12">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid lg:grid-cols-12 gap-16 xl:gap-24 items-start">
 
@@ -91,8 +93,8 @@ export default function Home() {
             </main>
 
             {/* Footer */}
-            <footer className="py-12 border-t border-border bg-surface">
-                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
+            <footer className="py-12 border-t border-border bg-surface mt-20">
+                <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
                     <div className="space-y-2">
                         <Logo withText={false} className="scale-90 origin-center md:origin-left" />
                         <p className="text-[11px] text-text-muted italic max-w-xs">

@@ -26,23 +26,18 @@ export default function Logo({ className, withText = true }: LogoProps) {
             </div>
 
             {withText && (
-                <div className="flex flex-col min-w-0 -ml-1 border-l border-border pl-3 group-hover:border-primary transition-colors">
-                    <span className="text-[12px] font-black text-heading tracking-tight uppercase leading-tight italic">
-                        Recruitment
-                    </span>
-                    <span className="text-[11px] font-bold text-primary tracking-[0.05em] uppercase leading-none mt-0.5">
-                        Portal
-                    </span>
+                <div className="flex items-center gap-3">
+                    <div className="w-[1px] h-6 bg-border group-hover:bg-primary/20 transition-colors" />
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-[12px] font-black text-heading tracking-tight uppercase leading-tight italic">
+                            Recruitment
+                        </span>
+                        <span className="text-[11px] font-bold text-primary tracking-[0.05em] uppercase leading-none mt-0.5">
+                            Portal
+                        </span>
+                    </div>
                 </div>
             )}
         </Link>
     );
 }
-
-
-
-
-
-
-
-

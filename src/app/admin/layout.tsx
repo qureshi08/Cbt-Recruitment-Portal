@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
@@ -29,8 +30,10 @@ export default async function AdminLayout({
         <div className="flex min-h-screen bg-[#FAFBFC]">
             <Sidebar userRoles={roles} />
             <div className="flex-1 ml-0 md:ml-60 flex flex-col min-w-0">
-                <header className="h-16 glass sticky top-0 z-20 flex items-center justify-end md:justify-between px-4 md:px-10 shadow-[0_1px_0_0_rgba(0,0,0,0.02)]">
-                    <div className="hidden md:block"></div>
+                <header className="h-16 glass sticky top-0 z-20 flex items-center justify-between px-4 md:px-10 shadow-[0_1px_0_0_rgba(0,0,0,0.02)]">
+                    <div className="hidden md:block">
+                        <Logo className="scale-90 origin-left" />
+                    </div>
 
                     <div className="flex items-center gap-6">
                         <NotificationBell />
