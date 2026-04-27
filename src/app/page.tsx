@@ -101,7 +101,6 @@ export default function Home() {
                     </div>
                     <div className="flex items-center gap-8 text-[11px] font-bold text-text-muted tracking-widest uppercase italic">
                         <Link href="https://www.convergentbt.com/contact" className="hover:text-primary transition-colors">Contact</Link>
-                        <Link href="/" className="hover:text-primary transition-colors">Privacy Policy</Link>
                     </div>
                 </div>
             </footer>
