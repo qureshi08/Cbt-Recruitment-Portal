@@ -1,6 +1,7 @@
 import ApplicationForm from "@/components/ApplicationForm";
 import Logo from "@/components/Logo";
 import Image from "next/image";
+import Link from "next/link";
 import { CheckCircle2, Star, Briefcase, GraduationCap, Calendar } from "lucide-react";
 
 export default function Home() {
