@@ -10,9 +10,6 @@ export default function Home() {
             {/* Ultra-Minimal Header */}
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface px-6 md:px-12 py-3 flex items-center justify-between">
                 <Logo withText={false} />
-                <div className="flex items-center gap-2 px-3 py-1 bg-primary/5 rounded-full text-primary text-[10px] font-black uppercase tracking-wider italic animate-pulse">
-                    Batch 29 · applications open
-                </div>
             </header>
 
             <main className="pt-12 md:pt-20 pb-32 px-4 md:px-12">
@@ -45,22 +42,6 @@ export default function Home() {
 
                         {/* RIGHT: Basic Program Info */}
                         <div className="lg:col-span-5 lg:sticky lg:top-28 space-y-10">
-                            <div className="relative aspect-[4/1] lg:aspect-[16/9] w-full rounded-2xl overflow-hidden border border-border/50 group">
-                                <Image
-                                    src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000&auto=format&fit=crop"
-                                    alt="CGAP Program"
-                                    fill
-                                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                                    priority
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-heading/80 to-transparent flex items-end p-8">
-                                    <h2 className="text-2xl font-black text-white italic tracking-tight">
-                                        Graduates today. <br />
-                                        <span className="text-primary italic">Consultants, shipping.</span>
-                                    </h2>
-                                </div>
-                            </div>
-
                             <div className="grid grid-cols-2 gap-4">
                                 {[
                                     { label: "DURATION", val: "9 months", icon: Calendar },

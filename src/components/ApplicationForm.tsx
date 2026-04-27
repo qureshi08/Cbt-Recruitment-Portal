@@ -154,15 +154,6 @@ export default function ApplicationForm() {
                 <input type="hidden" name="position" value="CGAP" />
             </div>
 
-            <div className="space-y-1">
-                <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Cover Letter</label>
-                <textarea
-                    name="coverLetter"
-                    required
-                    className="input-field !py-2 !px-3 !text-[13px] min-h-[80px] resize-none"
-                    placeholder="Why us? (Briefly)"
-                />
-            </div>
 
             <div className="space-y-1">
                 <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Resume</label>
