@@ -58,11 +58,27 @@ Building this project with **Antigravity** transformed the development lifecycle
 3.  **Proactive Deployment**: Antigravity didn't just write code; it managed the Git repository, handled commits, and monitored Vercel deployments in real-time.
 
 ## 🎯 Final Outcome
-The **CBT Recruitment Portal** is now a production-ready system capable of:
-- Accepting and storing candidate applications.
-- Managing secure admin login with granular permissions.
-- Scheduling and tracking technical assessments.
-- providing a clean, consistent, and responsive user interface.
+The **CBT Recruitment Portal** is now a high-fidelity, production-ready system capable of:
+- Accepting and storing candidate applications with unique identity verification.
+- **AI-Driven Screening**: Automated resume analysis using Google Gemini Pro for instant scoring and feedback.
+- Managing secure admin login with granular RBAC permissions.
+- Scheduling and tracking technical assessments via self-service booking.
+- **Anti-Fraud Protections**: Enforcing re-application cooling periods based on CNIC verification.
 
-**Status**: 🟢 deployed & Operational
-**Version**: 1.0.0
+**Status**: 🟢 Deployed & Operational
+**Version**: 1.1.0
+
+---
+
+### Phase 6: AI Intelligence (Gemini Integration)
+To handle the high volume of applicants, we integrated a state-of-the-art AI screening layer.
+- **Deep Analysis**: Using Gemini 2.0 Flash to extract skills, education, and experience from resumes (including image-based PDFs via Vision API).
+- **Custom Criteria**: Admins can define dynamic AI screening criteria directly from the dashboard.
+- **Verdict Automation**: The system now provides an instant "Highly Recommended" to "Not Recommended" verdict with detailed reasoning.
+
+### Phase 7: Anti-Fraud & Reliability
+We implemented enterprise-grade consistency checks.
+- **CNIC Enforcement**: Users are restricted from reapplying for 3-6 months based on their previous application status, verified by a normalized CNIC lookup.
+- **Audit Logging**: Every action (status changes, score uploads, user management) is now logged to a central audit trail for transparency.
+
+
