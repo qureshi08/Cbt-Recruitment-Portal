@@ -32,12 +32,12 @@ export default function Home() {
                                         />
                                     </div>
                                 </h1>
-                                <p className="text-lg text-text-muted max-w-xl leading-relaxed">
+                                <p className="text-lg text-muted max-w-xl leading-relaxed">
                                     Nine months of structured learning, senior mentorship, and real stakes. Start your career journey today by filling out the form below.
                                 </p>
                             </div>
 
-                            <div className="relative bg-white p-6 md:p-10 rounded-[32px] border border-border shadow-2xl shadow-primary/5">
+                            <div className="relative bg-white p-6 md:p-10 rounded-[40px] border border-border/60 shadow-elevated">
                                 <ApplicationForm />
                             </div>
                         </div>
@@ -51,28 +51,31 @@ export default function Home() {
                                     { label: "PHASES", val: "4 Core", icon: GraduationCap },
                                     { label: "ENGAGEMENT", val: "Real Stakes", icon: Briefcase },
                                 ].map((item, i) => (
-                                    <div key={i} className="p-6 bg-surface rounded-2xl border border-border/40 hover:border-primary/20 transition-all group">
-                                        <h3 className="text-xl font-bold text-heading group-hover:text-primary transition-colors">
+                                    <div key={i} className="p-6 bg-white rounded-[2rem] border border-border/40 hover:border-primary/20 transition-all group shadow-sm hover:shadow-premium">
+                                        <h3 className="text-2xl font-bold text-heading group-hover:text-primary transition-colors italic">
                                             {item.val}
                                         </h3>
-                                        <p className="text-[10px] font-black text-text-muted tracking-widest uppercase mt-1">
+                                        <p className="text-[10px] font-black text-muted tracking-[0.2em] uppercase mt-2">
                                             {item.label}
                                         </p>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="p-8 bg-heading rounded-[24px] text-white space-y-6">
-                                <h3 className="text-lg font-extrabold italic border-b border-white/10 pb-4">Ideal Candidate</h3>
-                                <ul className="space-y-4">
+                            <div className="p-10 bg-heading rounded-[2.5rem] text-white space-y-8 relative overflow-hidden shadow-elevated">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                <h3 className="text-2xl font-bold italic border-b border-white/10 pb-6">Ideal Candidate</h3>
+                                <ul className="space-y-5">
                                     {[
                                         "Fresh graduates or up to 2yr experience",
                                         "Bachelor's in CS, Stats, or Engineering",
                                         "Strong analytical & problem-solving skills",
                                         "Commitment to full 9-month program"
                                     ].map((item, i) => (
-                                        <li key={i} className="flex items-start gap-3">
-                                            <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                        <li key={i} className="flex items-start gap-4">
+                                            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                                <CheckCircle2 className="w-3 h-3 text-primary" />
+                                            </div>
                                             <span className="text-sm font-medium text-white/80 leading-snug">{item}</span>
                                         </li>
                                     ))}
@@ -80,10 +83,10 @@ export default function Home() {
                             </div>
 
                             <div className="text-center md:text-left pt-4">
-                                <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase italic">Trusted by Industry Leaders</p>
-                                <div className="flex flex-wrap items-center gap-4 mt-6 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-default">
+                                <p className="text-[10px] text-muted font-bold tracking-[0.3em] uppercase italic">Trusted by Industry Leaders</p>
+                                <div className="flex flex-wrap items-center gap-6 mt-8 opacity-20 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-default">
                                     {["Microsoft", "Coca-Cola", "PepsiCo", "UNICEF", "Spark"].map(id => (
-                                        <span key={id} className="text-xs font-black italic tracking-tighter">{id}</span>
+                                        <span key={id} className="text-sm font-black italic tracking-tighter">{id}</span>
                                     ))}
                                 </div>
                             </div>
@@ -93,16 +96,16 @@ export default function Home() {
             </main>
 
             {/* Footer */}
-            <footer className="py-12 border-t border-border bg-surface mt-20">
-                <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
-                    <div className="space-y-2">
-                        <Logo withText={false} className="scale-90 origin-center md:origin-left" />
-                        <p className="text-[11px] text-text-muted italic max-w-xs">
-                            © 2026 Convergent Business Technologies. Data, Cloud & AI consultancy.
+            <footer className="py-20 border-t border-border bg-surface-alt">
+                <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
+                    <div className="space-y-4">
+                        <Logo withText={true} className="scale-110 origin-center md:origin-left" />
+                        <p className="text-[11px] text-muted italic max-w-xs leading-relaxed">
+                            © 2026 Convergent Business Technologies. Empowering the next generation of Cloud & AI specialists.
                         </p>
                     </div>
-                    <div className="flex items-center gap-8 text-[11px] font-bold text-text-muted tracking-widest uppercase italic">
-                        <Link href="https://www.convergentbt.com/contact" className="hover:text-primary transition-colors">Contact</Link>
+                    <div className="flex items-center gap-10 text-[10px] font-black text-muted tracking-[0.3em] uppercase italic">
+                        <Link href="https://www.convergentbt.com/contact" className="hover:text-primary transition-all">Contact Us</Link>
                     </div>
                 </div>
             </footer>

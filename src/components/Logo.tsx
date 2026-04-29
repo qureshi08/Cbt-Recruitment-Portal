@@ -27,12 +27,12 @@ export default function Logo({ className, withText = true }: LogoProps) {
 
             {withText && (
                 <div className="flex items-center gap-4">
-                    <div className="w-[1px] h-6 bg-border group-hover:bg-primary/20 transition-colors" />
+                    <div className="w-[1px] h-6 bg-border group-hover:bg-primary transition-colors" />
                     <div className="flex flex-col min-w-0">
-                        <span className="text-[11px] font-black text-heading tracking-tight uppercase leading-tight italic">
+                        <span className="text-[12px] font-bold text-heading tracking-tight uppercase leading-tight italic font-heading">
                             Recruitment
                         </span>
-                        <span className="text-[10px] font-bold text-primary tracking-[0.05em] uppercase leading-none mt-0.5">
+                        <span className="text-[10px] font-black text-primary tracking-[0.2em] uppercase leading-none mt-1">
                             Portal
                         </span>
                     </div>

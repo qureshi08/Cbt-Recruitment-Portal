@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Send, CheckCircle2, AlertCircle, FileCheck } from "lucide-react";
+import { Upload, Send, CheckCircle2, AlertCircle, FileCheck, Loader2 } from "lucide-react";
 import { submitApplication } from "@/app/actions";
+import { cn } from "@/lib/utils";
 
 export default function ApplicationForm() {
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -12,21 +13,13 @@ export default function ApplicationForm() {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setFileName(file.name);
-        } else {
-            setFileName(null);
-        }
+        setFileName(file ? file.name : null);
     };
 
     const handleCnicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 5) {
-            value = value.substring(0, 5) + '-' + value.substring(5);
-        }
-        if (value.length > 13) {
-            value = value.substring(0, 13) + '-' + value.substring(13, 14);
-        }
+        if (value.length > 5) value = value.substring(0, 5) + '-' + value.substring(5);
+        if (value.length > 13) value = value.substring(0, 13) + '-' + value.substring(13, 14);
         e.target.value = value;
     };
 
@@ -34,9 +27,7 @@ export default function ApplicationForm() {
         let value = e.target.value;
         const hasPlus = value.startsWith('+');
         value = value.replace(/\D/g, '');
-        if (hasPlus) {
-            value = '+' + value;
-        }
+        if (hasPlus) value = '+' + value;
         e.target.value = value;
     };
 
@@ -48,12 +39,8 @@ export default function ApplicationForm() {
         try {
             const formData = new FormData(e.currentTarget);
             const result = await submitApplication(formData);
-
-            if (result.success) {
-                setIsSubmitted(true);
-            } else {
-                setError(result.error || "An error occurred");
-            }
+            if (result.success) setIsSubmitted(true);
+            else setError(result.error || "An error occurred");
         } catch (error: any) {
             setError(error.message || "A network error occurred.");
         } finally {
@@ -63,129 +50,123 @@ export default function ApplicationForm() {
 
     if (isSubmitted) {
         return (
-            <div className="text-center py-6 animate-in fade-in zoom-in duration-500">
-                <div className="flex justify-center mb-2">
+            <div className="text-center py-12 animate-in fade-in zoom-in duration-700">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CheckCircle2 className="w-10 h-10 text-primary" />
                 </div>
-                <h2 className="text-lg font-bold text-heading mb-1">Success!</h2>
-                <p className="text-text-muted text-[13px] px-6">
-                    Application submitted. We'll be in touch soon.
+                <h2 className="text-3xl font-bold text-heading mb-3 italic">Application Received</h2>
+                <p className="text-muted text-sm max-w-xs mx-auto mb-10 leading-relaxed font-medium">
+                    Thank you for applying to the CGAP Academy. Our recruitment team will review your profile and contact you soon.
                 </p>
                 <button
                     type="button"
                     onClick={() => setIsSubmitted(false)}
-                    className="mt-4 text-primary hover:underline text-xs font-semibold"
+                    className="btn-secondary h-14 w-full max-w-[240px] mx-auto rounded-2xl"
                 >
-                    Submit another
+                    Submit Another
                 </button>
             </div>
         );
     }
 
+    const Label = ({ children }: { children: React.ReactNode }) => (
+        <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1 mb-2 block">
+            {children}
+        </label>
+    );
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Full Name</label>
-                    <input type="text" name="name" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="John Doe" onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter your full name')} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
+                    <Label>Full Name</Label>
+                    <input type="text" name="name" required className="input-field h-14" placeholder="e.g. Muhammad Anas" />
                 </div>
                 <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Email Address</label>
-                    <input
-                        type="email"
-                        name="email"
-                        required
-                        className="input-field !py-2 !px-3 !text-[13px]"
-                        placeholder="john@example.com"
-                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid email address to continue')}
-                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
-                    />
+                    <Label>Email Address</Label>
+                    <input type="email" name="email" required className="input-field h-14" placeholder="name@company.com" />
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Phone Number</label>
-                    <input type="tel" name="phone" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="+923001234567" pattern="^((\+92)?(0092)?(0)?)(3[0-9]{2})[0-9]{7}$" onChange={handlePhoneChange} minLength={11} maxLength={15} onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid Pakistani phone number')} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
+                    <Label>Phone Number</Label>
+                    <input type="tel" name="phone" required className="input-field h-14" placeholder="+92 XXX XXXXXXX" onChange={handlePhoneChange} />
                 </div>
                 <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">City/Area</label>
-                    <input type="text" name="location" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="e.g. Rawalpindi" />
-                </div>
-                <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">CNIC Number</label>
-                    <input type="text" name="cnic" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="XXXXX-XXXXXXX-X" pattern="^\d{5}-\d{7}-\d{1}$" onChange={handleCnicChange} maxLength={15} onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Please enter a valid CNIC in the format XXXXX-XXXXXXX-X')} onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
+                    <Label>City / Area</Label>
+                    <input type="text" name="location" required className="input-field h-14" placeholder="e.g. Islamabad" />
                 </div>
             </div>
-
-            <div className="space-y-2 pt-1">
-                <h3 className="text-base font-bold font-heading text-heading pb-1 border-b border-border/40">Educational Background</h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Education Status</label>
-                    <select name="education_status" required className="input-field !py-2 !px-3 !text-[13px] min-h-[38px]">
-                        <option value="">Select Status...</option>
-                        <option value="Graduated">Graduated</option>
-                        <option value="Currently Enrolled">Currently Enrolled</option>
-                    </select>
-                </div>
-                <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Graduation Year</label>
-                    <input type="text" name="graduation_year" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="e.g. 2024" pattern="^20[0-9]{2}$" maxLength={4} />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Degree Field</label>
-                    <input type="text" name="degree_field" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="Computer Science" />
-                </div>
-                <div className="space-y-1">
-                    <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">University</label>
-                    <input type="text" name="university" required className="input-field !py-2 !px-3 !text-[13px]" placeholder="e.g. NUST" />
-                </div>
-            </div>
-
-            <div className="space-y-1 font-medium text-text-muted bg-surface p-2.5 rounded-md border border-border flex items-center gap-2.5 mt-2">
-                <span className="text-[10px] uppercase tracking-wider font-bold text-text-muted/50">Post:</span>
-                <span className="text-primary font-bold text-[13px]">CGAP Graduate Academy</span>
-                <input type="hidden" name="position" value="CGAP" />
-            </div>
-
 
             <div className="space-y-1">
-                <label className="text-[11.5px] font-bold text-heading uppercase tracking-wide opacity-80">Resume</label>
-                <div className={`border-2 border-dashed rounded-lg p-3 text-center transition-all cursor-pointer group relative ${fileName ? 'border-primary bg-primary/5' : 'border-border hover:border-primary bg-surface/50 hover:bg-white'}`}>
-                    <input
-                        type="file"
-                        name="resume"
-                        required
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        id="resume-upload"
-                        accept=".pdf,.doc,.docx"
-                        onChange={handleFileChange}
-                    />
-                    <div className="pointer-events-none">
+                <Label>CNIC Number</Label>
+                <input type="text" name="cnic" required className="input-field h-14" placeholder="XXXXX-XXXXXXX-X" onChange={handleCnicChange} maxLength={15} />
+            </div>
+
+            <div className="pt-4 border-t border-border/60">
+                <h3 className="text-lg font-bold font-heading italic text-heading mb-6">Education Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                        <Label>Education Status</Label>
+                        <select name="education_status" required className="input-field h-14 appearance-none hover:border-primary cursor-pointer">
+                            <option value="">Select Status</option>
+                            <option value="Graduated">Graduated</option>
+                            <option value="Currently Enrolled">Currently Enrolled</option>
+                        </select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label>Graduation Year</Label>
+                        <input type="text" name="graduation_year" required className="input-field h-14" placeholder="2024" pattern="^20[0-9]{2}$" maxLength={4} />
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1">
+                    <Label>Degree Field</Label>
+                    <input type="text" name="degree_field" required className="input-field h-14" placeholder="e.g. Software Engineering" />
+                </div>
+                <div className="space-y-1">
+                    <Label>University</Label>
+                    <input type="text" name="university" required className="input-field h-14" placeholder="e.g. NUST" />
+                </div>
+            </div>
+
+            <div className="space-y-1">
+                <Label>Resume Attachment</Label>
+                <div className={cn(
+                    "relative border-2 border-dashed rounded-[1.5rem] p-8 text-center transition-all duration-300 group overflow-hidden",
+                    fileName ? "border-primary bg-primary-light" : "border-border hover:border-primary hover:bg-white"
+                )}>
+                    <input type="file" name="resume" required className="absolute inset-0 opacity-0 cursor-pointer z-10" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
+                    <div className="flex flex-col items-center gap-2">
                         {fileName ? (
                             <>
-                                <FileCheck className="w-6 h-6 text-primary mx-auto mb-1" />
-                                <p className="text-[12px] font-bold text-heading truncate px-3">{fileName}</p>
+                                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mb-2 shadow-lg shadow-primary/20">
+                                    <FileCheck className="w-6 h-6 text-white" />
+                                </div>
+                                <p className="text-sm font-bold text-heading truncate max-w-[200px]">{fileName}</p>
+                                <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">Ready to upload</p>
                             </>
                         ) : (
-                            <div className="flex items-center justify-center gap-2">
-                                <Upload className="w-5 h-5 text-text-muted/40 group-hover:text-primary transition-colors" />
-                                <p className="text-[13px] text-text-muted">Upload Resume (PDF/DOC)</p>
-                            </div>
+                            <>
+                                <div className="w-12 h-12 bg-surface-alt rounded-2xl flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
+                                    <Upload className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
+                                </div>
+                                <p className="text-sm font-bold text-heading">Click to upload your resume</p>
+                                <p className="text-xs text-muted">Supports PDF or DOC up to 5MB</p>
+                            </>
                         )}
                     </div>
                 </div>
             </div>
 
+            <input type="hidden" name="position" value="CGAP" />
+
             {error && (
-                <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-100 text-red-700 rounded-md text-[11px]">
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl text-xs font-medium animate-shake">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
                     {error}
                 </div>
             )}
@@ -193,20 +174,24 @@ export default function ApplicationForm() {
             <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 shadow-md shadow-primary/5 hover:shadow-primary/10 mt-1"
+                className="btn-primary h-16 w-full text-lg shadow-elevated"
             >
                 {isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Submitting...
+                    <span className="flex items-center gap-3">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Processing Application...
                     </span>
                 ) : (
                     <>
-                        <Send className="w-4 h-4" />
-                        <span className="text-[14px]">Submit Application</span>
+                        <Send className="w-5 h-5" />
+                        Submit Application
                     </>
                 )}
             </button>
+
+            <p className="text-center text-[10px] text-muted font-bold tracking-[0.2em] uppercase pt-4 italic">
+                Secure SSL Encrypted Application
+            </p>
         </form>
     );
 }
