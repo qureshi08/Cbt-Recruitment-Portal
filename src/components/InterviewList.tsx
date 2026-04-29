@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileBarChart, Star, Activity, Plus, Minus, Send, AlertCircle, Shield } from "lucide-react";
+import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole, requestL2Interview, submitFinalInterviewFeedback } from "@/app/actions";
 
@@ -49,11 +49,11 @@ const SCORE_CATEGORIES: {
     label: string;
     description: string;
 }[] = [
-        { key: 'technical', label: 'Technical Proficiency', description: 'Systems architecture & logical foundation' },
-        { key: 'communication', label: 'Linguistic Clarity', description: 'Persuasion, articulation & structure' },
-        { key: 'masters_plans', label: "Strategic Intent", description: 'Academic trajectory & career alignment' },
-        { key: 'analytical', label: 'Cognitive Agility', description: 'First-principles thinking & reasoning' },
-        { key: 'personality', label: 'Professional Ethos', description: 'Cultural resonance & resilience' },
+        { key: 'technical', label: 'Technical Depth', description: 'Subject matter expertise & problem-solving' },
+        { key: 'communication', label: 'Communication', description: 'Clarity, articulation & structural thinking' },
+        { key: 'masters_plans', label: "Graduate Ambition", description: 'Academic goals & professional trajectory' },
+        { key: 'analytical', label: 'Analytical Reasoning', description: 'Data-driven mindset & logical deduction' },
+        { key: 'personality', label: 'Culture Alignment', description: 'Attitude, adaptability & institutional fit' },
     ];
 
 const emptyFeedback = (): StructuredFeedback => ({
@@ -73,70 +73,71 @@ function calcAvg(fb: StructuredFeedback): number {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function ScoreBar({ score }: { score: number }) {
-    const colors = ['', 'bg-rose-400', 'bg-orange-400', 'bg-amber-400', 'bg-emerald-500', 'bg-primary'];
+function ScoreDots({ score }: { score: number }) {
     return (
         <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map(n => (
-                <div key={n} className={cn("h-1.5 w-5 rounded-full transition-all", n <= score ? colors[score] : 'bg-gray-100')} />
+                <div
+                    key={n}
+                    className={cn(
+                        "h-1.5 w-4 rounded-full transition-all duration-300",
+                        n <= score ? "bg-[var(--primary)]" : "bg-[var(--border)]"
+                    )}
+                />
             ))}
         </div>
     );
 }
 
-function FeedbackPanel({ label, fb, color }: { label: string; fb: StructuredFeedback; color: 'blue' | 'purple' }) {
+function FeedbackSection({ label, fb, type }: { label: string; fb: StructuredFeedback; type: 'first' | 'second' }) {
     const avg = calcAvg(fb);
-    const isPurple = color === 'purple';
+    const isSecond = type === 'second';
 
     return (
         <div className={cn(
-            "rounded-3xl border-2 p-6 space-y-5 transition-all hover:shadow-lg",
-            isPurple ? "border-purple-100 bg-purple-50/20" : "border-blue-100 bg-blue-50/20"
+            "rounded-xl border p-6 space-y-4 bg-white",
+            isSecond ? "border-indigo-100" : "border-[var(--border)]"
         )}>
-            <div className="flex items-center justify-between pb-4 border-b border-white/60">
-                <p className={cn("text-[10px] font-black uppercase tracking-[0.25em]", isPurple ? "text-purple-600" : "text-blue-600")}>{label}</p>
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--surface-alt)]">
+                <p className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</p>
                 {avg > 0 && (
-                    <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Composite Score</span>
-                        <div className={cn("px-4 py-1 rounded-full text-white font-black italic shadow-sm", isPurple ? "bg-purple-600" : "bg-blue-600")}>
-                            {avg.toFixed(1)}
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-[var(--muted)] uppercase">Average Score</span>
+                        <span className="text-lg font-bold text-[var(--heading)]">{avg.toFixed(1)}</span>
                     </div>
                 )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="space-y-4">
                 {SCORE_CATEGORIES.map(cat => {
                     const d = fb[cat.key];
                     if (!d || d.score === 0) return null;
                     return (
-                        <div key={cat.key} className="space-y-2">
+                        <div key={cat.key} className="space-y-1">
                             <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-black text-heading uppercase tracking-tight">{cat.label}</span>
+                                <span className="text-xs font-semibold text-[var(--heading)]">{cat.label}</span>
                                 <div className="flex items-center gap-3">
-                                    <ScoreBar score={d.score} />
-                                    <span className="text-[12px] font-black italic text-gray-900 w-6 text-right">
-                                        {d.score}.0
-                                    </span>
+                                    <ScoreDots score={d.score} />
+                                    <span className="text-xs font-bold text-[var(--heading)]">{d.score}</span>
                                 </div>
                             </div>
                             {d.notes && (
-                                <p className="text-xs text-body leading-relaxed pl-4 border-l-2 border-gray-200 font-medium italic">"{d.notes}"</p>
+                                <p className="text-xs text-[var(--body)] border-l-2 border-[var(--border)] pl-3 ml-0.5 py-0.5">{d.notes}</p>
                             )}
                         </div>
                     );
                 })}
             </div>
             {fb.overall_notes && (
-                <div className="pt-5 border-t border-white/60">
-                    <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-2">Final Executive Summary</p>
-                    <p className="text-sm text-heading leading-relaxed font-bold italic bg-white/40 p-4 rounded-2xl border border-white/60">"{fb.overall_notes}"</p>
+                <div className="pt-3 border-t border-[var(--surface-alt)]">
+                    <p className="text-[10px] font-bold text-[var(--muted)] uppercase mb-1">Interviewer Synthesis</p>
+                    <p className="text-sm text-[var(--heading)] italic leading-relaxed">"{fb.overall_notes}"</p>
                 </div>
             )}
         </div>
     );
 }
 
-function FeedbackViewer({ interview }: { interview: Interview }) {
+function ScorecardViewer({ interview }: { interview: Interview }) {
     const [open, setOpen] = useState(false);
     const hasL1 = !!interview.l1_feedback_json;
     const hasL2 = !!interview.l2_feedback_json;
@@ -147,40 +148,34 @@ function FeedbackViewer({ interview }: { interview: Interview }) {
         <div className="mt-1">
             <button
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-2 text-[10px] font-black text-primary hover:text-primary-hover transition-all bg-primary/[0.03] px-3 py-1.5 rounded-xl border border-primary/10 uppercase tracking-widest shadow-sm hover:shadow-md"
+                className="inline-flex items-center gap-2 text-[10px] font-bold text-[var(--primary)] hover:text-[var(--primary-hover)] transition-all bg-[var(--primary-light)] px-3 py-1 rounded-md border border-[var(--primary)]/10 uppercase tracking-wider"
             >
-                <FileBarChart className="w-3.5 h-3.5" />
-                Dossier Analysis
+                <FileText className="w-3 h-3" />
+                View Scorecard
             </button>
 
             {open && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-heading/60 backdrop-blur-md" onClick={() => setOpen(false)} />
-                    <div className="bg-white rounded-[2.5rem] shadow-[0_32px_128px_rgba(0,0,0,0.15)] w-full max-w-3xl relative z-10 animate-in fade-in zoom-in duration-500 flex flex-col max-h-[90vh] overflow-hidden">
+                    <div className="fixed inset-0 bg-[var(--heading)]/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh] overflow-hidden">
 
-                        <div className="p-10 border-b flex justify-between items-start bg-surface-alt shrink-0">
-                            <div className="space-y-1">
-                                <h3 className="font-black text-heading text-3xl tracking-tighter italic uppercase underline decoration-primary/20 decoration-8 underline-offset-4">Candidate Scorecard</h3>
-                                <div className="flex items-center gap-3">
-                                    <p className="text-[10px] font-black text-muted mt-2 uppercase tracking-[0.3em]">{interview.candidates?.name}</p>
-                                    <div className="h-px w-8 bg-gray-200 self-end mb-1" />
-                                    <p className="text-[10px] font-black text-primary mt-2 uppercase tracking-[0.3em]">{interview.candidates?.position}</p>
-                                </div>
+                        <div className="p-6 border-b flex justify-between items-center shrink-0">
+                            <div>
+                                <h3 className="font-heading text-2xl font-bold">Interview Assessment</h3>
+                                <p className="text-xs text-[var(--muted)] font-medium mt-1">{interview.candidates?.name} — {interview.candidates?.position}</p>
                             </div>
-                            <button onClick={() => setOpen(false)} className="p-4 bg-white rounded-2xl text-muted hover:text-heading shadow-sm transition-all hover:rotate-90 border border-border/50">
-                                <X className="w-6 h-6" />
+                            <button onClick={() => setOpen(false)} className="p-2 hover:bg-[var(--surface-alt)] rounded-lg transition-colors text-[var(--muted)] hover:text-[var(--heading)]">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="overflow-y-auto p-10 space-y-8 flex-1 scrollbar-hide">
-                            {hasL1 && <FeedbackPanel label="Phase 01 Assessment — Initial Evaluation" fb={interview.l1_feedback_json!} color="blue" />}
-                            {hasL2 && <FeedbackPanel label="Phase 02 Assessment — Advanced Scrutiny" fb={interview.l2_feedback_json!} color="purple" />}
+                        <div className="overflow-y-auto p-6 space-y-6 flex-1 bg-[var(--surface-alt)]">
+                            {hasL1 && <FeedbackSection label="L1 Interview Details" fb={interview.l1_feedback_json!} type="first" />}
+                            {hasL2 && <FeedbackSection label="L2 Interview Details" fb={interview.l2_feedback_json!} type="second" />}
                         </div>
 
-                        <div className="p-8 bg-surface-alt border-t flex items-center justify-center gap-6 shrink-0 opacity-40 grayscale">
-                            <div className="h-0.5 w-12 bg-gray-300" />
-                            <p className="text-[9px] font-black text-muted uppercase tracking-[0.4em] italic leading-none">Confidential Recruitment Protocol</p>
-                            <div className="h-0.5 w-12 bg-gray-300" />
+                        <div className="p-4 border-t bg-white text-center shrink-0">
+                            <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Confidential Recruitment Record</p>
                         </div>
                     </div>
                 </div>
@@ -209,8 +204,8 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
 
         if (decision === 'Recommended' || decision === 'Not Recommended') {
             const confirmMsg = decision === 'Recommended'
-                ? "EXECUTIVE AUTHORIZATION: Confirm RECOMMENDATION for this candidate? This will trigger a formal acceptance package."
-                : "EXECUTIVE AUTHORIZATION: Confirm REJECTION? This will transmit an automated termination of application.";
+                ? "Are you sure you want to RECOMMEND this candidate? This will trigger the final acceptance process."
+                : "Are you sure you want to mark this candidate as NOT RECOMMENDED? This will conclude their application process.";
 
             if (!window.confirm(confirmMsg)) return;
         }
@@ -256,18 +251,18 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
     };
 
     return (
-        <div className="rounded-[2.5rem] border border-border/60 bg-white shadow-premium overflow-hidden">
-            <div className="overflow-x-auto scrollbar-hide">
-                <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '950px' }}>
+        <div className="bg-white border border-[var(--border)] rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '900px' }}>
                     <thead>
-                        <tr className="bg-surface-alt border-b border-border/50">
-                            <th className="px-8 py-6 text-[10px] font-black text-muted uppercase tracking-[0.25em] w-[20%]">Timestamp</th>
-                            <th className="px-8 py-6 text-[10px] font-black text-muted uppercase tracking-[0.25em] w-[28%]">Profile Identity</th>
-                            <th className="px-8 py-6 text-[10px] font-black text-muted uppercase tracking-[0.25em] w-[32%]">Assessement Status</th>
-                            <th className="px-8 py-6 text-[10px] font-black text-muted uppercase tracking-[0.25em] text-right w-[20%]">Executive Actions</th>
+                        <tr className="bg-[var(--surface-alt)] border-b border-[var(--border)]">
+                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider w-[22%]">Scheduled</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider w-[28%]">Candidate</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider w-[30%]">Interview Status</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider text-right w-[20%]">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border/40 bg-white">
+                    <tbody className="divide-y divide-[var(--border)]/50">
                         {interviews.map((interview) => {
                             const isAwaitingL2 = interview.decision === 'L2 Interview Required';
                             const isFinal = interview.decision === 'Recommended' || interview.decision === 'Not Recommended';
@@ -275,82 +270,76 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             const canActL2 = isAwaitingL2 && (userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));
 
                             return (
-                                <tr key={interview.id} className="hover:bg-primary/[0.01] transition-all group">
-                                    <td className="px-8 py-6 overflow-hidden">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-11 h-11 rounded-2xl bg-gray-50 flex items-center justify-center text-muted group-hover:bg-primary/10 group-hover:text-primary transition-all shadow-sm border border-border/20">
-                                                <Calendar className="w-4 h-4" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-black text-heading italic">
-                                                    {new Date(interview.scheduled_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </p>
-                                                <div className="flex items-center gap-2 text-[10px] font-black text-muted mt-1 uppercase tracking-tighter">
-                                                    <Clock className="w-2.5 h-2.5" />
-                                                    {new Date(interview.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </div>
+                                <tr key={interview.id} className="hover:bg-[var(--surface-alt)] transition-colors group">
+                                    <td className="px-6 py-5 align-top">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-[var(--heading)]">
+                                                {new Date(interview.scheduled_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </span>
+                                            <span className="text-[11px] text-[var(--muted)] font-medium mt-0.5 flex items-center gap-1.5">
+                                                <Clock className="w-3 h-3" />
+                                                {new Date(interview.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 overflow-hidden">
+                                    <td className="px-6 py-5 align-top">
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-sm font-black text-heading truncate uppercase tracking-tight italic">{interview.candidates?.name}</span>
-                                            <span className="text-[10px] text-muted font-bold mt-1.5 truncate uppercase tracking-widest">{interview.candidates?.position}</span>
-                                            <div className="flex items-center gap-4 mt-3">
+                                            <span className="text-sm font-bold text-[var(--heading)] truncate">{interview.candidates?.name}</span>
+                                            <span className="text-xs text-[var(--muted)] mt-0.5 truncate">{interview.candidates?.position}</span>
+                                            <div className="flex items-center gap-4 mt-2">
                                                 {interview.candidates?.resume_url && (
                                                     <a href={interview.candidates.resume_url} target="_blank" rel="noopener noreferrer"
-                                                        className="text-[9px] font-black text-primary hover:scale-105 transition-transform flex items-center gap-1.5 uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded-full">
-                                                        CV ACCESS
+                                                        className="text-[10px] font-bold text-[var(--primary)] hover:underline flex items-center gap-1.5 uppercase tracking-wide">
+                                                        Resume
                                                     </a>
                                                 )}
                                                 {interview.candidates?.assessment_score_url && (
                                                     <a href={interview.candidates.assessment_score_url} target="_blank" rel="noopener noreferrer"
-                                                        className="text-[9px] font-black text-blue-600 hover:scale-105 transition-transform flex items-center gap-1.5 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-full">
-                                                        SCORE CARD
+                                                        className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1.5 uppercase tracking-wide">
+                                                        Results
                                                     </a>
                                                 )}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 overflow-hidden">
+                                    <td className="px-6 py-5 align-top">
                                         {interview.decision ? (
-                                            <div className="flex flex-col gap-3">
-                                                <div className={cn(
-                                                    "inline-flex items-center px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm w-fit",
-                                                    interview.decision === 'Recommended' ? "bg-emerald-500 text-white border border-emerald-600" :
-                                                        interview.decision === 'L2 Interview Required' ? "bg-indigo-600 text-white border border-indigo-700" :
-                                                            "bg-rose-600 text-white border border-rose-700"
+                                            <div className="flex flex-col gap-2">
+                                                <span className={cn(
+                                                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider w-fit border",
+                                                    interview.decision === 'Recommended' ? "bg-green-50 text-green-700 border-green-200" :
+                                                        interview.decision === 'L2 Interview Required' ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                                                            "bg-red-50 text-red-700 border-red-200"
                                                 )}>
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-white mr-2 animate-pulse" />
                                                     {interview.decision}
-                                                </div>
-                                                <FeedbackViewer interview={interview} />
+                                                </span>
+                                                <ScorecardViewer interview={interview} />
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-3 text-muted">
-                                                <Activity className="w-4 h-4 opacity-30 animate-pulse text-primary" />
-                                                <span className="text-[11px] font-black uppercase tracking-[0.25em] italic opacity-60">Pending Evaluation</span>
+                                            <div className="flex items-center gap-2 text-[var(--muted)] bg-[var(--surface-alt)] px-3 py-1.5 rounded-lg w-fit border border-[var(--border)]">
+                                                <Activity className="w-3.5 h-3.5 animate-pulse text-[var(--primary)]" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Response</span>
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-8 py-6 text-right">
+                                    <td className="px-6 py-5 text-right align-top">
                                         {!interview.decision && canAct && (
                                             <button onClick={() => openModal(interview)}
-                                                className="btn-primary !px-5 !py-2.5 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all">
-                                                INITIALIZE SCORECARD
+                                                className="btn-primary !px-4 !py-2 !text-xs !rounded-lg w-full md:w-auto">
+                                                Complete Scorecard
                                             </button>
                                         )}
                                         {isAwaitingL2 && canActL2 && (
                                             <button onClick={() => openModal(interview)}
-                                                className="btn-primary !px-5 !py-2.5 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 transition-all">
-                                                FINALIZE L2 PROTOCOL
+                                                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all w-full md:w-auto shadow-sm">
+                                                Finalize L2
                                             </button>
                                         )}
                                         {(!interview.decision && !canAct) && (
-                                            <div className="inline-flex items-center gap-1.5 text-[10px] font-black text-muted uppercase tracking-[0.2em] bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">
                                                 <Shield className="w-3 h-3" />
-                                                Restricted
-                                            </div>
+                                                No Permission
+                                            </span>
                                         )}
                                     </td>
                                 </tr>
@@ -360,91 +349,80 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                 </table>
             </div>
 
-            {/* Scorecard Input Modal */}
+            {/* Assessment Modal */}
             {selectedInterview && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-heading/60 backdrop-blur-md" onClick={() => setSelectedInterview(null)} />
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl relative z-10 animate-in fade-in zoom-in duration-500 flex flex-col max-h-[95vh] overflow-hidden">
+                    <div className="fixed inset-0 bg-[var(--heading)]/60 backdrop-blur-sm" onClick={() => setSelectedInterview(null)} />
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[95vh] overflow-hidden">
 
-                        <div className="p-10 border-b flex justify-between items-start bg-surface-alt shrink-0">
+                        <div className="p-6 border-b flex justify-between items-center bg-white shrink-0">
                             <div>
-                                <h3 className="font-black text-heading text-3xl tracking-tighter italic uppercase underline decoration-primary/20 decoration-8 underline-offset-4">Evaluation Terminal</h3>
-                                <div className="flex items-center gap-3 mt-4">
-                                    <div className="bg-white px-4 py-1.5 rounded-2xl border border-border/50 shadow-sm flex items-center gap-2">
-                                        <User className="w-4 h-4 text-primary" />
-                                        <span className="text-xs font-black text-heading uppercase tracking-tight">{selectedInterview.candidates?.name}</span>
-                                    </div>
-                                    <div className="h-px w-6 bg-gray-200" />
-                                    <span className="text-[10px] font-black text-muted uppercase tracking-[0.25em]">Interactive Assessment Portal</span>
-                                </div>
+                                <h2 className="font-heading text-2xl font-bold">Candidate Evaluation</h2>
+                                <p className="text-sm text-[var(--muted)] mt-1 font-medium">{selectedInterview.candidates?.name} — {selectedInterview.candidates?.position}</p>
                             </div>
-                            <button onClick={() => setSelectedInterview(null)} className="p-4 bg-white rounded-2xl text-muted hover:text-heading shadow-sm transition-all hover:rotate-90 border border-border/50">
+                            <button onClick={() => setSelectedInterview(null)} className="p-2 hover:bg-[var(--surface-alt)] rounded-lg transition-colors text-[var(--muted)] hover:text-[var(--heading)]">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <div className="overflow-y-auto p-10 flex-1 space-y-10 scrollbar-hide">
-                            <div className="grid grid-cols-1 gap-10">
+                        <div className="overflow-y-auto p-6 flex-1 space-y-8 bg-[var(--surface-alt)]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {SCORE_CATEGORIES.map((cat) => (
-                                    <div key={cat.key} className="group p-8 rounded-[2rem] border-2 border-gray-50 bg-gray-50/30 hover:border-primary/20 hover:bg-white transition-all space-y-6">
-                                        <div className="flex flex-col md:flex-row justify-between gap-6">
-                                            <div className="space-y-1.5 flex-1">
-                                                <h4 className="text-lg font-black text-heading uppercase tracking-tight flex items-center gap-3">
-                                                    {cat.label}
-                                                    <span className="text-[9px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full tracking-widest">{cat.key.toUpperCase()}</span>
-                                                </h4>
-                                                <p className="text-xs text-muted font-medium">{cat.description}</p>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-3">
-                                                <p className="text-[10px] font-black text-muted uppercase tracking-widest">Calibration (1-5)</p>
-                                                <div className="flex items-center gap-2">
-                                                    {[1, 2, 3, 4, 5].map((n) => (
-                                                        <button
-                                                            key={n}
-                                                            type="button"
-                                                            onClick={() => updateScore(cat.key, n)}
-                                                            className={cn(
-                                                                "w-12 h-12 rounded-2xl font-black text-lg transition-all border-2",
-                                                                feedback[cat.key].score === n
-                                                                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-110"
-                                                                    : "bg-white text-gray-400 border-gray-100 hover:border-primary/50 hover:text-primary"
-                                                            )}
-                                                        >
-                                                            {n}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                    <div key={cat.key} className="bg-white p-6 rounded-xl border border-[var(--border)] shadow-sm space-y-4">
+                                        <div className="flex flex-col gap-1">
+                                            <h4 className="text-sm font-bold text-[var(--heading)]">{cat.label}</h4>
+                                            <p className="text-[11px] text-[var(--muted)] font-medium">{cat.description}</p>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label icon={MessageSquare}>Observed Nuances & Insights</Label>
-                                            <textarea
-                                                className="input-field min-h-[100px] !py-4 !rounded-2xl shadow-sm text-sm font-medium"
-                                                placeholder={`Document technical depth or communication quirks for ${cat.label}...`}
-                                                value={feedback[cat.key].notes}
-                                                onChange={(e) => updateNotes(cat.key, e.target.value)}
-                                            />
+
+                                        <div className="flex items-center gap-2">
+                                            {[1, 2, 3, 4, 5].map((n) => (
+                                                <button
+                                                    key={n}
+                                                    type="button"
+                                                    onClick={() => updateScore(cat.key, n)}
+                                                    className={cn(
+                                                        "w-10 h-10 rounded-lg font-bold text-sm transition-all border-2",
+                                                        feedback[cat.key].score === n
+                                                            ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md"
+                                                            : "bg-white text-[var(--muted)] border-[var(--border)] hover:border-[var(--primary)]"
+                                                    )}
+                                                >
+                                                    {n}
+                                                </button>
+                                            ))}
                                         </div>
+
+                                        <textarea
+                                            className="w-full bg-[var(--surface-alt)] border border-[var(--border)] rounded-lg p-3 text-sm font-medium placeholder:text-[var(--muted)] resize-none"
+                                            rows={3}
+                                            placeholder={`Observation notes for ${cat.label.toLowerCase()}...`}
+                                            value={feedback[cat.key].notes}
+                                            onChange={(e) => updateNotes(cat.key, e.target.value)}
+                                        />
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="p-8 rounded-[2rem] bg-heading text-white space-y-4">
-                                <Label icon={Star} className="text-white/60">Executive Synthesis</Label>
+                            <div className="bg-white p-6 rounded-xl border border-[var(--border)] shadow-sm space-y-3">
+                                <h4 className="text-sm font-bold text-[var(--heading)] flex items-center gap-2">
+                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                    Overall Review & Synthesis
+                                </h4>
                                 <textarea
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white text-base font-medium placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[120px]"
-                                    placeholder="Synthesize the candidate's holistic potential and institutional resonance..."
+                                    className="w-full bg-[var(--surface-alt)] border border-[var(--border)] rounded-lg p-4 text-sm font-medium placeholder:text-[var(--muted)]"
+                                    rows={4}
+                                    placeholder="Provide a holistic summary of the candidate's performance and fit..."
                                     value={feedback.overall_notes}
                                     onChange={(e) => setFeedback(prev => ({ ...prev, overall_notes: e.target.value }))}
                                 />
                             </div>
                         </div>
 
-                        <div className="p-10 border-t bg-surface-alt flex flex-wrap gap-4 items-center justify-between shrink-0">
-                            <div className="flex items-center gap-6">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-muted uppercase tracking-widest pl-1">Aggregate Evaluation</span>
-                                    <span className="text-3xl font-black italic text-heading tracking-tighter">{calcAvg(feedback).toFixed(1)}</span>
+                        <div className="p-6 border-t bg-white flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-[var(--primary-light)] rounded-xl border border-[var(--primary)]/10">
+                                    <span className="text-[10px] font-bold text-[var(--primary)] uppercase tracking-widest block mb-1">Average Score</span>
+                                    <span className="text-2xl font-bold text-[var(--heading)] tracking-tighter leading-none">{calcAvg(feedback).toFixed(1)}</span>
                                 </div>
                             </div>
 
@@ -453,34 +431,33 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     <button
                                         onClick={() => handleDecision('Recommended')}
                                         disabled={isSubmitting || calcAvg(feedback) === 0}
-                                        className="btn-primary !px-8 !py-4 !rounded-2xl shadow-xl shadow-primary/20 flex items-center gap-3 group disabled:grayscale"
+                                        className="btn-primary"
                                     >
-                                        <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                        <span className="text-sm font-black uppercase tracking-widest italic">Submit Final Dossier</span>
+                                        <Send className="w-4 h-4" />
+                                        Submit Final Decision
                                     </button>
                                 ) : (
                                     <>
                                         <button
                                             onClick={() => handleDecision('Not Recommended')}
                                             disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="px-6 py-4 rounded-2xl border-2 border-rose-100 text-rose-600 font-black text-xs uppercase tracking-widest hover:bg-rose-50 transition-all shadow-sm"
+                                            className="px-6 py-3 rounded-lg border border-red-200 text-red-600 font-bold text-xs uppercase tracking-wider hover:bg-red-50 transition-all"
                                         >
-                                            Reject Profile
+                                            Skip Candidate
                                         </button>
                                         <button
                                             onClick={() => handleDecision('L2 Interview Required')}
                                             disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="px-6 py-4 rounded-2xl border-2 border-blue-100 text-blue-600 font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all shadow-sm"
+                                            className="px-6 py-3 rounded-lg border border-indigo-200 text-indigo-600 font-bold text-xs uppercase tracking-wider hover:bg-indigo-50 transition-all"
                                         >
                                             Escalate to L2
                                         </button>
                                         <button
                                             onClick={() => handleDecision('Recommended')}
                                             disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="btn-primary !px-8 !py-4 !rounded-2xl shadow-xl shadow-primary/20 flex items-center gap-3 group disabled:grayscale"
+                                            className="btn-primary"
                                         >
-                                            <CheckCircle className="w-5 h-5" />
-                                            <span className="text-sm font-black uppercase tracking-widest italic">Authorize Approval</span>
+                                            Recommend Candidate
                                         </button>
                                     </>
                                 )}
@@ -489,17 +466,6 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                     </div>
                 </div>
             )}
-        </div>
-    );
-}
-
-function Label({ children, icon: Icon, className }: { children: React.ReactNode, icon?: any, className?: string }) {
-    return (
-        <div className={cn("flex items-center gap-2 mb-2 ml-1", className)}>
-            {Icon && <Icon className="w-3.5 h-3.5 opacity-60" />}
-            <label className="text-[10px] font-black uppercase tracking-[0.2em]">
-                {children}
-            </label>
         </div>
     );
 }
