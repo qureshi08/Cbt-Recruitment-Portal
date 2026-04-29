@@ -780,12 +780,24 @@ export async function getCandidateBasic(id: string) {
 
 export async function getInterviewerNameByEmail(email: string) {
     if (!email) return null;
-    const { data } = await supabaseAdmin
+
+    // 1. Try public.users table
+    const { data: userData } = await supabaseAdmin
         .from('users')
         .select('full_name')
         .ilike('email', email.trim())
         .maybeSingle();
-    return data?.full_name || null;
+
+    if (userData?.full_name) return userData.full_name;
+
+    // 2. Fallback: Pretty print from email (e.g. muhammad.anas -> Muhammad Anas)
+    const prefix = email.split('@')[0];
+    const prettyName = prefix
+        .split(/[._-]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+    return prettyName || "Interviewer";
 }
 
 export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string, l1FeedbackJson?: object) {
