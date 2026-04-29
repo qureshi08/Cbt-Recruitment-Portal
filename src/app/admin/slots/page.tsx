@@ -19,10 +19,12 @@ export default async function SlotsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-800">Assessment Slots</h2>
-                <p className="text-sm text-gray-500">Manage time slots for candidate assessments.</p>
+        <div className="space-y-5">
+            <div className="admin-page-header">
+                <div>
+                    <h1 className="admin-page-title">Assessment Slots</h1>
+                    <p className="admin-page-subtitle">Manage time slots for candidate assessments.</p>
+                </div>
             </div>
 
             <div className="card">

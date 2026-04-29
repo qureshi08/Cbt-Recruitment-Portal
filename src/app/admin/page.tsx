@@ -15,16 +15,15 @@ export default async function AdminDashboard() {
         .order('created_at', { ascending: false });
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="admin-page-header">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Recruiter Dashboard</h1>
-                    <p className="text-sm text-gray-500 font-medium">Monitoring candidate flow and pipeline health</p>
+                    <h1 className="admin-page-title">Recruiter Dashboard</h1>
+                    <p className="admin-page-subtitle">Monitoring candidate flow and pipeline health.</p>
                 </div>
                 <div className="flex gap-2">
                     {user?.roles?.map(role => (
-                        <span key={role} className="px-4 py-1.5 bg-white border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm">
+                        <span key={role} className="px-3 py-1 bg-white border border-gray-200 text-[var(--muted)] text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm">
                             {role}
                         </span>
                     ))}

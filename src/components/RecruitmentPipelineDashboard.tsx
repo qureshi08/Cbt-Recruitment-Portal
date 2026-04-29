@@ -10,55 +10,70 @@ import {
     TrendingUp,
     Calendar,
     Layers,
-    ArrowRight,
-    Search,
     ChevronRight,
-    Percent
+    ArrowUpRight,
+    Target,
+    Activity
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Candidate, CandidateStatus } from '@/types/database';
+import { Candidate } from '@/types/database';
 
 interface RecruitmentPipelineDashboardProps {
     initialCandidates: Candidate[];
 }
 
-const BRAND_PRIMARY = '#009245';
-
 // --- Sub-components ---
 
-const PipelineStage = ({ title, count, subtitle, icon: Icon, colorClass }: any) => (
-    <div className="group">
-        <div className="bg-white p-4 rounded-2xl border border-border/40 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all relative overflow-hidden h-full">
-            <div className={cn("absolute top-0 left-0 w-1 h-full", colorClass)} />
-            <div className="flex items-center justify-between mb-2">
-                <div className={cn("p-1.5 rounded-lg bg-gray-50 text-gray-400 group-hover:text-primary group-hover:bg-primary/5 transition-colors")}>
-                    <Icon className="w-3.5 h-3.5" />
+const PipelineStage = ({ title, count, subtitle, icon: Icon, gradient, color }: any) => (
+    <div className="group relative">
+        <div className="bg-white p-5 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col relative z-10 overflow-hidden">
+            {/* Background Accent */}
+            <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-[0.03] transition-transform duration-500 group-hover:scale-150", color)} />
+
+            <div className="flex items-center justify-between mb-4">
+                <div className={cn("p-2 rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110", gradient)}>
+                    <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-2xl font-semibold text-gray-900">{count}</span>
+                <div className="flex flex-col items-end">
+                    <span className="text-2xl font-black text-heading tracking-tight leading-none">{count}</span>
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span>View</span>
+                        <ChevronRight className="w-2.5 h-2.5" />
+                    </div>
+                </div>
             </div>
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide leading-tight">{title}</p>
-            <p className="text-[9px] text-gray-400 font-medium mt-0.5 opacity-80">{subtitle}</p>
+
+            <div className="mt-auto">
+                <p className="text-[11px] font-black text-muted uppercase tracking-wider mb-1">{title}</p>
+                <p className="text-[10px] text-gray-400 font-medium leading-tight">{subtitle}</p>
+            </div>
         </div>
     </div>
 );
 
-const MetricBox = ({ label, value, denominator, numerator, description }: any) => (
-    <div className="bg-gray-50/30 p-4 rounded-2xl border border-border/40">
-        <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
-            <div className="flex items-center gap-1.5 font-bold">
-                <span className="text-[10px] text-gray-400">{numerator}/{denominator}</span>
+const MetricBox = ({ label, value, denominator, numerator, description, icon: Icon }: any) => (
+    <div className="bg-white p-5 rounded-2xl border border-border/40 shadow-sm relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:opacity-10 transition-opacity">
+            <Icon className="w-12 h-12" />
+        </div>
+        <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-black text-muted uppercase tracking-[0.1em]">{label}</span>
+            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{numerator} / {denominator}</span>
+        </div>
+        <div className="flex items-end gap-2">
+            <span className="text-3xl font-black text-heading leading-none">{value}%</span>
+            <div className="flex items-center text-[10px] font-bold text-primary mb-1">
+                <ArrowUpRight className="w-3 h-3" />
+                <span>Rate</span>
             </div>
         </div>
-        <div className="text-2xl font-semibold text-gray-900">{value}%</div>
-        <p className="text-[10px] text-gray-400 font-medium mt-0.5 italic">{description}</p>
+        <p className="text-[10px] text-gray-400 font-medium mt-3 leading-relaxed">{description}</p>
     </div>
 );
 
 export default function RecruitmentPipelineDashboard({ initialCandidates }: RecruitmentPipelineDashboardProps) {
     const [filterBatch, setFilterBatch] = useState('All');
-    const [filterPeriod, setFilterPeriod] = useState('All');
 
     const filteredCandidates = useMemo(() => {
         return initialCandidates.filter(c => {
@@ -69,21 +84,13 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
 
     const stats = useMemo(() => {
         const total = filteredCandidates.length;
-
-        // 1. Pending Screening: Candidate applied but HR hasn't taken any action.
         const pending = filteredCandidates.filter(c => c.status === 'Applied').length;
-
-        // 2. Test Participants: Passed initial screening (Approved) OR already in testing phase.
         const testParticipants = filteredCandidates.filter(c =>
             ['Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed'].includes(c.status)
         ).length;
-
-        // 3. Active Interviews: Cleared assessment phase and moved to interviews.
         const activeInterviews = filteredCandidates.filter(c =>
             ['To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'].includes(c.status)
         ).length;
-
-        // 4. Recommendation: Final positive decision.
         const recommended = filteredCandidates.filter(c => c.status === 'Recommended').length;
 
         return { total, pending, testParticipants, activeInterviews, recommended };
@@ -109,127 +116,124 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
 
             recRate: totalAfterScreening ? Math.round((stats.recommended / totalAfterScreening) * 100) : 0,
             recNumerator: stats.recommended,
-            recDenominator: totalAfterScreening // Overall Pass Rate = Recommended / Total Tested (Total after screening)
+            recDenominator: totalAfterScreening
         };
     }, [stats]);
 
-
-
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {/* --- Filter Bar --- */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-5 py-3.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-border/40 min-h-[64px]">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4 text-primary" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-4 bg-white rounded-2xl border border-border/50 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Activity className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                        <h2 className="text-[15px] font-semibold text-gray-900 leading-none">Recruitment Insights</h2>
-                        <p className="text-[12px] text-gray-500 mt-1">Operational view of the hiring pipeline</p>
+                        <h2 className="text-[16px] font-bold text-heading leading-tight">Recruitment Analytics</h2>
+                        <p className="text-[12px] text-muted font-medium mt-0.5">Real-time health of your hiring pipeline</p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-white border border-gray-100 px-2.5 py-1 rounded-lg">
-                        <Layers className="w-3 h-3 text-gray-400" />
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 bg-gray-50 border border-border px-3 py-1.5 rounded-xl">
+                        <Layers className="w-3.5 h-3.5 text-muted" />
+                        <span className="text-[11px] font-black text-muted uppercase tracking-wider">Batch:</span>
                         <select
                             value={filterBatch}
                             onChange={(e) => setFilterBatch(e.target.value)}
-                            className="bg-transparent text-[11px] font-bold text-gray-700 outline-none cursor-pointer"
+                            className="bg-transparent text-[12px] font-bold text-heading outline-none cursor-pointer"
                         >
                             {batches.map(b => (
                                 <option key={b} value={b}>{b === 'All' ? 'All Batches' : `Batch ${b}`}</option>
                             ))}
                         </select>
                     </div>
-                    <div className="flex items-center gap-2 bg-gray-50 border border-border px-3 py-1.5 rounded-lg">
-                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        <select
-                            value={filterPeriod}
-                            onChange={(e) => setFilterPeriod(e.target.value)}
-                            className="bg-transparent text-[11px] font-bold text-gray-700 outline-none cursor-pointer"
-                        >
-                            <option value="All">All Time</option>
-                            <option value="Month">Last 30 Days</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
-            {/* --- Main Pipeline View (Combined KPI & Flow) --- */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+            {/* --- Main Pipeline View --- */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <PipelineStage
-                    title="Total Applications"
+                    title="Applications"
                     count={stats.total}
-                    subtitle="Gross application volume"
+                    subtitle="Gross volume of incoming talent"
                     icon={Users}
-                    colorClass="bg-blue-500"
+                    gradient="bg-blue-600"
+                    color="bg-blue-600"
                 />
                 <PipelineStage
-                    title="Pending Approval"
+                    title="Pending"
                     count={stats.pending}
-                    subtitle="Awaiting HR screening"
+                    subtitle="Awaiting initial resume screening"
                     icon={Clock}
-                    colorClass="bg-amber-500"
+                    gradient="bg-amber-500"
+                    color="bg-amber-500"
                 />
                 <PipelineStage
-                    title="Test Phase"
+                    title="Assessment"
                     count={stats.testParticipants}
-                    subtitle="Assessment participation"
+                    subtitle="Active in technical testing"
                     icon={FileText}
-                    colorClass="bg-indigo-500"
+                    gradient="bg-indigo-600"
+                    color="bg-indigo-600"
                 />
                 <PipelineStage
-                    title="Active Interviews"
+                    title="Interviewing"
                     count={stats.activeInterviews}
-                    subtitle="Qualified interview pool"
+                    subtitle="Qualified for technical interviews"
                     icon={MessageSquare}
-                    colorClass="bg-purple-500"
+                    gradient="bg-purple-600"
+                    color="bg-purple-600"
                 />
                 <PipelineStage
                     title="Recommended"
                     count={stats.recommended}
-                    subtitle="Successful candidacies"
+                    subtitle="Successful candidates found"
                     icon={CheckCircle}
-                    colorClass="bg-primary"
+                    gradient="bg-primary"
+                    color="bg-primary"
                 />
             </div>
 
-            {/* --- Insight Section (Horizontal) --- */}
-            <div className="bg-white p-6 rounded-2xl border border-border shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Stage Conversion</h3>
-                        <p className="text-[10px] text-gray-400 font-medium">Pipeline health and yield analysis</p>
-                    </div>
-                    <span className="text-[10px] bg-primary/5 text-primary px-2 py-0.5 rounded-full font-bold">Performance Metrics</span>
-                </div>
+            {/* --- Conversion Metrics --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <MetricBox
+                    label="Screening Yield"
+                    value={efficiency.testRate}
+                    numerator={efficiency.testNumerator}
+                    denominator={efficiency.testDenominator}
+                    description="The percentage of applicants who pass the initial resume screening phase."
+                    icon={Target}
+                />
+                <MetricBox
+                    label="Assessment Pass Rate"
+                    value={efficiency.interviewRate}
+                    numerator={efficiency.interviewNumerator}
+                    denominator={efficiency.interviewDenominator}
+                    description="The percentage of test participants who qualify for the interview round."
+                    icon={Activity}
+                />
+                <div className="bg-primary p-6 rounded-2xl shadow-xl shadow-primary/20 relative overflow-hidden group flex flex-col justify-center">
+                    {/* Decorative element */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 -mr-10 -mt-10 rounded-full blur-2xl" />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <MetricBox
-                        label="Screening to Test"
-                        value={efficiency.testRate}
-                        numerator={efficiency.testNumerator}
-                        denominator={efficiency.testDenominator}
-                        description="Candidates passing initial screening"
-                    />
-                    <MetricBox
-                        label="Test to Interview"
-                        value={efficiency.interviewRate}
-                        numerator={efficiency.interviewNumerator}
-                        denominator={efficiency.interviewDenominator}
-                        description="Pass rate of the technical assessment"
-                    />
-                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex flex-col justify-center">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Overall Pass Rate</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-primary/60">{efficiency.recNumerator}/{efficiency.recDenominator}</span>
-                            </div>
+                    <div className="flex items-center justify-between mb-4 relative z-10">
+                        <span className="text-[10px] font-black text-white/70 uppercase tracking-[.2em]">Overall Efficiency</span>
+                        <div className="px-2.5 py-1 bg-white/20 rounded-full text-white text-[10px] font-bold">
+                            {efficiency.recNumerator} / {efficiency.recDenominator}
                         </div>
-                        <div className="text-2xl font-semibold text-gray-900">{efficiency.recRate}%</div>
-                        <p className="text-[10px] text-gray-500 font-medium mt-1">Recommended / Total Tested</p>
                     </div>
+
+                    <div className="flex items-end gap-3 relative z-10">
+                        <span className="text-4xl font-black text-white leading-none tracking-tight">{efficiency.recRate}%</span>
+                        <div className="bg-white text-primary px-2 py-0.5 rounded-md text-[10px] font-black mb-1">
+                            HIRE RATIO
+                        </div>
+                    </div>
+
+                    <p className="text-[11px] text-white/80 font-medium mt-4 leading-relaxed relative z-10">
+                        Calculated as recommended candidates vs total participants who reached the testing phase.
+                    </p>
                 </div>
             </div>
         </div>

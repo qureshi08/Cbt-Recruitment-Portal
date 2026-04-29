@@ -24,10 +24,12 @@ export default async function InterviewsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-800">Interviews</h2>
-                <p className="text-sm text-gray-500">Scheduled interviews and candidate feedback.</p>
+        <div className="space-y-5">
+            <div className="admin-page-header">
+                <div>
+                    <h1 className="admin-page-title">Interviews</h1>
+                    <p className="admin-page-subtitle">Scheduled interviews and candidate feedback.</p>
+                </div>
             </div>
 
             <div className="card !p-0">

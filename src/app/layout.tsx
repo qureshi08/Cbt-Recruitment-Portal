@@ -30,10 +30,8 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className={`${dmSans.variable} ${playfair.variable}`}>
-            <body className="font-sans antialiased text-text selection:bg-primary/10">
-                <main className="min-h-screen bg-white">
-                    {children}
-                </main>
+            <body className="font-sans antialiased selection:bg-primary/10 overflow-x-hidden">
+                {children}
             </body>
         </html>
     );

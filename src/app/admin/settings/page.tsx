@@ -37,9 +37,11 @@ export default async function SettingsPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-800">System Settings</h2>
-                <p className="text-sm text-gray-500">Configure core behaviors and manage administrative access.</p>
+            <div className="admin-page-header">
+                <div>
+                    <h1 className="admin-page-title">System Settings</h1>
+                    <p className="admin-page-subtitle">Configure core behaviors and manage administrative access.</p>
+                </div>
             </div>
 
             <AiCriteriaManager initialCriteria={aiCriteria} />

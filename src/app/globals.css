@@ -2,20 +2,22 @@
 @config "../../tailwind.config.ts";
 
 /* 
-  CBT DESIGN SYSTEM 2.0
+  CBT RECRUITMENT PORTAL — DESIGN SYSTEM 2.1
   Master Global Styles & Token Definitions
 */
 
 :root {
-  /* Colors */
+  /* Brand Colors */
   --primary: #009245;
   --primary-hover: #007a3a;
   --primary-light: rgba(0, 146, 69, 0.08);
 
+  /* Text */
   --heading: #0f172a;
   --body: #475569;
   --muted: #94a3b8;
 
+  /* Surfaces */
   --surface: #ffffff;
   --surface-alt: #f8fafc;
   --border: #e2e8f0;
@@ -29,73 +31,86 @@
   --duration: 0.3s;
 }
 
-/* Base Styles */
+/* ─── Base Reset ──────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  overflow-x: hidden;
+  /* Kill any horizontal scroll at the root */
+}
+
 body {
   color: var(--body);
   background: var(--surface-alt);
   font-family: var(--font-body);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-size: 15px;
   overflow-x: hidden;
-  /* Prevent horizontal scroll globally */
+  height: 100%;
 }
 
-/* Typography Scale */
+/* ─── Typography ──────────────────────────────────────────── */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
+  /* Use DM Sans for UI headings in admin; Playfair can be applied per element */
   color: var(--heading);
-  line-height: 1.2;
+  line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.01em;
+  margin: 0;
 }
 
+/* Admin UI page headings — not editorial/italic */
 h1 {
-  font-size: 2.25rem;
-  font-style: italic;
+  font-size: 1.5rem;
 }
 
 h2 {
-  font-size: 1.85rem;
-  font-style: italic;
+  font-size: 1.25rem;
 }
 
 h3 {
-  font-size: 1.5rem;
-  font-style: italic;
+  font-size: 1.1rem;
 }
 
 h4 {
-  font-size: 1.15rem;
+  font-size: 1rem;
 }
 
 @media (max-width: 768px) {
   h1 {
-    font-size: 1.85rem;
+    font-size: 1.25rem;
   }
 
   h2 {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
   }
 
   h3 {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
 }
 
-/* Scrollbar Customization */
+/* ─── Scrollbar ───────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--surface-alt);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -103,53 +118,66 @@ h4 {
   border-radius: 10px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ─── Component Classes ───────────────────────────────────── */
 @layer components {
 
-  /* Compact Buttons */
+  /* Buttons */
   .btn-primary {
-    @apply bg-[var(--primary)] text-white px-5 py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] active:scale-[0.98] shadow-sm hover:shadow-md hover:bg-[var(--primary-hover)] text-xs;
+    @apply bg-[var(--primary)] text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md hover:bg-[var(--primary-hover)] text-xs tracking-wide;
   }
 
   .btn-secondary {
-    @apply bg-white border border-[var(--border)] text-[var(--heading)] px-5 py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] hover:border-[var(--primary)] hover:text-[var(--primary)] text-xs shadow-sm;
+    @apply bg-white border border-[var(--border)] text-[var(--heading)] px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all duration-200 hover:border-[var(--primary)] hover:text-[var(--primary)] text-xs shadow-sm tracking-wide;
   }
 
   .btn-ghost {
-    @apply text-[var(--muted)] font-bold px-3 py-1.5 rounded-lg transition-all hover:text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs;
+    @apply text-[var(--muted)] font-semibold px-3 py-1.5 rounded-lg transition-all hover:text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs;
   }
 
-  /* Compact Inputs */
+  /* Inputs */
   .input-field {
-    @apply w-full bg-white border border-[var(--border)] rounded-xl px-4 py-2 text-sm font-medium transition-all duration-[var(--duration)] focus:border-[var(--primary)] focus:ring-2 focus:ring-emerald-500/5 placeholder:text-[var(--muted)] outline-none;
+    @apply w-full bg-white border border-[var(--border)] rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 focus:border-[var(--primary)] focus:ring-2 focus:ring-emerald-500/10 placeholder:text-[var(--muted)] outline-none;
   }
 
-  /* Compact Cards */
+  /* Cards */
   .card {
-    @apply bg-white border border-[var(--border)] rounded-2xl p-5 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-emerald-900/5;
+    @apply bg-white border border-[var(--border)] rounded-2xl p-5 shadow-sm transition-all duration-300 hover:shadow-md;
   }
 
+  /* Status badges */
+  .status-badge {
+    @apply px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border inline-flex items-center whitespace-nowrap;
+  }
+
+  /* Glass */
   .glass {
     @apply bg-white/70 backdrop-blur-xl border border-white/20;
   }
 
-  .status-badge {
-    @apply px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border;
+  /* Page section */
+  .page-section {
+    @apply py-10 px-6 max-w-7xl mx-auto;
   }
 
-  .section-padding {
-    @apply py-12 px-6 max-w-7xl mx-auto;
+  /* Utility to prevent text-caused horizontal overflow */
+  .text-safe {
+    @apply break-words whitespace-normal overflow-hidden min-w-0;
   }
 
-  /* Global Layout Constrain */
-  .container-flex {
-    @apply flex flex-col md:flex-row gap-6 p-6 h-full max-h-screen overflow-hidden;
+  /* Admin page header */
+  .admin-page-header {
+    @apply flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6;
   }
 
-  .content-scroll {
-    @apply flex-1 overflow-auto pr-2;
+  .admin-page-title {
+    @apply text-lg font-bold text-[var(--heading)] tracking-tight;
   }
 
-  .text-wrap-safe {
-    @apply break-words whitespace-normal overflow-hidden;
+  .admin-page-subtitle {
+    @apply text-xs text-[var(--muted)] font-medium mt-0.5;
   }
 }

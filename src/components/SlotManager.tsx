@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createAssessmentSlot, completeAssessment } from "@/app/actions";
-import { supabase } from "@/lib/supabase";
 
 interface Slot {
     id: string;
@@ -74,142 +73,169 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-700">All Slots</h3>
+        <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-border/50 shadow-sm">
+                <div>
+                    <h3 className="text-lg font-black text-heading uppercase tracking-tight italic">Availability Management</h3>
+                    <p className="text-xs text-muted font-medium mt-1 uppercase tracking-widest">Global assessment slot inventory</p>
+                </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="btn-primary flex items-center gap-2 text-sm"
+                    className="btn-primary flex items-center gap-2 px-6 shadow-lg shadow-primary/20"
                 >
                     <Plus className="w-4 h-4" />
-                    Create New Slot
+                    CREATE SLOT
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {slots.map((slot) => (
-                    <div
-                        key={slot.id}
-                        className={cn(
-                            "border rounded-lg p-4 flex flex-col justify-between space-y-4 transition-all",
-                            slot.is_locked ? "bg-gray-50 border-border" : "bg-white border-primary/20 hover:border-primary/50"
-                        )}
-                    >
-                        <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2 text-primary">
-                                <CalendarIcon className="w-4 h-4" />
-                                <span className="text-sm font-medium">
-                                    {new Date(slot.start_time).toLocaleDateString()}
-                                </span>
-                            </div>
-                            {slot.is_locked ? (
-                                <Lock className="w-4 h-4 text-gray-400" />
-                            ) : (
-                                <Unlock className="w-4 h-4 text-primary opacity-50" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {slots.map((slot) => {
+                    const isLocked = slot.is_locked || !!slot.candidate_id;
+                    return (
+                        <div
+                            key={slot.id}
+                            className={cn(
+                                "group relative bg-white border-2 rounded-2xl p-5 flex flex-col transition-all duration-300 hover:shadow-xl",
+                                isLocked ? "border-gray-100 opacity-95" : "border-primary/10 hover:border-primary shadow-sm"
                             )}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-gray-600">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-sm">
-                                {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                {" - "}
-                                {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                        </div>
-
-                        <div className="pt-2 border-t border-border flex flex-col gap-3">
-                            {slot.candidates ? (
-                                <>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs text-gray-500 uppercase tracking-wider">Booked by</span>
-                                        <span className="text-sm font-medium text-gray-800">{slot.candidates.name}</span>
-                                        <span className="text-[10px] text-primary font-bold uppercase">{slot.candidates.status}</span>
+                        >
+                            <div className="flex justify-between items-start mb-6">
+                                <div className={cn(
+                                    "p-2.5 rounded-xl shadow-sm",
+                                    isLocked ? "bg-gray-100 text-gray-400" : "bg-primary/10 text-primary group-hover:scale-110 transition-transform"
+                                )}>
+                                    <CalendarIcon className="w-5 h-5" />
+                                </div>
+                                {isLocked ? (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
+                                        <Lock className="w-3 h-3" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Locked</span>
                                     </div>
-                                    {slot.candidates.status === "Assessment Scheduled" && (
-                                        <button
-                                            onClick={() => markCompleted(slot.id, slot.candidates!.id)}
-                                            disabled={isSubmitting}
-                                            className="btn-primary !py-1.5 text-xs flex items-center justify-center gap-2"
-                                        >
-                                            {isSubmitting ? (
-                                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="w-3.5 h-3.5" />
-                                                    Complete Assessment
-                                                </>
+                                ) : (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
+                                        <Unlock className="w-3 h-3" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Open</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-4 flex-grow">
+                                <div>
+                                    <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">Schedule</p>
+                                    <p className="text-base font-black text-heading leading-tight">
+                                        {new Date(slot.start_time).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1.5 text-xs font-bold text-muted">
+                                        <Clock className="w-3.5 h-3.5 opacity-60" />
+                                        <span>
+                                            {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {" — "}
+                                            {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-gray-50">
+                                    {slot.candidates ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100">
+                                                <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Booked By</p>
+                                                <p className="text-[13px] font-black text-heading truncate">{slot.candidates.name}</p>
+                                                <span className="text-[10px] font-bold text-primary mt-1 block tracking-tight">{slot.candidates.status}</span>
+                                            </div>
+                                            {slot.candidates.status === "Assessment Scheduled" && (
+                                                <button
+                                                    onClick={() => markCompleted(slot.id, slot.candidates!.id)}
+                                                    disabled={isSubmitting}
+                                                    className="w-full btn-primary !py-2 text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
+                                                >
+                                                    {isSubmitting ? (
+                                                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle className="w-3.5 h-3.5" />
+                                                            Mark Evaluation Complete
+                                                        </>
+                                                    )}
+                                                </button>
                                             )}
-                                        </button>
+                                        </div>
+                                    ) : (
+                                        <div className="py-2 flex items-center gap-2 text-gray-400 italic text-[11px] font-medium">
+                                            <Info className="w-3.5 h-3.5" />
+                                            Active Inventory — Unassigned
+                                        </div>
                                     )}
-                                </>
-                            ) : (
-                                <span className="text-sm text-gray-400 italic">Available</span>
-                            )}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {slots.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-gray-500 card bg-gray-50/50 border-dashed">
-                        No assessment slots created yet.
+                    <div className="col-span-full py-16 text-center text-muted bg-gray-50 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center gap-3">
+                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-300">
+                            <CalendarIcon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-gray-600">No Assessment Slots</p>
+                            <p className="text-xs mt-1">Start by creating manual inventory for candidates to book.</p>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* Create Slot Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-4 border-b border-border flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-800">Create New Slot</h3>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-heading/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div className="p-8 border-b border-border flex justify-between items-start bg-surface-alt">
+                            <div>
+                                <h3 className="font-black text-heading text-xl uppercase italic tracking-tight">Create Inventory</h3>
+                                <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mt-1">Define New Assessment Period</p>
+                            </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="p-2.5 bg-white text-muted rounded-xl shadow-sm hover:rotate-90 transition-all hover:text-heading border border-border/50"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleCreateSlot} className="p-6 space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-gray-700">Date</label>
-                                <input type="date" name="date" required className="input-field" />
+                        <form onSubmit={handleCreateSlot} className="p-8 space-y-5">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-black text-muted uppercase tracking-widest pl-1">Target Date</label>
+                                <input type="date" name="date" required className="input-field !py-3 !rounded-xl font-bold text-heading" />
                             </div>
-                            <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">Start Time</label>
-                                    <input type="time" name="startTime" required className="input-field" />
-                                    <p className="text-[10px] text-primary font-medium mt-1 uppercase tracking-wider">
-                                        Note: All assessment slots are 2 hours long.
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-black text-muted uppercase tracking-widest pl-1">Start Time</label>
+                                <input type="time" name="startTime" required className="input-field !py-3 !rounded-xl font-bold text-heading" />
+                                <div className="flex items-start gap-2 bg-primary/5 p-3 rounded-xl border border-primary/10 mt-3">
+                                    <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-primary/80 font-bold leading-relaxed uppercase tracking-tight">
+                                        System Protocol: Assessment windows are strictly 120 minutes in duration.
+                                        Ending time will be automatically calculated.
                                     </p>
                                 </div>
                             </div>
 
                             {error && (
-                                <p className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 italic">
-                                    {error}
+                                <p className="text-[11px] text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100 font-bold italic">
+                                    SYSTEM ERROR: {error}
                                 </p>
                             )}
 
                             <div className="pt-4 flex gap-3">
                                 <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="btn-secondary flex-1"
-                                >
-                                    Cancel
-                                </button>
-                                <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="btn-primary flex-1 flex items-center justify-center gap-2"
+                                    className="btn-primary w-full shadow-lg shadow-primary/20 flex items-center justify-center gap-2 py-3 text-sm"
                                 >
                                     {isSubmitting ? (
-                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
-                                        "Create Slot"
+                                        "GENERATE SLOT"
                                     )}
                                 </button>
                             </div>

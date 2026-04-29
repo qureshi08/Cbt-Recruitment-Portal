@@ -355,20 +355,20 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     return (
         <div className="space-y-3">
             {/* Search and Filter Bar */}
-            <div className="bg-white border border-border rounded-2xl p-3 flex flex-col md:flex-row gap-3 items-center shadow-sm">
+            <div className="bg-white border border-border rounded-xl px-4 py-2.5 flex flex-col sm:flex-row gap-2.5 items-center shadow-sm">
                 <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
                     <input
                         type="text"
                         placeholder="Filter by name, email or mobile..."
-                        className="w-full bg-gray-50 border border-border rounded-xl pl-9 pr-3 py-2 text-xs font-medium focus:border-primary focus:ring-2 focus:ring-emerald-500/5 placeholder:text-muted outline-none"
+                        className="w-full bg-gray-50 border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs font-medium focus:border-primary focus:ring-2 focus:ring-emerald-500/5 placeholder:text-muted outline-none transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-4 shrink-0">
                     <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-black text-muted uppercase tracking-wider whitespace-nowrap">Status:</span>
+                        <span className="text-[9px] font-black text-muted uppercase tracking-wider">Status</span>
                         <select
                             className="border border-border bg-gray-50 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer hover:border-primary transition-colors outline-none text-gray-700"
                             value={statusFilter}
@@ -380,7 +380,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         </select>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-black text-muted uppercase tracking-wider whitespace-nowrap">Batch:</span>
+                        <span className="text-[9px] font-black text-muted uppercase tracking-wider">Batch</span>
                         <select
                             className="border border-border bg-gray-50 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer hover:border-primary transition-colors outline-none text-gray-700"
                             value={batchFilter}
@@ -394,329 +394,331 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 </div>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-border bg-white shadow-sm">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50 border-b border-border text-[9px]">
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Batch</th>
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Candidate</th>
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Info</th>
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">AI Score</th>
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Assessment</th>
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Interview</th>
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60 bg-white">
-                        {filteredCandidates.map((candidate) => (
-                            <tr key={candidate.id} className="hover:bg-primary/[0.02] transition-colors">
-                                <td className="px-3 py-3">
-                                    <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-                                        {candidate.batch_number || 'N/A'}
-                                    </span>
-                                </td>
-                                <td className="px-3 py-3 max-w-[180px]">
-                                    <div className="flex flex-col gap-0.5">
-                                        <span className="text-xs font-bold text-gray-900 leading-tight truncate" title={candidate.name}>{candidate.name}</span>
-                                        <span className="text-[10px] text-gray-400 font-medium truncate" title={candidate.email}>{candidate.email}</span>
-                                        {candidate.phone && (
-                                            <span className="text-[10px] text-primary font-bold flex items-center gap-1">
-                                                <Phone className="w-2.5 h-2.5 shrink-0" />
-                                                {candidate.phone}
-                                            </span>
-                                        )}
-                                        {candidate.cnic && (
-                                            <span className="text-[9px] text-gray-400 font-mono truncate" title={`CNIC: ${candidate.cnic}`}>
-                                                {formatCNIC(candidate.cnic)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-3 py-3 max-w-[140px]">
-                                    <div className="flex flex-col gap-0.5">
-                                        {candidate.location && (
-                                            <span className="text-[9px] font-medium text-gray-500 truncate" title={candidate.location}>
-                                                📍 {candidate.location}
-                                            </span>
-                                        )}
-                                        {candidate.degree_field && (
-                                            <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-medium border border-blue-100/50 truncate" title={candidate.degree_field}>
-                                                {candidate.degree_field}
-                                            </span>
-                                        )}
-                                        <div className="flex items-center gap-1 flex-wrap">
-                                            {candidate.graduation_year && (
-                                                <span className="text-[8px] text-gray-400 font-bold bg-gray-100 px-1 py-0.5 rounded">
-                                                    '{candidate.graduation_year.slice(-2)}
+            <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '680px' }}>
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-border">
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider w-14">Batch</th>
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider w-[22%]">Candidate / Contact</th>
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider w-[18%]">Demographics</th>
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider w-[20%]">AI Analysis</th>
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider w-[12%]">Assessment Score</th>
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider w-[14%]">Interview</th>
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider w-[14%]">Status</th>
+                                <th className="px-3 py-2.5 text-[9px] font-black text-muted uppercase tracking-wider text-right w-[10%]">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/60 bg-white">
+                            {filteredCandidates.map((candidate) => (
+                                <tr key={candidate.id} className="hover:bg-primary/[0.02] transition-colors">
+                                    <td className="px-3 py-3">
+                                        <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                                            {candidate.batch_number || 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td className="px-3 py-3 overflow-hidden">
+                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                            <span className="text-xs font-bold text-gray-900 leading-tight truncate" title={candidate.name}>{candidate.name}</span>
+                                            <span className="text-[10px] text-gray-400 font-medium truncate" title={candidate.email}>{candidate.email}</span>
+                                            {candidate.phone && (
+                                                <span className="text-[10px] text-primary font-bold flex items-center gap-1">
+                                                    <Phone className="w-2.5 h-2.5 shrink-0" />
+                                                    {candidate.phone}
                                                 </span>
                                             )}
-                                            {candidate.education_status && candidate.education_status !== 'Graduated' && (
-                                                <span className="text-[8px] text-yellow-600 font-bold bg-yellow-50 px-1 py-0.5 rounded">Student</span>
+                                            {candidate.cnic && (
+                                                <span className="text-[9px] text-gray-400 font-mono truncate" title={`CNIC: ${candidate.cnic}`}>
+                                                    {formatCNIC(candidate.cnic)}
+                                                </span>
                                             )}
                                         </div>
-                                        {!candidate.location && !candidate.degree_field && (
-                                            <span className="text-[9px] text-gray-400 italic">N/A</span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-3 py-3">
-                                    {candidate.ai_score !== undefined ? (
-                                        <div className="flex flex-col items-start gap-1">
-                                            <div
-                                                className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-                                                onClick={() => setSelectedAiReasoning(candidate)}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <div className={cn(
-                                                        "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm",
-                                                        candidate.ai_score >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
-                                                            candidate.ai_score >= 50 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
-                                                                "bg-red-100 text-red-700 border border-red-200"
-                                                    )}>
-                                                        {candidate.ai_score}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-[10px] font-bold text-gray-700">
-                                                                {candidate.ai_analysis_json?.verdict || 'Start Analyzing'}
-                                                            </span>
-                                                            <Sparkles className="w-2.5 h-2.5 text-primary animate-pulse" />
+                                    </td>
+                                    <td className="px-3 py-3 overflow-hidden">
+                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                            {candidate.location && (
+                                                <span className="text-[9px] font-medium text-gray-500 truncate" title={candidate.location}>
+                                                    📍 {candidate.location}
+                                                </span>
+                                            )}
+                                            {candidate.degree_field && (
+                                                <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-medium border border-blue-100/50 truncate" title={candidate.degree_field}>
+                                                    {candidate.degree_field}
+                                                </span>
+                                            )}
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                                {candidate.graduation_year && (
+                                                    <span className="text-[8px] text-gray-400 font-bold bg-gray-100 px-1 py-0.5 rounded">
+                                                        '{candidate.graduation_year.slice(-2)}
+                                                    </span>
+                                                )}
+                                                {candidate.education_status && candidate.education_status !== 'Graduated' && (
+                                                    <span className="text-[8px] text-yellow-600 font-bold bg-yellow-50 px-1 py-0.5 rounded">Student</span>
+                                                )}
+                                            </div>
+                                            {!candidate.location && !candidate.degree_field && (
+                                                <span className="text-[9px] text-gray-400 italic">N/A</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-3 py-3">
+                                        {candidate.ai_score !== undefined ? (
+                                            <div className="flex flex-col items-start gap-1">
+                                                <div
+                                                    className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                                    onClick={() => setSelectedAiReasoning(candidate)}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={cn(
+                                                            "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm",
+                                                            candidate.ai_score >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
+                                                                candidate.ai_score >= 50 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
+                                                                    "bg-red-100 text-red-700 border border-red-200"
+                                                        )}>
+                                                            {candidate.ai_score}
                                                         </div>
-                                                        <p className="text-[9px] text-gray-400 truncate max-w-[100px]">
-                                                            {candidate.ai_reasoning}
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-[10px] font-bold text-gray-700">
+                                                                    {candidate.ai_analysis_json?.verdict || 'Start Analyzing'}
+                                                                </span>
+                                                                <Sparkles className="w-2.5 h-2.5 text-primary animate-pulse" />
+                                                            </div>
+                                                            <p className="text-[9px] text-gray-400 truncate max-w-[100px]">
+                                                                {candidate.ai_reasoning}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {candidate.resume_url && (
+                                                    <a
+                                                        href={candidate.resume_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                    >
+                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                        Resume
+                                                    </a>
+                                                )}
+                                            </div>
+                                        ) : (canApprove && (candidate.resume_url)) ? (
+                                            <div className="flex flex-col gap-2 items-start max-w-[200px]">
+                                                <button
+                                                    onClick={() => handleAiAnalysis(candidate.id)}
+                                                    disabled={analyzingId === candidate.id}
+                                                    className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black rounded-xl border transition-all disabled:opacity-50 ${analysisStatus?.id === candidate.id && analysisStatus.status === 'success'
+                                                        ? 'bg-emerald-500 text-white border-emerald-600'
+                                                        : analysisStatus?.id === candidate.id && analysisStatus.status === 'error'
+                                                            ? 'bg-rose-500 text-white border-rose-600'
+                                                            : 'bg-primary/10 text-primary border-primary/10 hover:bg-primary hover:text-white'
+                                                        }`}
+                                                >
+                                                    {analyzingId === candidate.id ? (
+                                                        <span className="w-3 h-3 border-2 border-primary/30 border-t-white rounded-full animate-spin" />
+                                                    ) : analysisStatus?.id === candidate.id && analysisStatus.status === 'success' ? (
+                                                        <Check className="w-3.5 h-3.5" />
+                                                    ) : <Sparkles className="w-3.5 h-3.5" />}
+                                                    {analyzingId === candidate.id ? 'ANALYZING...' :
+                                                        analysisStatus?.id === candidate.id && analysisStatus.status === 'success' ? 'DONE!' :
+                                                            'RUN AI SCREENING'}
+                                                </button>
+
+                                                {analysisStatus?.id === candidate.id && analysisStatus.status === 'error' && (
+                                                    <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg shadow-sm">
+                                                        <p className="text-[9px] text-rose-700 leading-tight">
+                                                            <strong className="block uppercase tracking-widest text-[8px] mb-1">Diagnostic Report:</strong>
+                                                            {analysisStatus.message}
                                                         </p>
                                                     </div>
-                                                </div>
+                                                )}
+
+                                                {candidate.resume_url && (
+                                                    <a
+                                                        href={candidate.resume_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                    >
+                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                        Resume
+                                                    </a>
+                                                )}
                                             </div>
-                                            {candidate.resume_url && (
-                                                <a
-                                                    href={candidate.resume_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
-                                                >
-                                                    <ExternalLink className="w-2.5 h-2.5" />
-                                                    Resume
-                                                </a>
-                                            )}
-                                        </div>
-                                    ) : (canApprove && (candidate.resume_url)) ? (
-                                        <div className="flex flex-col gap-2 items-start max-w-[200px]">
-                                            <button
-                                                onClick={() => handleAiAnalysis(candidate.id)}
-                                                disabled={analyzingId === candidate.id}
-                                                className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black rounded-xl border transition-all disabled:opacity-50 ${analysisStatus?.id === candidate.id && analysisStatus.status === 'success'
-                                                    ? 'bg-emerald-500 text-white border-emerald-600'
-                                                    : analysisStatus?.id === candidate.id && analysisStatus.status === 'error'
-                                                        ? 'bg-rose-500 text-white border-rose-600'
-                                                        : 'bg-primary/10 text-primary border-primary/10 hover:bg-primary hover:text-white'
-                                                    }`}
-                                            >
-                                                {analyzingId === candidate.id ? (
-                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-white rounded-full animate-spin" />
-                                                ) : analysisStatus?.id === candidate.id && analysisStatus.status === 'success' ? (
-                                                    <Check className="w-3.5 h-3.5" />
-                                                ) : <Sparkles className="w-3.5 h-3.5" />}
-                                                {analyzingId === candidate.id ? 'ANALYZING...' :
-                                                    analysisStatus?.id === candidate.id && analysisStatus.status === 'success' ? 'DONE!' :
-                                                        'RUN AI SCREENING'}
-                                            </button>
-
-                                            {analysisStatus?.id === candidate.id && analysisStatus.status === 'error' && (
-                                                <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg shadow-sm">
-                                                    <p className="text-[9px] text-rose-700 leading-tight">
-                                                        <strong className="block uppercase tracking-widest text-[8px] mb-1">Diagnostic Report:</strong>
-                                                        {analysisStatus.message}
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {candidate.resume_url && (
-                                                <a
-                                                    href={candidate.resume_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
-                                                >
-                                                    <ExternalLink className="w-2.5 h-2.5" />
-                                                    Resume
-                                                </a>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col gap-1 items-start">
-                                            <span className="text-[10px] text-gray-400 italic">
-                                                {!candidate.resume_url ? 'No resume' : 'No analysis'}
-                                            </span>
-                                            {candidate.resume_url && (
-                                                <a
-                                                    href={candidate.resume_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
-                                                >
-                                                    <ExternalLink className="w-2.5 h-2.5" />
-                                                    Resume
-                                                </a>
-                                            )}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="px-3 py-3">
-                                    {candidate.assessment_score_url ? (
-                                        <a
-                                            href={candidate.assessment_score_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
-                                        >
-                                            <ExternalLink className="w-3.5 h-3.5" />
-                                            View Score Sheet
-                                        </a>
-                                    ) : (isMaster || isHR) ? (
-                                        <div className="flex items-center gap-2">
-                                            <label className="cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 flex items-center gap-2 transition-all">
-                                                {uploadingScore === candidate.id ? (
-                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                                ) : <Upload className="w-3 h-3" />}
-                                                Upload Score
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleScoreUpload(candidate.id, file);
-                                                    }}
-                                                />
-                                            </label>
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs text-gray-400 italic">No score uploaded</span>
-                                    )}
-                                </td>
-                                {/* Interview Scores */}
-                                <td className="px-3 py-3">
-                                    {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
-                                        <div className="flex flex-col gap-1.5">
-                                            {candidate.interview_scores.l1_feedback_json && (
-                                                <div className="flex flex-col gap-0.5 mb-1 last:mb-0">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-[9px] font-black text-blue-500 uppercase">L1</span>
-                                                        <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l1_feedback_json))} />
-                                                        <span className="text-[10px] font-black text-blue-700">{calcAvg(candidate.interview_scores.l1_feedback_json).toFixed(1)}</span>
-                                                    </div>
-                                                    {candidate.interview_scores.l1_interviewer_name && (
-                                                        <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l1_interviewer_name}</span>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {candidate.interview_scores.l2_feedback_json && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-[9px] font-black text-purple-500 uppercase">L2</span>
-                                                        <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l2_feedback_json))} />
-                                                        <span className="text-[10px] font-black text-purple-700">{calcAvg(candidate.interview_scores.l2_feedback_json).toFixed(1)}</span>
-                                                    </div>
-                                                    {candidate.interview_scores.l2_interviewer_name && (
-                                                        <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l2_interviewer_name}</span>
-                                                    )}
-                                                </div>
-                                            )}
-                                            <button
-                                                onClick={() => setSelectedInterviewScores(candidate)}
-                                                className="flex items-center gap-1 text-[9px] font-bold text-gray-500 hover:text-primary transition-colors mt-0.5"
-                                            >
-                                                <ClipboardList className="w-2.5 h-2.5" />
-                                                View Report
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <span className="text-[10px] text-gray-300 italic">—</span>
-                                    )}
-                                </td>
-                                <td className="px-3 py-3">
-                                    <div className="flex flex-col items-start gap-1">
-                                        <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
-                                            {candidate.status}
-                                        </span>
-                                        {candidate.last_action_by && (
-                                            <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                                                By: {candidate.last_action_by}
-                                            </span>
+                                        ) : (
+                                            <div className="flex flex-col gap-1 items-start">
+                                                <span className="text-[10px] text-gray-400 italic">
+                                                    {!candidate.resume_url ? 'No resume' : 'No analysis'}
+                                                </span>
+                                                {candidate.resume_url && (
+                                                    <a
+                                                        href={candidate.resume_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                    >
+                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                        Resume
+                                                    </a>
+                                                )}
+                                            </div>
                                         )}
-                                    </div>
-                                </td>
-                                <td className="px-3 py-3 text-right">
-                                    <div className="flex justify-end gap-2">
-                                        {candidate.status === 'Approved' && (isMaster || isHR) && (
-                                            <button
-                                                onClick={() => copyBookingLink(candidate.id)}
-                                                className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20 transition-all border border-primary/20"
-                                                title="Copy booking link for candidate"
+                                    </td>
+                                    <td className="px-3 py-3">
+                                        {candidate.assessment_score_url ? (
+                                            <a
+                                                href={candidate.assessment_score_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
                                             >
-                                                {copiedId === candidate.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                                {copiedId === candidate.id ? "Copied" : "Booking Link"}
-                                            </button>
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                View Score Sheet
+                                            </a>
+                                        ) : (isMaster || isHR) ? (
+                                            <div className="flex items-center gap-2">
+                                                <label className="cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 flex items-center gap-2 transition-all">
+                                                    {uploadingScore === candidate.id ? (
+                                                        <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                    ) : <Upload className="w-3 h-3" />}
+                                                    Upload Score
+                                                    <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) handleScoreUpload(candidate.id, file);
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 italic">No score uploaded</span>
                                         )}
-
-
-
-                                        {candidate.status === 'Applied' && canApprove && (
-                                            <>
+                                    </td>
+                                    {/* Interview Scores */}
+                                    <td className="px-3 py-3">
+                                        {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
+                                            <div className="flex flex-col gap-1.5">
+                                                {candidate.interview_scores.l1_feedback_json && (
+                                                    <div className="flex flex-col gap-0.5 mb-1 last:mb-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[9px] font-black text-blue-500 uppercase">L1</span>
+                                                            <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l1_feedback_json))} />
+                                                            <span className="text-[10px] font-black text-blue-700">{calcAvg(candidate.interview_scores.l1_feedback_json).toFixed(1)}</span>
+                                                        </div>
+                                                        {candidate.interview_scores.l1_interviewer_name && (
+                                                            <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l1_interviewer_name}</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {candidate.interview_scores.l2_feedback_json && (
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[9px] font-black text-purple-500 uppercase">L2</span>
+                                                            <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l2_feedback_json))} />
+                                                            <span className="text-[10px] font-black text-purple-700">{calcAvg(candidate.interview_scores.l2_feedback_json).toFixed(1)}</span>
+                                                        </div>
+                                                        {candidate.interview_scores.l2_interviewer_name && (
+                                                            <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l2_interviewer_name}</span>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <button
-                                                    onClick={() => handleStatusUpdate(candidate.id, 'Approved')}
-                                                    className="p-1.5 hover:bg-green-50 rounded text-green-600 transition-colors"
-                                                    title="Approve"
+                                                    onClick={() => setSelectedInterviewScores(candidate)}
+                                                    className="flex items-center gap-1 text-[9px] font-bold text-gray-500 hover:text-primary transition-colors mt-0.5"
                                                 >
-                                                    <CheckCircle className="w-4 h-4" />
+                                                    <ClipboardList className="w-2.5 h-2.5" />
+                                                    View Report
                                                 </button>
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] text-gray-300 italic">—</span>
+                                        )}
+                                    </td>
+                                    <td className="px-3 py-3">
+                                        <div className="flex flex-col items-start gap-1">
+                                            <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
+                                                {candidate.status}
+                                            </span>
+                                            {candidate.last_action_by && (
+                                                <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
+                                                    By: {candidate.last_action_by}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-3 py-3 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            {candidate.status === 'Approved' && (isMaster || isHR) && (
                                                 <button
-                                                    onClick={() => handleStatusUpdate(candidate.id, 'Rejected')}
+                                                    onClick={() => copyBookingLink(candidate.id)}
+                                                    className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20 transition-all border border-primary/20"
+                                                    title="Copy booking link for candidate"
+                                                >
+                                                    {copiedId === candidate.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                                    {copiedId === candidate.id ? "Copied" : "Booking Link"}
+                                                </button>
+                                            )}
+
+
+
+                                            {candidate.status === 'Applied' && canApprove && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleStatusUpdate(candidate.id, 'Approved')}
+                                                        className="p-1.5 hover:bg-green-50 rounded text-green-600 transition-colors"
+                                                        title="Approve"
+                                                    >
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleStatusUpdate(candidate.id, 'Rejected')}
+                                                        className="p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors"
+                                                        title="Reject"
+                                                    >
+                                                        <XCircle className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            )}
+
+                                            {(isMaster || isHR || isApprover) && (
+                                                <button
+                                                    onClick={() => setEditingCandidate(candidate)}
+                                                    className="p-1.5 hover:bg-blue-50 rounded text-blue-600 transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+
+                                            {canDelete && (
+                                                <button
+                                                    onClick={() => handleDelete(candidate.id)}
                                                     className="p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors"
-                                                    title="Reject"
+                                                    title="Delete"
                                                 >
-                                                    <XCircle className="w-4 h-4" />
+                                                    <Trash2 className="w-4 h-4" />
                                                 </button>
-                                            </>
-                                        )}
-
-                                        {(isMaster || isHR || isApprover) && (
-                                            <button
-                                                onClick={() => setEditingCandidate(candidate)}
-                                                className="p-1.5 hover:bg-blue-50 rounded text-blue-600 transition-colors"
-                                                title="Edit"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                        )}
-
-                                        {canDelete && (
-                                            <button
-                                                onClick={() => handleDelete(candidate.id)}
-                                                className="p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors"
-                                                title="Delete"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        )}
+                                            )}
 
 
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredCandidates.length === 0 && (
-                            <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 italic">
-                                    No candidates match your search.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div >
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredCandidates.length === 0 && (
+                                <tr>
+                                    <td colSpan={8} className="px-6 py-12 text-center text-muted text-sm italic">
+                                        No candidates match your search.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             {/* Edit Candidate Modal */}
             {

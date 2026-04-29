@@ -58,17 +58,19 @@ export default function Sidebar({ userRoles }: SidebarProps) {
 
             <aside
                 className={cn(
-                    "w-56 glass border-r border-border flex flex-col h-screen fixed left-0 top-0 z-50 transition-transform duration-300",
+                    "w-[220px] bg-white/80 backdrop-blur-xl border-r border-border/50 flex flex-col h-screen fixed left-0 top-0 z-50 transition-transform duration-300",
                     isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 )}
             >
-                <div className="p-3 px-4 border-b border-border/40 flex items-center bg-white/50">
-                    <Logo withText={true} className="scale-90 origin-left" />
-                    <button onClick={() => setIsOpen(false)} className="md:hidden ml-auto p-1 rounded-md hover:bg-gray-100">
+                {/* Logo Header */}
+                <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between bg-white/60 min-h-[56px]">
+                    <Logo withText={true} />
+                    <button onClick={() => setIsOpen(false)} className="md:hidden p-1 rounded-md hover:bg-gray-100">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
 
+                {/* Navigation */}
                 <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
                     {allowedItems.map((item) => {
                         const isActive = pathname === item.href;
@@ -78,10 +80,10 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                                 href={item.href}
                                 onClick={() => setIsOpen(false)}
                                 className={cn(
-                                    "flex items-center justify-between px-3 py-1.5 rounded-xl transition-all group",
+                                    "flex items-center justify-between px-3 py-2 rounded-xl transition-all group",
                                     isActive
                                         ? "bg-primary text-white shadow-lg shadow-primary/20 font-bold"
-                                        : "text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-sm"
+                                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
                                 )}
                             >
                                 <div className="flex items-center gap-2.5">
@@ -94,11 +96,12 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                     })}
                 </nav>
 
-                <div className="p-3 border-t border-border bg-white/50">
+                {/* Logout */}
+                <div className="p-3 border-t border-border/40 bg-white/60">
                     <form action={logout}>
                         <button
                             type="submit"
-                            className="flex items-center gap-2 px-3 py-1.5 w-full text-gray-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors text-xs"
+                            className="flex items-center gap-2 px-3 py-2 w-full text-gray-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors text-xs font-medium"
                         >
                             <LogOut className="w-3.5 h-3.5 shrink-0" />
                             <span>Logout</span>

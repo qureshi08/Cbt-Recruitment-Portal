@@ -36,11 +36,11 @@ export default async function ApplicationsPage() {
     }));
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-5">
+            <div className="admin-page-header">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Applications</h2>
-                    <p className="text-sm text-gray-500">Manage all recruitment applications in one place.</p>
+                    <h1 className="admin-page-title">Applications</h1>
+                    <p className="admin-page-subtitle">Manage all recruitment applications in one place.</p>
                 </div>
             </div>
 

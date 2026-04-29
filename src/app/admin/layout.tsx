@@ -26,35 +26,53 @@ export default async function AdminLayout({
     const roles = user.roles;
 
     return (
-        <div className="flex h-screen bg-[#FAFBFC] overflow-hidden">
+        <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
             <Sidebar userRoles={roles} />
-            <div className="flex-1 ml-0 md:ml-56 flex flex-col min-w-0 h-full overflow-hidden">
-                <header className="h-14 glass sticky top-0 z-20 flex items-center justify-end md:justify-between px-4 md:px-8 border-b border-border/30">
-                    <div className="hidden md:block"></div>
 
-                    <div className="flex items-center gap-4">
+            {/* Main content — offset by sidebar width, no horizontal overflow */}
+            <div className="flex-1 ml-0 md:ml-[220px] flex flex-col min-w-0 h-full overflow-hidden">
+
+                {/* Top Header */}
+                <header className="h-14 bg-white/80 backdrop-blur-xl sticky top-0 z-20 flex items-center justify-between px-5 border-b border-border/30 shadow-[0_1px_0_0_rgba(0,0,0,0.04)] shrink-0">
+                    {/* Page context — left side */}
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[11px] font-black text-muted uppercase tracking-[0.15em] leading-none">
+                                Convergent Graduate Academy
+                            </span>
+                            <span className="text-[13px] font-bold text-heading leading-none mt-0.5 truncate">
+                                Admin Console
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Right side — notifications + user pill */}
+                    <div className="flex items-center gap-3 shrink-0">
                         <NotificationBell />
 
-                        <div className="flex items-center gap-2 bg-white px-2.5 py-1 rounded-full border border-gray-100 shadow-sm">
-                            <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shadow-md shadow-primary/20">
+                        <div className="flex items-center gap-2.5 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
+                            <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-black text-[11px] shadow-md shadow-primary/20 shrink-0">
                                 {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </div>
-                            <div className="flex flex-col text-left">
-                                <span className="text-[12px] font-semibold text-gray-900 leading-none">
+                            <div className="flex flex-col text-left min-w-0">
+                                <span className="text-[12px] font-semibold text-heading leading-none truncate max-w-[120px]">
                                     {user.full_name || 'User'}
                                 </span>
-                                <span className="text-[10px] font-medium text-gray-500 leading-none mt-0.5">
+                                <span className="text-[10px] font-medium text-muted leading-none mt-0.5 truncate max-w-[160px]">
                                     {user.email}
                                 </span>
                             </div>
                         </div>
                     </div>
                 </header>
-                <main className="flex-1 p-3 md:p-5 overflow-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="max-w-[1440px] mx-auto w-full">
+
+                {/* Scrollable page content */}
+                <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                    <div className="p-4 md:p-6 max-w-[1440px] mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
                         {children}
                     </div>
                 </main>
+
             </div>
         </div>
     );
