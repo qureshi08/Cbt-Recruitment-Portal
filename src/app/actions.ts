@@ -1304,10 +1304,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
             if (visionImages.length > 0) {
                 content = [
-                    {
-                        type: "text",
-                        text: `${prompt}\n\nSTRICT JSON ONLY.`
-                    },
+                    { type: "text", text: `${prompt}\n\nSTRICT JSON ONLY.` },
                     ...visionImages.map((b64: string) => ({
                         type: "image_url",
                         image_url: { url: `data:image/jpeg;base64,${b64}` }
@@ -1325,9 +1322,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 },
                 body: JSON.stringify({
                     "model": "google/gemini-2.0-flash-001",
-                    "messages": [
-                        { "role": "user", "content": content }
-                    ],
+                    "messages": [{ "role": "user", "content": content }],
                     "max_tokens": 1200,
                     "response_format": { "type": "json_object" },
                     "temperature": 0.1
@@ -1342,22 +1337,24 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             const data = await response.json();
             const responseContent = data.choices?.[0]?.message?.content;
             if (!responseContent) throw new Error("AI returned an empty response");
-
             const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
-            const cleanedContent = jsonMatch ? jsonMatch[0] : responseContent;
-            analysis = JSON.parse(cleanedContent.replace(/```json/gi, "").replace(/```/g, "").trim());
+            analysis = JSON.parse((jsonMatch ? jsonMatch[0] : responseContent).replace(/```json/gi, "").replace(/```/g, "").trim());
         } else {
+            // Direct Google SDK Implementation with V1 API and Fallbacks
             const genAI = new GoogleGenerativeAI(apiKey);
-            // Multi-model fallback list: tries the most capable first, then faster ones
-            const modelsToTry = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"];
+            const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
             let lastErr = null;
 
             for (const modelName of modelsToTry) {
                 try {
-                    const model = genAI.getGenerativeModel({ model: modelName });
+                    // Force v1 API version to avoid v1beta 404s
+                    const model = genAI.getGenerativeModel(
+                        { model: modelName },
+                        { apiVersion: 'v1' }
+                    );
+
                     const visionImages = (candidate as any)._vision_images || [];
                     let result;
-
                     if (visionImages.length > 0) {
                         const promptPart = { text: `${prompt}\n\nSTRICT JSON ONLY.` };
                         const imageParts = visionImages.map((b64: string) => ({
@@ -1374,12 +1371,36 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
                     if (analysis) break;
                 } catch (err: any) {
-                    console.warn(`Model ${modelName} failed, trying next... Error: ${err.message}`);
+                    console.warn(`[SDK v1] Model ${modelName} failed: ${err.message}`);
                     lastErr = err;
-                    continue;
                 }
             }
-            if (!analysis) throw lastErr || new Error("Direct AI communication failed.");
+
+            // FINAL FALLBACK: If Direct SDK fails even with v1, try OpenRouter as a last resort
+            if (!analysis && process.env.OPENROUTER_API_KEY) {
+                console.log("Direct SDK failed completely. Attempting OpenRouter fallback...");
+                const orResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "model": "google/gemini-2.0-flash-001",
+                        "messages": [{ "role": "user", "content": prompt }],
+                        "max_tokens": 1200,
+                        "response_format": { "type": "json_object" }
+                    })
+                });
+                if (orResponse.ok) {
+                    const orData = await orResponse.json();
+                    const orContent = orData.choices?.[0]?.message?.content;
+                    const orMatch = orContent.match(/\{[\s\S]*\}/);
+                    analysis = JSON.parse((orMatch ? orMatch[0] : orContent).replace(/```json/gi, "").replace(/```/g, "").trim());
+                }
+            }
+
+            if (!analysis) throw lastErr || new Error("AI analysis failed on all available pathways.");
         }
 
         const { error: updateError } = await supabaseAdmin
