@@ -34,16 +34,8 @@ export default async function AdminLayout({
 
                 {/* Top Header */}
                 <header className="h-14 bg-white/80 backdrop-blur-xl sticky top-0 z-20 flex items-center justify-between px-5 border-b border-border/30 shadow-[0_1px_0_0_rgba(0,0,0,0.04)] shrink-0">
-                    {/* Page context — left side */}
+                    {/* Page context — removed redundant text as per request */}
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[11px] font-black text-muted uppercase tracking-[0.15em] leading-none">
-                                Convergent Graduate Academy
-                            </span>
-                            <span className="text-[13px] font-bold text-heading leading-none mt-0.5 truncate">
-                                Admin Console
-                            </span>
-                        </div>
                     </div>
 
                     {/* Right side — notifications + user pill */}
