@@ -91,43 +91,97 @@ export const sendTeamNotification = async (recipients: string[], subject: string
   return transporter.sendMail(mailOptions);
 };
 
-export const notifyRecruitmentTeam = async (teamEmails: string[], type: 'NEW_APPLICATION' | 'SLOT_BOOKED', data: any) => {
-  const subject = type === 'NEW_APPLICATION'
-    ? `New Application: ${data.name}`
-    : `Assessment Scheduled: ${data.name}`;
+export const notifyRole = async (emails: string[], subject: string, title: string, body: string) => {
+  if (!emails || emails.length === 0) return null;
 
-  const content = type === 'NEW_APPLICATION'
-    ? `
-      <h2 style="color: #009245;">New Application Received</h2>
-      <p><strong>Candidate:</strong> ${data.name}</p>
-      <p><strong>Email:</strong> ${data.email}</p>
-      <p><strong>Position:</strong> ${data.position}</p>
-      <p>A new application has been submitted and is ready for initial screening.</p>
-    `
-    : `
-      <h2 style="color: #009245;">Assessment Slot Booked</h2>
-      <p><strong>Candidate:</strong> ${data.name}</p>
-      <p><strong>Time:</strong> ${data.slotTime}</p>
-      <p>The candidate has selected a slot for their technical assessment.</p>
-    `;
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    to: emails.join(','),
+    subject: subject,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+        <h2 style="color: #009245; margin-bottom: 20px;">${title}</h2>
+        <div style="color: #333; line-height: 1.6;">
+          ${body}
+        </div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="font-size: 11px; color: #888;">Automated System Notification from CBT Recruitment Portal</p>
+      </div>
+    `,
+  };
 
-  return sendTeamNotification(teamEmails, subject, content);
+  return transporter.sendMail(mailOptions);
 };
 
-export const notifyInterviewers = async (interviewerEmails: string[], candidateName: string, candidateId: string) => {
-  const subject = `Meeting Request: Interview with ${candidateName}`;
+export const notifyWorkflowStage = async (stage: string, emails: string[], data: any) => {
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const feedbackLink = `${origin}/admin/interviews`;
+  let subject = '';
+  let title = '';
+  let body = '';
 
-  const content = `
-    <h2 style="color: #009245;">Assessment Completed</h2>
-    <p><strong>Candidate:</strong> ${candidateName}</p>
-    <p>The candidate has successfully completed their assessment and is now ready for the interview phase.</p>
-    <p>Please coordinate a meeting time and provide your feedback in the recruitment portal.</p>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${feedbackLink}" style="background-color: #009245; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Provide Feedback</a>
-    </div>
-  `;
+  switch (stage) {
+    case 'NEW_APPLICATION':
+      subject = `[New Application] ${data.name}`;
+      title = 'New Applicant Intake';
+      body = `
+        <p>A new application has been submitted for the <strong>${data.position}</strong> program.</p>
+        <p><strong>Candidate:</strong> ${data.name}<br><strong>Email:</strong> ${data.email}</p>
+        <p>Please log in to the dashboard to review the candidate's profile and AI screening score.</p>
+      `;
+      break;
 
-  return sendTeamNotification(interviewerEmails, subject, content);
+    case 'APPROVED':
+      subject = `[Approved] ${data.name}`;
+      title = 'Candidate Approved';
+      body = `
+        <p><strong>${data.name}</strong> has been approved by the panel.</p>
+        <p>A scheduling link has been sent to the candidate. They are now in the <strong>Approved</strong> stage.</p>
+      `;
+      break;
+
+    case 'SLOT_BOOKED':
+      subject = `[Slot Booked] ${data.name}`;
+      title = 'Assessment Scheduled';
+      body = `
+        <p>A candidate has selected a slot for their technical assessment.</p>
+        <p><strong>Candidate:</strong> ${data.name}<br><strong>Time:</strong> ${data.slotTime}</p>
+      `;
+      break;
+
+    case 'INTERVIEW_L1':
+      subject = `[L1 Request] Interview with ${data.name}`;
+      title = 'Meeting Request: L1 Interview';
+      body = `
+        <p>Candidate <strong>${data.name}</strong> has completed their technical assessment.</p>
+        <p>They are now ready for the <strong>L1 Interview</strong> phase.</p>
+        <div style="margin: 25px 0;">
+          <a href="${origin}/admin/interviews" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review & Submit Feedback</a>
+        </div>
+      `;
+      break;
+
+    case 'INTERVIEW_L2':
+      subject = `[L2 Request] Interview with ${data.name}`;
+      title = 'Meeting Request: L2 Interview';
+      body = `
+        <p>L2 Interview has been requested for candidate <strong>${data.name}</strong> by the L1 panel.</p>
+        <p>Please review the L1 feedback and conduct the follow-up session.</p>
+        <div style="margin: 25px 0;">
+          <a href="${origin}/admin/interviews" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Access Interview Panel</a>
+        </div>
+      `;
+      break;
+
+    case 'DECISION':
+      subject = `[Final Decision] ${data.name}`;
+      title = 'Interview Outcome Reached';
+      body = `
+        <p>A final decision has been recorded for <strong>${data.name}</strong>.</p>
+        <p><strong>Status:</strong> ${data.status}<br><strong>Decision by:</strong> ${data.interviewer}</p>
+        <p>The recruitment team can now proceed with onboarding or closing the file.</p>
+      `;
+      break;
+  }
+
+  return notifyRole(emails, subject, title, body);
 };

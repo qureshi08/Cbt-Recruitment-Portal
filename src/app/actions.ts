@@ -11,8 +11,7 @@ import {
     sendAssessmentEmail,
     sendRecommendedEmail,
     sendNotRecommendedEmail,
-    notifyRecruitmentTeam,
-    notifyInterviewers
+    notifyWorkflowStage
 } from "@/lib/email";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
@@ -417,22 +416,14 @@ export async function submitApplication(formData: FormData) {
             is_read: false
         });
 
-        // Notify recruitment team
+        // Notify recruitment team & Approvers
         try {
-            const { data: teamEmails } = await supabaseAdmin
-                .from('team_notifications')
-                .select('email')
-                .eq('category', 'recruitment_team');
-
-            if (teamEmails && teamEmails.length > 0) {
-                await notifyRecruitmentTeam(
-                    teamEmails.map(t => t.email),
-                    'NEW_APPLICATION',
-                    { name, email, position }
-                );
+            const recipients = await getRecipientsByRoles(['recruitment_team', 'approver']);
+            if (recipients.length > 0) {
+                await notifyWorkflowStage('NEW_APPLICATION', recipients, { name, email, position });
             }
         } catch (notifyErr) {
-            console.error("Recruitment team notification failed:", notifyErr);
+            console.error("Workflow notification failed:", notifyErr);
         }
 
         revalidatePath("/admin");
@@ -473,6 +464,12 @@ export async function updateCandidateStatus(candidateId: string, status: string)
                 if (status === "Approved") {
                     const bookingLink = `${origin}/book-slot/${candidateId}`;
                     await sendAssessmentEmail(candidate.email, candidate.name, bookingLink);
+
+                    // Notify recruitment team about approval
+                    const recipients = await getRecipientsByRoles(['recruitment_team']);
+                    if (recipients.length > 0) {
+                        await notifyWorkflowStage('APPROVED', recipients, { name: candidate.name });
+                    }
                 } else if (status === "Recommended") {
                     await sendRecommendedEmail(candidate.email, candidate.name);
                 } else if (status === "Not Recommended" || status === "Rejected") {
@@ -578,23 +575,15 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
 
         // Notify recruitment team about booking
         try {
-            const { data: teamEmails } = await supabaseAdmin
-                .from('team_notifications')
-                .select('email')
-                .eq('category', 'recruitment_team');
-
-            if (teamEmails && teamEmails.length > 0) {
+            const recipients = await getRecipientsByRoles(['recruitment_team']);
+            if (recipients.length > 0) {
                 const { data: cData } = await supabaseAdmin.from('candidates').select('name').eq('id', candidateId).single();
                 const { data: sData } = await supabaseAdmin.from('assessment_slots').select('start_time').eq('id', slotId).single();
 
-                await notifyRecruitmentTeam(
-                    teamEmails.map(t => t.email),
-                    'SLOT_BOOKED',
-                    {
-                        name: cData?.name || 'A candidate',
-                        slotTime: sData ? new Date(sData.start_time).toLocaleString() : 'N/A'
-                    }
-                );
+                await notifyWorkflowStage('SLOT_BOOKED', recipients, {
+                    name: cData?.name || 'A candidate',
+                    slotTime: sData ? new Date(sData.start_time).toLocaleString() : 'N/A'
+                });
             }
         } catch (notifyErr) {
             console.error("Booking notification failed:", notifyErr);
@@ -677,22 +666,14 @@ export async function completeAssessment(candidateId: string) {
             is_read: false
         });
 
-        // Notify Interviewers (Meeting Request)
+        // Notify L1 Interviewers
         try {
-            const { data: interviewerEmails } = await supabaseAdmin
-                .from('team_notifications')
-                .select('email')
-                .eq('category', 'interviewer');
-
-            if (interviewerEmails && interviewerEmails.length > 0) {
-                await notifyInterviewers(
-                    interviewerEmails.map(t => t.email),
-                    candidate?.name || 'A candidate',
-                    candidateId
-                );
+            const recipients = await getRecipientsByRoles(['l1_interviewer']);
+            if (recipients.length > 0) {
+                await notifyWorkflowStage('INTERVIEW_L1', recipients, { name: candidate?.name || 'A candidate' });
             }
         } catch (notifyErr) {
-            console.error("Interviewer notification failed:", notifyErr);
+            console.error("L1 Interview notification failed:", notifyErr);
         }
 
         revalidatePath("/admin/slots");
@@ -716,6 +697,20 @@ export async function getTeamNotificationRecipients() {
 
     if (error) throw error;
     return data;
+}
+
+// Helper to get emails for specific roles
+async function getRecipientsByRoles(categories: string[]): Promise<string[]> {
+    try {
+        const { data } = await supabaseAdmin
+            .from('team_notifications')
+            .select('email')
+            .in('category', categories);
+        return data?.map(r => r.email) || [];
+    } catch (e) {
+        console.error("Failed to fetch recipients:", e);
+        return [];
+    }
 }
 
 export async function addTeamNotificationRecipient(email: string, category: string) {
@@ -760,10 +755,16 @@ export async function requestL2Interview(interviewId: string, candidateId: strin
         // 2. Update Candidate Status
         await updateCandidateStatus(candidateId, "L2 Interview Required");
 
-        await logAction('INTERVIEW_L2_REQUESTED', candidateId, 'candidate', {
-            interview_id: interviewId,
-            interviewer: interviewerName
-        });
+        // Notify L2 Interviewers
+        try {
+            const recipients = await getRecipientsByRoles(['l2_interviewer']);
+            if (recipients.length > 0) {
+                const { data: cData } = await supabaseAdmin.from('candidates').select('name').eq('id', candidateId).single();
+                await notifyWorkflowStage('INTERVIEW_L2', recipients, { name: cData?.name || 'A candidate' });
+            }
+        } catch (notifyErr) {
+            console.error("L2 Interview notification failed:", notifyErr);
+        }
 
         revalidatePath("/admin/interviews");
         revalidatePath("/admin/applications");
@@ -810,6 +811,21 @@ export async function submitFinalInterviewFeedback(
             decision,
             interviewer: interviewerName
         });
+
+        // Notify recruitment team about final decision
+        try {
+            const recipients = await getRecipientsByRoles(['recruitment_team']);
+            if (recipients.length > 0) {
+                const { data: cData } = await supabaseAdmin.from('candidates').select('name').eq('id', candidateId).single();
+                await notifyWorkflowStage('DECISION', recipients, {
+                    name: cData?.name || 'A candidate',
+                    status: decision,
+                    interviewer: interviewerName
+                });
+            }
+        } catch (notifyErr) {
+            console.error("Decision notification failed:", notifyErr);
+        }
 
         revalidatePath('/admin/interviews');
         revalidatePath('/admin/applications');

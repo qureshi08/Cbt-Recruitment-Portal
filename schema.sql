@@ -162,7 +162,7 @@ create policy "Admins can update notifications" on public.notifications
 create table public.team_notifications (
   id uuid primary key default uuid_generate_v4(),
   email text not null,
-  category text not null, -- 'recruitment_team' or 'interviewer'
+  category text not null, -- 'recruitment_team', 'approver', 'l1_interviewer', 'l2_interviewer'
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

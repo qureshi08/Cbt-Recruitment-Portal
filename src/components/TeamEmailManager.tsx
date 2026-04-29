@@ -10,7 +10,10 @@ import {
     Loader2,
     Users,
     Briefcase,
-    CalendarCheck
+    CalendarCheck,
+    ShieldCheck,
+    UserCircle,
+    UserCog
 } from "lucide-react";
 import { addTeamNotificationRecipient, removeTeamNotificationRecipient } from "@/app/actions";
 import { cn } from "@/lib/utils";
@@ -39,7 +42,6 @@ export default function TeamEmailManager({ initialRecipients }: TeamEmailManager
         if (result.success) {
             setStatus({ type: 'success', message: 'Email recipient added successfully!' });
             setIsAdding(false);
-            // Refresh local state or reload
             setTimeout(() => window.location.reload(), 1000);
         } else {
             setStatus({ type: 'error', message: result.error || 'Failed to add recipient.' });
@@ -59,8 +61,14 @@ export default function TeamEmailManager({ initialRecipients }: TeamEmailManager
         }
     };
 
-    const recruitmentEmails = recipients.filter(r => r.category === 'recruitment_team');
-    const interviewerEmails = recipients.filter(r => r.category === 'interviewer');
+    const getGroup = (cat: string) => recipients.filter(r => r.category === cat);
+
+    const groups = [
+        { id: 'recruitment_team', label: 'Recruitment Team', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { id: 'approver', label: 'Approvers', icon: ShieldCheck, color: 'text-amber-600', bg: 'bg-amber-50' },
+        { id: 'l1_interviewer', label: 'L1 Interviewers', icon: UserCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        { id: 'l2_interviewer', label: 'L2 Interviewers', icon: UserCog, color: 'text-purple-600', bg: 'bg-purple-50' },
+    ];
 
     return (
         <div className="space-y-6">
@@ -68,9 +76,9 @@ export default function TeamEmailManager({ initialRecipients }: TeamEmailManager
                 <div>
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                         <Mail className="w-5 h-5 text-primary" />
-                        Team Notification Settings
+                        Role-Based Notifications
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">Manage who receives automated system notifications.</p>
+                    <p className="text-sm text-gray-500 mt-1">Configure automated emails for each recruitment stage.</p>
                 </div>
                 <button
                     onClick={() => {
@@ -99,18 +107,19 @@ export default function TeamEmailManager({ initialRecipients }: TeamEmailManager
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold text-gray-700">Email Address</label>
-                                <input name="email" type="email" required className="input-field h-11" placeholder="team@convergentbt.com" />
+                                <input name="email" type="email" required className="input-field h-11" placeholder="user@convergentbt.com" />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-gray-700">Notification Category</label>
+                                <label className="text-sm font-semibold text-gray-700">Workflow Role</label>
                                 <select name="category" required className="input-field h-11">
-                                    <option value="recruitment_team">Recruitment Team (New Apps & Bookings)</option>
-                                    <option value="interviewer">Interviewers (Meeting Requests)</option>
+                                    {groups.map(g => (
+                                        <option key={g.id} value={g.id}>{g.label}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
                         <div className="flex justify-end gap-3">
-                            <button type="submit" disabled={isSubmitting} className="btn-primary hover:bg-primary-dark">
+                            <button type="submit" disabled={isSubmitting} className="btn-primary">
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Recipient"}
                             </button>
                         </div>
@@ -118,70 +127,61 @@ export default function TeamEmailManager({ initialRecipients }: TeamEmailManager
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recruitment Team Column */}
-                <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
-                    <div className="p-4 bg-gray-50 border-b border-border flex items-center gap-2">
-                        <Briefcase className="w-4 h-4 text-gray-400" />
-                        <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Recruitment Team</h4>
-                    </div>
-                    <div className="p-2">
-                        {recruitmentEmails.length === 0 ? (
-                            <p className="p-4 text-sm text-gray-400 italic">No emails configured.</p>
-                        ) : (
-                            <div className="divide-y divide-gray-50">
-                                {recruitmentEmails.map((r) => (
-                                    <div key={r.id} className="p-3 flex justify-between items-center group hover:bg-gray-50 rounded-lg transition-colors">
-                                        <span className="text-sm text-gray-600 font-medium">{r.email}</span>
-                                        <button
-                                            onClick={() => handleRemoveRecipient(r.id, r.email)}
-                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {groups.map(group => {
+                    const list = getGroup(group.id);
+                    const Icon = group.icon;
+                    return (
+                        <div key={group.id} className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
+                            <div className={cn("p-4 border-b border-border flex items-center justify-between", group.bg)}>
+                                <div className="flex items-center gap-2">
+                                    <Icon className={cn("w-4 h-4", group.color)} />
+                                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">{group.label}</h4>
+                                </div>
+                                <span className="text-[10px] font-bold bg-white/50 px-2 py-0.5 rounded-full text-gray-500">
+                                    {list.length} {list.length === 1 ? 'e-mail' : 'e-mails'}
+                                </span>
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Interviewers Column */}
-                <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
-                    <div className="p-4 bg-gray-50 border-b border-border flex items-center gap-2">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Interviewers</h4>
-                    </div>
-                    <div className="p-2">
-                        {interviewerEmails.length === 0 ? (
-                            <p className="p-4 text-sm text-gray-400 italic">No emails configured.</p>
-                        ) : (
-                            <div className="divide-y divide-gray-50">
-                                {interviewerEmails.map((r) => (
-                                    <div key={r.id} className="p-3 flex justify-between items-center group hover:bg-gray-50 rounded-lg transition-colors">
-                                        <span className="text-sm text-gray-600 font-medium">{r.email}</span>
-                                        <button
-                                            onClick={() => handleRemoveRecipient(r.id, r.email)}
-                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                            <div className="p-2 min-h-[100px]">
+                                {list.length === 0 ? (
+                                    <p className="p-4 text-xs text-gray-400 italic text-center mt-4">No recipients assigned to this role.</p>
+                                ) : (
+                                    <div className="space-y-1">
+                                        {list.map((r) => (
+                                            <div key={r.id} className="p-2.5 flex justify-between items-center group hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-border/50">
+                                                <span className="text-sm text-gray-600 font-medium">{r.email}</span>
+                                                <button
+                                                    onClick={() => handleRemoveRecipient(r.id, r.email)}
+                                                    className="p-1 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-md transition-all md:opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                )}
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
+                    );
+                })}
             </div>
 
-            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start">
-                <CalendarCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                    <p className="font-bold mb-1">Email Logic Details:</p>
-                    <ul className="list-disc list-inside space-y-1 opacity-90">
-                        <li><strong>Recruitment Team:</strong> Receives notification when a candidate submits an application or selects an assessment slot.</li>
-                        <li><strong>Interviewers:</strong> Receives a meeting request email as soon as a candidate finishes their technical assessment.</li>
-                    </ul>
+            <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl">
+                <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2 mb-3">
+                    <CalendarCheck className="w-5 h-5" />
+                    Automation Workflow Guide
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-emerald-800/80 leading-relaxed">
+                    <div className="space-y-2">
+                        <p><strong>Step 1:</strong> Candidate applies &rarr; <span className="font-semibold text-emerald-900">Recruitment & Approvers</span> notified.</p>
+                        <p><strong>Step 2:</strong> Approver approves candidate &rarr; <span className="font-semibold text-emerald-900">Recruitment Team</span> notified.</p>
+                        <p><strong>Step 3:</strong> Candidate books slot &rarr; <span className="font-semibold text-emerald-900">Recruitment Team</span> notified.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <p><strong>Step 4:</strong> Assessment marked complete &rarr; <span className="font-semibold text-emerald-900">L1 Interviewers</span> get meeting request.</p>
+                        <p><strong>Step 5:</strong> L2 requested by L1 &rarr; <span className="font-semibold text-emerald-900">L2 Interviewers</span> get meeting request.</p>
+                        <p><strong>Step 6:</strong> Final decision recorded &rarr; <span className="font-semibold text-emerald-900">Recruitment Team</span> notified to close file.</p>
+                    </div>
                 </div>
             </div>
         </div>
