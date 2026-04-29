@@ -3,6 +3,7 @@ import Logo from "@/components/Logo";
 import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, Star, Briefcase, GraduationCap, Calendar, ArrowRight, MousePointer2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
     return (
@@ -171,7 +172,7 @@ export default function Home() {
                         <p className="text-[10px] text-muted font-bold italic">ISO 27001 Certified Environment</p>
                     </div>
                 </div>
-            </header>
+            </footer>
         </div>
     );
 }
