@@ -779,11 +779,12 @@ export async function getCandidateBasic(id: string) {
 }
 
 export async function getInterviewerNameByEmail(email: string) {
+    if (!email) return null;
     const { data } = await supabaseAdmin
-        .from('user_roles')
+        .from('users')
         .select('full_name')
-        .eq('email', email)
-        .single();
+        .ilike('email', email.trim())
+        .maybeSingle();
     return data?.full_name || null;
 }
 
