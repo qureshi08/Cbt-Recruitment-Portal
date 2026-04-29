@@ -1356,7 +1356,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         } else {
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({
-                model: "gemini-1.5-flash", // Use Flash instead of Pro for the free tier
+                model: "gemini-1.5-flash-latest", // Use specific latest identifier
                 generationConfig: {
                     responseMimeType: "application/json",
                     maxOutputTokens: 1500
