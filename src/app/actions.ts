@@ -1295,7 +1295,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 headers: {
                     "Authorization": `Bearer ${apiKey}`,
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "https://localhost:3000",
+                    "HTTP-Referer": "https://cbt-recruitment-portal.vercel.app",
                     "X-Title": "CBT Recruitment Portal"
                 },
                 body: JSON.stringify({
