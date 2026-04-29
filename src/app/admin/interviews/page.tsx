@@ -24,15 +24,15 @@ export default async function InterviewsPage() {
     }
 
     return (
-        <div className="space-y-5">
-            <div className="admin-page-header">
+        <div className="space-y-4">
+            <div className="flex items-end justify-between mb-2">
                 <div>
-                    <h1 className="admin-page-title">Interviews</h1>
-                    <p className="admin-page-subtitle">Scheduled interviews and candidate feedback.</p>
+                    <h1 className="text-xl font-bold text-heading italic tracking-tight">Evaluation Center</h1>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1 opacity-60">Scheduled Assessments & Interview Dossiers</p>
                 </div>
             </div>
 
-            <div className="card !p-0">
+            <div className="bg-white border border-border rounded-sm shadow-soft overflow-hidden">
                 <InterviewList initialInterviews={interviews || []} userRoles={roles} />
             </div>
         </div>

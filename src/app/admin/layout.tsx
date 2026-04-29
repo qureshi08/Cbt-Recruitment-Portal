@@ -13,12 +13,11 @@ export default async function AdminLayout({
 }) {
     const user = await getCurrentUser();
 
-    // Silently ensure buckets and roles exist (runs once, idempotent)
+    // Silently ensure buckets and roles exist
     if (user?.roles) {
         await ensureBuckets();
     }
 
-    // Strict multi-layer check: Redirect if no user or no assigned roles
     if (!user || !user.roles || user.roles.length === 0) {
         redirect("/login");
     }
@@ -26,41 +25,40 @@ export default async function AdminLayout({
     const roles = user.roles;
 
     return (
-        <div className="flex h-screen bg-surface-alt overflow-hidden">
+        <div className="flex h-screen bg-surface-alt overflow-hidden grid-bg">
             <Sidebar userRoles={roles} />
 
-            {/* Main content — offset by sidebar width (260px), no horizontal overflow */}
+            {/* Main content — compact offset */}
             <div className="flex-1 ml-0 md:ml-[260px] flex flex-col min-w-0 h-full overflow-hidden">
 
-                {/* Top Header — Clean & High Contrast */}
-                <header className="h-[80px] bg-white border-b border-border sticky top-0 z-20 flex items-center justify-between px-8 shrink-0">
+                {/* Top Header — SLIM & REFINED */}
+                <header className="h-14 bg-white border-b border-border sticky top-0 z-20 flex items-center justify-between px-6 shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
-                        {/* Dynamic Page Indicator (optional) */}
                     </div>
 
                     {/* Right side — notifications + user profile */}
                     <div className="flex items-center gap-6 shrink-0">
                         <NotificationBell />
 
-                        <div className="flex items-center gap-3 bg-surface-alt pr-4 pl-1.5 py-1.5 rounded-sm border border-border shadow-soft group hover:border-primary transition-all cursor-default">
-                            <div className="w-8 h-8 rounded-sm bg-primary text-white flex items-center justify-center font-bold text-sm shadow-premium shrink-0">
-                                {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
-                            </div>
-                            <div className="flex flex-col text-left min-w-0 overflow-hidden">
-                                <span className="text-[12px] font-bold text-heading leading-tight truncate max-w-[140px]">
+                        <div className="flex items-center gap-3 pr-1 py-1 rounded-sm transition-all cursor-default">
+                            <div className="flex flex-col text-right min-w-0 overflow-hidden">
+                                <span className="text-[11px] font-bold text-heading leading-tight truncate max-w-[140px]">
                                     {user.full_name || 'System User'}
                                 </span>
-                                <span className="text-[10px] font-bold text-muted uppercase tracking-widest leading-none mt-0.5 truncate max-w-[180px]">
+                                <span className="text-[9px] font-bold text-muted uppercase tracking-[0.1em] leading-none mt-1 truncate">
                                     {user.email}
                                 </span>
+                            </div>
+                            <div className="w-8 h-8 rounded-sm bg-heading text-white flex items-center justify-center font-bold text-[10px] shadow-sm shrink-0 border border-primary/20">
+                                {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </div>
                         </div>
                     </div>
                 </header>
 
-                {/* Main View Area */}
-                <main className="flex-1 overflow-y-auto overflow-x-hidden bg-white/40">
-                    <div className="p-8 max-w-7xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+                {/* Main View Area — Compressed Spacing */}
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8">
+                    <div className="max-w-6xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
                         {children}
                     </div>
                 </main>

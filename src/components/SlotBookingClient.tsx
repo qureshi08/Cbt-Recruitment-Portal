@@ -42,43 +42,42 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
 
     if (isSuccess) {
         return (
-            <div className="card max-w-lg mx-auto p-12 text-center space-y-6 animate-in fade-in zoom-in duration-500">
-                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto scale-110">
-                    <CheckCircle2 className="w-10 h-10" />
+            <div className="bg-white border border-border rounded-sm shadow-premium max-w-lg mx-auto p-10 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+                <div className="w-16 h-16 bg-primary text-white rounded-sm flex items-center justify-center mx-auto shadow-premium">
+                    <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <div className="space-y-2">
-                    <h2 className="text-2xl font-bold text-gray-900">Slot Booked!</h2>
-                    <p className="text-gray-600">
-                        Your assessment has been scheduled. Check your email for the next steps and preparation material.
+                <div className="space-y-1">
+                    <h2 className="text-xl font-bold text-heading italic">Registry Entry Successful</h2>
+                    <p className="text-muted font-bold text-[10px] uppercase tracking-widest leading-relaxed">
+                        Your assessment has been officially scheduled. Please monitor your secure channel for further instructions.
                     </p>
                 </div>
                 <button
                     onClick={() => {
-                        window.location.reload(); // Force refresh to trigger Server-Side status check
+                        window.location.reload();
                     }}
-                    className="btn-primary"
+                    className="bg-primary text-white border border-primary-hover px-6 py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all"
                 >
-                    View My Booking Details
+                    View My Registry Details
                 </button>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <div className="text-center space-y-2">
-                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Schedule Your Assessment Slot</h1>
-                <p className="text-gray-600 text-lg">
-                    Welcome, <span className="text-primary font-bold">{candidateName}</span>!
-                    Please select a convenient time for your 2-hour digital assessment.
+                <h1 className="text-2xl font-black text-heading tracking-tight italic">Registry Scheduling</h1>
+                <p className="text-muted font-bold text-[10px] uppercase tracking-[0.2em]">
+                    Welcome, <span className="text-primary">{candidateName}</span> — Identify your 120-minute evaluation window
                 </p>
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <Clock className="w-5 h-5 text-red-400" />
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <Clock className="w-4 h-4 text-red-400" />
                     <div className="flex-1">
-                        <p className="font-bold text-sm">Booking Error</p>
+                        <p className="font-bold text-[10px] uppercase tracking-widest">Access Restriction</p>
                         <p className="text-xs">{error}</p>
                     </div>
                     <button onClick={() => setError(null)} className="text-red-400 hover:text-red-700">
@@ -93,21 +92,21 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                         key={slot.id}
                         onClick={() => setSelectedSlot(slot.id)}
                         className={cn(
-                            "card p-6 cursor-pointer border-2 transition-all hover:shadow-md flex flex-col items-center gap-3 text-center",
+                            "bg-white border rounded-sm p-5 cursor-pointer transition-all flex flex-col items-center gap-3 text-center group",
                             selectedSlot === slot.id
-                                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                                : "border-border hover:border-primary/30"
+                                ? "border-primary bg-surface-alt shadow-premium ring-1 ring-primary/20"
+                                : "border-border hover:border-primary shadow-soft"
                         )}
                     >
-                        <CalendarIcon className={cn("w-6 h-6", selectedSlot === slot.id ? "text-primary" : "text-gray-400")} />
+                        <CalendarIcon className={cn("w-5 h-5", selectedSlot === slot.id ? "text-primary" : "text-muted group-hover:text-primary transition-colors")} />
                         <div>
-                            <p className="font-bold text-gray-900">
+                            <p className="font-bold text-heading text-sm italic">
                                 {new Date(slot.start_time).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                             </p>
-                            <p className="text-gray-500 flex items-center justify-center gap-1 text-sm mt-1">
+                            <p className="text-muted flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-widest mt-1">
                                 <Clock className="w-3 h-3" />
                                 {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                {" - "}
+                                {" — "}
                                 {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
@@ -116,16 +115,16 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
             </div>
 
             {selectedSlot && (
-                <div className="fixed bottom-8 left-0 right-0 px-6 flex justify-center animate-in slide-in-from-bottom-4 duration-300">
+                <div className="fixed bottom-10 left-0 right-0 px-6 flex justify-center animate-in slide-in-from-bottom-4 duration-300">
                     <button
                         onClick={handleBooking}
                         disabled={isSubmitting}
-                        className="btn-primary px-12 py-4 text-lg shadow-2xl flex items-center gap-3"
+                        className="bg-heading text-white border border-heading hover:bg-black px-10 py-3 text-[11px] font-bold uppercase tracking-[0.2em] shadow-premium flex items-center gap-3 hover:scale-105 transition-all"
                     >
                         {isSubmitting ? (
-                            <span className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
-                            "Confirm Selection"
+                            "Confirm Registry Entry"
                         )}
                     </button>
                 </div>

@@ -32,33 +32,33 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
                 .single();
 
             return (
-                <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-                    <div className="card max-w-lg w-full text-center space-y-6 p-12">
-                        <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto scale-110">
-                            <CheckCircle2 className="w-10 h-10" />
+                <div className="min-h-screen flex items-center justify-center p-6 bg-white">
+                    <div className="bg-white border border-border rounded-sm shadow-premium max-w-lg w-full text-center space-y-6 p-10">
+                        <div className="w-16 h-16 bg-primary text-white rounded-sm flex items-center justify-center mx-auto shadow-premium">
+                            <CheckCircle2 className="w-8 h-8" />
                         </div>
-                        <div className="space-y-2">
-                            <h2 className="text-2xl font-extrabold text-gray-900">Scheduled!</h2>
-                            <p className="text-gray-600">
-                                You have booked an assessment slot.
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-bold text-heading italic">Slot Confirmed</h2>
+                            <p className="text-muted font-bold text-[10px] uppercase tracking-widest">
+                                Assessment Successfully Scheduled
                             </p>
                         </div>
 
                         {currentSlot && (
-                            <div className="bg-gray-50 border border-border p-4 rounded-xl space-y-2">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Scheduled For</p>
-                                <p className="text-lg font-bold text-primary">
+                            <div className="bg-surface-alt border border-border p-5 rounded-sm space-y-2">
+                                <p className="text-[9px] font-bold text-muted uppercase tracking-[0.2em]">Scheduled Registry Entry</p>
+                                <p className="text-base font-bold text-heading italic">
                                     {new Date(currentSlot.start_time).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                                 </p>
-                                <p className="text-sm font-medium text-gray-700">
+                                <p className="text-sm font-bold text-primary font-mono tracking-tighter">
                                     {new Date(currentSlot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    {" - "}
+                                    {" — "}
                                     {new Date(currentSlot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
                         )}
 
-                        <div className="pt-4 border-t border-gray-100">
+                        <div className="pt-4 border-t border-border">
                             <RescheduleButton candidateId={id} />
                         </div>
                     </div>
@@ -91,12 +91,12 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
         .order("start_time", { ascending: true });
 
     return (
-        <div className="min-h-screen bg-gray-50/50">
-            <header className="bg-white border-b border-border py-4 px-6 flex justify-between items-center">
+        <div className="min-h-screen bg-white">
+            <header className="bg-white border-b border-border py-3 px-6 flex justify-between items-center h-14">
                 <Logo />
             </header>
 
-            <main className="max-w-4xl mx-auto py-12 px-6">
+            <main className="max-w-4xl mx-auto py-10 px-6">
                 <SlotBookingClient candidateId={id} candidateName={candidate.name} initialSlots={slots || []} />
             </main>
         </div>

@@ -60,42 +60,42 @@ function InterviewFeedbackModal({ candidate, onClose }: { candidate: Candidate; 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-heading/60 backdrop-blur-md" onClick={onClose} />
-            <div className="bg-white rounded-[2.5rem] shadow-premium w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[85vh] overflow-hidden">
+            <div className="bg-white rounded-sm shadow-premium w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[85vh] overflow-hidden">
                 {/* Header */}
-                <div className="p-8 border-b border-border flex justify-between items-start bg-surface-alt shrink-0">
+                <div className="p-6 border-b border-border flex justify-between items-start bg-surface-alt shrink-0">
                     <div>
-                        <h3 className="font-black text-heading text-2xl tracking-tight italic">Interview Scorecard</h3>
-                        <p className="text-sm font-bold text-muted mt-1 uppercase tracking-widest">{candidate.name}</p>
+                        <h3 className="font-bold text-heading text-xl tracking-tight italic">Interview Scorecard</h3>
+                        <p className="text-[11px] font-bold text-muted mt-1 uppercase tracking-widest">{candidate.name}</p>
                         {s.decision && (
                             <span className={cn(
-                                "mt-4 inline-block text-[10px] font-black px-4 py-1.5 rounded-full border",
-                                s.decision === 'Recommended' ? "bg-green-500 text-white border-green-600" :
-                                    s.decision === 'Not Recommended' ? "bg-red-500 text-white border-red-600" :
-                                        "bg-primary/10 text-primary border-primary/20"
+                                "mt-4 inline-block text-[9px] font-bold px-3 py-1 rounded-sm border uppercase tracking-widest",
+                                s.decision === 'Recommended' ? "bg-primary text-white border-primary" :
+                                    s.decision === 'Not Recommended' ? "bg-red-600 text-white border-red-600" :
+                                        "bg-white text-muted border-border"
                             )}>
-                                {s.decision.toUpperCase()}
+                                {s.decision}
                             </span>
                         )}
                     </div>
-                    <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl text-muted hover:text-heading shadow-sm transition-all hover:rotate-90">
-                        <X className="w-6 h-6" />
+                    <button onClick={onClose} className="p-2 hover:bg-white border border-transparent hover:border-border rounded-sm text-muted hover:text-heading transition-all">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="overflow-y-auto p-8 space-y-8 flex-1 custom-scrollbar">
+                <div className="overflow-y-auto p-6 space-y-8 flex-1 custom-scrollbar">
                     {/* Summary row */}
                     {(l1Avg !== null || l2Avg !== null) && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {l1Avg !== null && (
-                                <div className="bg-primary-light border-2 border-primary/10 rounded-3xl p-6 text-center shadow-soft">
-                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Round 01 Average</p>
-                                    <p className="text-4xl font-black text-heading italic">{l1Avg.toFixed(1)}<span className="text-lg text-muted not-italic"> / 5.0</span></p>
+                                <div className="bg-surface-alt border border-border rounded-sm p-5 text-center">
+                                    <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-2">Round 01 Average</p>
+                                    <p className="text-3xl font-bold text-heading italic">{l1Avg.toFixed(1)}<span className="text-sm text-muted not-italic font-normal"> / 5.0</span></p>
                                 </div>
                             )}
                             {l2Avg !== null && (
-                                <div className="bg-heading text-white rounded-3xl p-6 text-center shadow-elevated">
-                                    <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-2">Round 02 Average</p>
-                                    <p className="text-4xl font-black italic">{l2Avg.toFixed(1)}<span className="text-lg text-muted/50 not-italic"> / 5.0</span></p>
+                                <div className="bg-heading text-white rounded-sm p-5 text-center">
+                                    <p className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] mb-2">Round 02 Average</p>
+                                    <p className="text-3xl font-bold italic">{l2Avg.toFixed(1)}<span className="text-sm text-muted/50 not-italic font-normal"> / 5.0</span></p>
                                 </div>
                             )}
                         </div>
@@ -108,7 +108,7 @@ function InterviewFeedbackModal({ candidate, onClose }: { candidate: Candidate; 
                         return (
                             <div key={label} className="space-y-4">
                                 <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] px-1">{label}</label>
-                                <div className={cn("rounded-[2rem] border-2 p-6 space-y-6 shadow-soft transition-all", isL2 ? "border-heading bg-white" : "border-primary/10 bg-surface-alt")}>
+                                <div className={cn("rounded-sm border p-5 space-y-6 transition-all", isL2 ? "border-heading bg-white shadow-soft" : "border-primary/10 bg-surface-alt")}>
                                     {SCORE_CATS.map(cat => {
                                         const d = fb[cat.key];
                                         if (!d || d.score === 0) return null;
@@ -355,13 +355,13 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     return (
         <div className="space-y-3">
             {/* Search and Filter Bar */}
-            <div className="bg-white border border-border rounded-xl px-4 py-2.5 flex flex-col sm:flex-row gap-2.5 items-center shadow-sm">
+            <div className="bg-white border border-border rounded-sm px-4 py-2 flex flex-col sm:flex-row gap-2.5 items-center shadow-soft">
                 <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
                     <input
                         type="text"
                         placeholder="Filter by name, email or mobile..."
-                        className="w-full bg-gray-50 border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs font-medium focus:border-primary focus:ring-2 focus:ring-emerald-500/5 placeholder:text-muted outline-none transition-all"
+                        className="w-full bg-surface-alt border border-border rounded-sm pl-9 pr-3 py-1.5 text-[11px] font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 placeholder:text-muted outline-none transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -370,7 +370,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     <div className="flex items-center gap-1.5">
                         <span className="text-[9px] font-black text-muted uppercase tracking-wider">Status</span>
                         <select
-                            className="border border-border bg-gray-50 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer hover:border-primary transition-colors outline-none text-gray-700"
+                            className="border border-border bg-surface-alt rounded-sm px-2 py-1 text-[10px] font-bold cursor-pointer hover:border-primary transition-colors outline-none text-heading"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                         >
@@ -382,7 +382,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     <div className="flex items-center gap-1.5">
                         <span className="text-[9px] font-black text-muted uppercase tracking-wider">Batch</span>
                         <select
-                            className="border border-border bg-gray-50 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer hover:border-primary transition-colors outline-none text-gray-700"
+                            className="border border-border bg-surface-alt rounded-sm px-2 py-1 text-[10px] font-bold cursor-pointer hover:border-primary transition-colors outline-none text-heading"
                             value={batchFilter}
                             onChange={(e) => setBatchFilter(e.target.value)}
                         >
@@ -394,7 +394,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
+            <div className="rounded-sm border border-border bg-white shadow-soft overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '680px' }}>
                         <thead>
@@ -413,7 +413,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             {filteredCandidates.map((candidate) => (
                                 <tr key={candidate.id} className="hover:bg-primary/[0.02] transition-colors">
                                     <td className="px-3 py-3">
-                                        <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                                        <span className="text-[10px] font-bold text-muted bg-surface-alt px-2 py-0.5 rounded-xs border border-border">
                                             {candidate.batch_number || 'N/A'}
                                         </span>
                                     </td>
@@ -448,12 +448,12 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             )}
                                             <div className="flex items-center gap-1 flex-wrap">
                                                 {candidate.graduation_year && (
-                                                    <span className="text-[8px] text-gray-400 font-bold bg-gray-100 px-1 py-0.5 rounded">
+                                                    <span className="text-[8px] text-muted font-bold bg-surface-alt px-1 py-0.5 rounded-xs border border-border">
                                                         '{candidate.graduation_year.slice(-2)}
                                                     </span>
                                                 )}
                                                 {candidate.education_status && candidate.education_status !== 'Graduated' && (
-                                                    <span className="text-[8px] text-yellow-600 font-bold bg-yellow-50 px-1 py-0.5 rounded">Student</span>
+                                                    <span className="text-[8px] text-amber-700 font-bold bg-amber-50 px-1 py-0.5 rounded-xs border border-amber-100">Student</span>
                                                 )}
                                             </div>
                                             {!candidate.location && !candidate.degree_field && (
@@ -470,10 +470,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 >
                                                     <div className="flex items-center gap-2">
                                                         <div className={cn(
-                                                            "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm",
-                                                            candidate.ai_score >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
-                                                                candidate.ai_score >= 50 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
-                                                                    "bg-red-100 text-red-700 border border-red-200"
+                                                            "w-8 h-8 rounded-sm flex items-center justify-center text-[10px] font-bold shadow-sm",
+                                                            candidate.ai_score >= 80 ? "bg-green-500 text-white border border-green-600" :
+                                                                candidate.ai_score >= 50 ? "bg-amber-500 text-white border border-amber-600" :
+                                                                    "bg-red-600 text-white border border-red-700"
                                                         )}>
                                                             {candidate.ai_score}
                                                         </div>
@@ -507,11 +507,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 <button
                                                     onClick={() => handleAiAnalysis(candidate.id)}
                                                     disabled={analyzingId === candidate.id}
-                                                    className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black rounded-xl border transition-all disabled:opacity-50 ${analysisStatus?.id === candidate.id && analysisStatus.status === 'success'
-                                                        ? 'bg-emerald-500 text-white border-emerald-600'
+                                                    className={`flex items-center gap-2 px-3 py-1 text-[10px] font-bold rounded-sm border transition-all disabled:opacity-50 ${analysisStatus?.id === candidate.id && analysisStatus.status === 'success'
+                                                        ? 'bg-primary text-white border-primary-hover'
                                                         : analysisStatus?.id === candidate.id && analysisStatus.status === 'error'
-                                                            ? 'bg-rose-500 text-white border-rose-600'
-                                                            : 'bg-primary/10 text-primary border-primary/10 hover:bg-primary hover:text-white'
+                                                            ? 'bg-red-600 text-white border-red-700'
+                                                            : 'bg-surface-alt text-heading border-border hover:border-primary hover:text-primary transition-colors'
                                                         }`}
                                                 >
                                                     {analyzingId === candidate.id ? (
@@ -577,11 +577,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             </a>
                                         ) : (isMaster || isHR) ? (
                                             <div className="flex items-center gap-2">
-                                                <label className="cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 flex items-center gap-2 transition-all">
+                                                <label className="cursor-pointer bg-surface-alt border border-border hover:border-primary px-3 py-1 rounded-sm text-[11px] font-bold text-heading flex items-center gap-2 transition-all">
                                                     {uploadingScore === candidate.id ? (
                                                         <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                                                     ) : <Upload className="w-3 h-3" />}
-                                                    Upload Score
+                                                    Upload
                                                     <input
                                                         type="file"
                                                         className="hidden"
@@ -654,11 +654,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             {candidate.status === 'Approved' && (isMaster || isHR) && (
                                                 <button
                                                     onClick={() => copyBookingLink(candidate.id)}
-                                                    className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20 transition-all border border-primary/20"
+                                                    className="flex items-center gap-1.5 px-2 py-1 bg-surface-alt text-primary text-[10px] font-bold rounded-sm hover:border-primary transition-all border border-border"
                                                     title="Copy booking link for candidate"
                                                 >
-                                                    {copiedId === candidate.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                                    {copiedId === candidate.id ? "Copied" : "Booking Link"}
+                                                    {copiedId === candidate.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                                    Link
                                                 </button>
                                             )}
 
@@ -725,10 +725,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 editingCandidate && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditingCandidate(null)} />
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-200">
-                            <div className="p-4 border-b border-border flex justify-between items-center bg-gray-50">
-                                <h3 className="font-bold text-gray-800">Edit Application: {editingCandidate.name}</h3>
-                                <button onClick={() => setEditingCandidate(null)} className="text-gray-400 hover:text-gray-600">
+                        <div className="bg-white rounded-sm shadow-premium w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-200">
+                            <div className="p-5 border-b border-border flex justify-between items-center bg-surface-alt">
+                                <h3 className="font-bold text-heading text-sm uppercase tracking-tight italic">Modify Registry: {editingCandidate.name}</h3>
+                                <button onClick={() => setEditingCandidate(null)} className="text-muted hover:text-heading transition-colors">
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
@@ -767,75 +767,70 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 selectedAiReasoning && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedAiReasoning(null)} />
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="bg-white rounded-sm shadow-premium w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[90vh]">
                             {/* Header */}
-                            <div className="p-8 border-b border-border flex justify-between items-start bg-gradient-to-br from-primary/10 via-white to-transparent">
-                                <div className="flex items-center gap-5">
+                            <div className="p-6 border-b border-border flex justify-between items-start bg-surface-alt">
+                                <div className="flex items-center gap-4">
                                     <div className={cn(
-                                        "w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black shadow-xl border-4 border-white",
-                                        (selectedAiReasoning.ai_score || 0) >= 80 ? "bg-green-100 text-green-700 shadow-green-100" :
-                                            (selectedAiReasoning.ai_score || 0) >= 50 ? "bg-yellow-100 text-yellow-700 shadow-yellow-100" :
-                                                "bg-red-100 text-red-700 shadow-red-100"
+                                        "w-14 h-14 rounded-sm flex items-center justify-center text-xl font-bold shadow-soft border border-border",
+                                        (selectedAiReasoning.ai_score || 0) >= 80 ? "bg-primary text-white border-primary" :
+                                            (selectedAiReasoning.ai_score || 0) >= 50 ? "bg-amber-500 text-white border-amber-600" :
+                                                "bg-red-600 text-white border-red-700"
                                     )}>
                                         {selectedAiReasoning.ai_score}
                                     </div>
                                     <div>
-                                        <h3 className="font-black text-2xl text-gray-900 tracking-tight">{selectedAiReasoning.name}</h3>
-                                        <p className="text-gray-500 font-medium text-sm mt-1">{selectedAiReasoning.position || 'Software Engineer'}</p>
-                                        <div className="flex items-center gap-2 mt-3">
-                                            <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border border-primary/5">
-                                                <Sparkles className="w-3 h-3" />
-                                                AI Assessment: {selectedAiReasoning.ai_analysis_json?.verdict || 'Processed'}
+                                        <h3 className="font-bold text-lg text-heading tracking-tight italic">{selectedAiReasoning.name}</h3>
+                                        <p className="text-muted font-bold text-[10px] mt-0.5 uppercase tracking-widest">{selectedAiReasoning.position || 'Software Engineer'}</p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <div className="px-2 py-0.5 bg-white border border-primary/20 text-primary rounded-sm text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                                <Sparkles className="w-2.5 h-2.5" />
+                                                AI VERDICT: {selectedAiReasoning.ai_analysis_json?.verdict || 'Processed'}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedAiReasoning(null)} className="p-2.5 hover:bg-gray-100 rounded-full text-gray-400 transition-all hover:rotate-90">
-                                    <X className="w-6 h-6" />
+                                <button onClick={() => setSelectedAiReasoning(null)} className="p-2 border border-transparent hover:border-border hover:bg-white rounded-sm text-muted hover:text-heading transition-all">
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
 
-                            {/* Content */}
-                            <div className="p-8 overflow-y-auto custom-scrollbar flex-1 bg-white/50 backdrop-blur-sm">
-                                <div className="space-y-8">
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                                <div className="space-y-6">
                                     {/* Criteria Used */}
-                                    <div className="p-6 rounded-3xl bg-surface-alt border border-border relative overflow-hidden shadow-inner">
-                                        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                                            <Search className="w-16 h-16 text-primary" />
-                                        </div>
-                                        <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3">Target Criteria Alignment</h4>
-                                        <p className="text-sm text-heading leading-relaxed font-semibold italic">
+                                    <div className="p-5 rounded-sm bg-surface-alt border border-border relative overflow-hidden">
+                                        <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-2">Target Criteria Alignment</h4>
+                                        <p className="text-sm text-heading leading-relaxed font-bold italic">
                                             "{selectedAiReasoning.analysis_criteria || "Standard Technical Evaluation."}"
                                         </p>
                                     </div>
 
                                     {/* Skills Grid */}
                                     <div>
-                                        <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] px-1 mb-4 block">Core Expertise Extracted</label>
-                                        <div className="flex flex-wrap gap-2.5">
+                                        <label className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] px-1 mb-3 block">Extracted Skillset</label>
+                                        <div className="flex flex-wrap gap-2">
                                             {selectedAiReasoning.ai_analysis_json?.extracted_skills && selectedAiReasoning.ai_analysis_json.extracted_skills.length > 0 ? (
                                                 selectedAiReasoning.ai_analysis_json.extracted_skills.map((skill, i) => (
-                                                    <span key={i} className="px-4 py-2 bg-white border border-border rounded-2xl text-[11px] font-bold text-heading shadow-sm hover:border-primary/40 hover:scale-105 transition-all cursor-default">
+                                                    <span key={i} className="px-3 py-1 bg-surface-alt border border-border rounded-sm text-[10px] font-bold text-heading hover:border-primary transition-colors cursor-default">
                                                         {skill}
                                                     </span>
                                                 ))
                                             ) : (
-                                                <div className="w-full text-center py-6 bg-surface-alt rounded-2xl border-2 border-dashed border-border flex flex-col items-center gap-2">
-                                                    <span className="text-[11px] font-bold text-muted uppercase tracking-widest italic opacity-60">Insight Pending — Could not extract structured skills</span>
+                                                <div className="w-full text-center py-4 bg-surface-alt rounded-sm border border-dashed border-border flex flex-col items-center gap-2">
+                                                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest italic opacity-60">Insight Pending</span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Profile Analysis Section */}
-                                    <div className="p-8 rounded-[2rem] bg-heading text-white shadow-premium relative overflow-hidden">
-                                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
-                                        <h4 className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-6 relative z-10">Candidate Blueprint (AI Summary)</h4>
-                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-6 relative z-10">
+                                    <div className="p-6 rounded-sm bg-heading text-white shadow-soft relative overflow-hidden">
+                                        <h4 className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] mb-4">Candidate Blueprint</h4>
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-4">
                                             {selectedAiReasoning.ai_analysis_json?.extracted_info && Object.entries(selectedAiReasoning.ai_analysis_json.extracted_info).map(([k, v]: [string, any]) => (
-                                                <div key={k} className="flex flex-col gap-1">
-                                                    <span className="text-[9px] font-bold text-muted uppercase tracking-widest opacity-60">{k.replace(/_/g, " ")}</span>
-                                                    <span className="text-xs font-black text-white truncate hover:overflow-visible transition-all" title={v || 'N/A'}>{v || 'N/A'}</span>
+                                                <div key={k} className="flex flex-col gap-0.5">
+                                                    <span className="text-[8px] font-bold text-muted uppercase tracking-widest opacity-60">{k.replace(/_/g, " ")}</span>
+                                                    <span className="text-[11px] font-bold text-white truncate" title={v || 'N/A'}>{v || 'N/A'}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -843,47 +838,47 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
 
                                     {/* Experience Narratives */}
                                     <div>
-                                        <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] px-1 mb-4 block">Professional Narrative</label>
-                                        <div className="bg-primary-light p-6 rounded-[1.5rem] border border-primary/20 shadow-sm">
-                                            <p className="text-sm text-heading leading-relaxed font-semibold">
-                                                {selectedAiReasoning.ai_analysis_json?.experience_summary || "Candidate experience overview is being processed."}
+                                        <label className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] px-1 mb-3 block">Professional Narrative</label>
+                                        <div className="bg-surface-alt p-5 rounded-sm border border-border">
+                                            <p className="text-sm text-heading leading-relaxed font-bold italic">
+                                                "{selectedAiReasoning.ai_analysis_json?.experience_summary || "Candidate experience overview is being processed."}"
                                             </p>
                                         </div>
                                     </div>
 
                                     {/* Matching Intelligence */}
-                                    <div className="space-y-5">
+                                    <div className="space-y-4">
                                         <div className="flex items-center justify-between px-1">
-                                            <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Compliance Check Intelligence</label>
+                                            <label className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Compliance Check Intelligence</label>
                                             {selectedAiReasoning.ai_analysis_json?.hard_filter_failed && (
-                                                <div className="px-3 py-1 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-red-500/20">
-                                                    Critical Failure: {selectedAiReasoning.ai_analysis_json.hard_filter_failed}
+                                                <div className="px-2 py-0.5 bg-red-600 text-white rounded-sm text-[8px] font-bold uppercase tracking-widest">
+                                                    CRITICAL FAILURE: {selectedAiReasoning.ai_analysis_json.hard_filter_failed}
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             {selectedAiReasoning.ai_analysis_json?.matching_analysis && typeof selectedAiReasoning.ai_analysis_json.matching_analysis === 'object' ? (
                                                 Object.entries(selectedAiReasoning.ai_analysis_json.matching_analysis).map(([key, val]: [string, any]) => (
-                                                    <div key={key} className="bg-white p-5 rounded-3xl border border-border shadow-soft hover:shadow-hover hover:border-primary/20 transition-all duration-300 group">
-                                                        <div className="flex justify-between items-start mb-3 gap-3">
-                                                            <span className="text-[10px] font-black text-muted uppercase tracking-tight group-hover:text-primary transition-colors">
+                                                    <div key={key} className="bg-white p-4 rounded-sm border border-border shadow-soft hover:border-primary transition-colors group">
+                                                        <div className="flex justify-between items-start mb-2 gap-3">
+                                                            <span className="text-[9px] font-bold text-muted uppercase tracking-tight group-hover:text-primary transition-colors">
                                                                 {key.replace(/_/g, " ")}
                                                             </span>
                                                             <span className={cn(
-                                                                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 shadow-sm",
-                                                                ["PASS", "STRONG", "HIGH"].includes(String(val.status).toUpperCase()) ? "bg-green-500 text-white" :
-                                                                    ["FAIL", "WEAK", "NONE"].includes(String(val.status).toUpperCase()) ? "bg-red-500 text-white" :
+                                                                "px-2 py-0.5 rounded-sm text-[8px] font-bold uppercase tracking-wider shrink-0",
+                                                                ["PASS", "STRONG", "HIGH"].includes(String(val.status).toUpperCase()) ? "bg-primary text-white" :
+                                                                    ["FAIL", "WEAK", "NONE"].includes(String(val.status).toUpperCase()) ? "bg-red-600 text-white" :
                                                                         "bg-amber-500 text-white"
                                                             )}>
                                                                 {val.status}
                                                             </span>
                                                         </div>
-                                                        <p className="text-[11px] text-body leading-relaxed font-bold">{val.detail}</p>
+                                                        <p className="text-[10px] text-body leading-relaxed font-bold">{val.detail}</p>
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="col-span-2 bg-surface-alt p-6 rounded-3xl border border-border border-dashed italic text-xs text-muted text-center font-black uppercase tracking-widest py-10 opacity-50">
-                                                    Detailed matching analysis not generated for this profile
+                                                <div className="col-span-2 bg-surface-alt p-5 rounded-sm border border-border border-dashed italic text-[10px] text-muted text-center font-bold uppercase tracking-widest">
+                                                    Detailed matching analysis not generated
                                                 </div>
                                             )}
                                         </div>
@@ -891,12 +886,12 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
 
                                     {/* Observation Flags */}
                                     {selectedAiReasoning.ai_analysis_json?.flags && selectedAiReasoning.ai_analysis_json.flags.length > 0 && (
-                                        <div className="p-6 rounded-[1.5rem] bg-amber-50 border-2 border-amber-100 shadow-sm">
-                                            <h4 className="text-[10px] font-black text-amber-700 uppercase tracking-[0.2em] mb-4">Observation Flags & Inferences</h4>
-                                            <ul className="space-y-3">
+                                        <div className="p-5 rounded-sm bg-amber-50 border border-amber-100 shadow-soft">
+                                            <h4 className="text-[9px] font-bold text-amber-700 uppercase tracking-[0.2em] mb-3">System Inference Flags</h4>
+                                            <ul className="space-y-2">
                                                 {selectedAiReasoning.ai_analysis_json.flags.map((flag, idx) => (
-                                                    <li key={idx} className="text-xs leading-relaxed font-bold text-amber-800 flex gap-3">
-                                                        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full mt-1.5 shrink-0" />
+                                                    <li key={idx} className="text-[10px] leading-relaxed font-bold text-amber-800 flex gap-2.5">
+                                                        <span className="w-1 h-1 bg-amber-400 rounded-full mt-1.5 shrink-0" />
                                                         {flag}
                                                     </li>
                                                 ))}
@@ -907,22 +902,22 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             </div>
 
                             {/* Footer Actions */}
-                            <div className="p-8 bg-gray-50 border-t border-border flex gap-4">
+                            <div className="p-6 border-t border-border flex gap-3 bg-surface-alt">
                                 <button
                                     onClick={() => setSelectedAiReasoning(null)}
-                                    className="flex-1 px-6 py-4 bg-white border border-gray-200 text-gray-700 text-sm font-black rounded-2xl hover:bg-gray-100 transition-all shadow-sm"
+                                    className="flex-1 px-4 py-3 bg-white border border-border text-heading text-[11px] font-bold rounded-sm hover:bg-surface-alt transition-all uppercase tracking-widest"
                                 >
-                                    Close Report
+                                    Dismiss
                                 </button>
                                 <button
                                     onClick={() => {
                                         handleAiAnalysis(selectedAiReasoning.id);
                                         setSelectedAiReasoning(null);
                                     }}
-                                    className="flex-[2] btn-primary py-4 rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                                    className="flex-[2] bg-primary text-white border border-primary-hover py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2"
                                 >
-                                    <Sparkles className="w-4 h-4" />
-                                    Re-Analyze with Current Criteria
+                                    <Sparkles className="w-3 h-3" />
+                                    Re-Analyze Registry
                                 </button>
                             </div>
                         </div>

@@ -95,8 +95,8 @@ function FeedbackSection({ label, fb, type }: { label: string; fb: StructuredFee
 
     return (
         <div className={cn(
-            "rounded-xl border p-6 space-y-4 bg-white",
-            isSecond ? "border-indigo-100" : "border-[var(--border)]"
+            "rounded-sm border p-5 space-y-4 bg-white shadow-soft",
+            isSecond ? "border-indigo-100" : "border-border"
         )}>
             <div className="flex items-center justify-between pb-3 border-b border-[var(--surface-alt)]">
                 <p className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</p>
@@ -148,30 +148,30 @@ function ScorecardViewer({ interview }: { interview: Interview }) {
         <div className="mt-1">
             <button
                 onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-2 text-[10px] font-bold text-[var(--primary)] hover:text-[var(--primary-hover)] transition-all bg-[var(--primary-light)] px-3 py-1 rounded-md border border-[var(--primary)]/10 uppercase tracking-wider"
+                className="inline-flex items-center gap-2 text-[10px] font-bold text-primary hover:text-primary-hover transition-all bg-surface-alt px-3 py-1 rounded-sm border border-border uppercase tracking-widest"
             >
                 <FileText className="w-3 h-3" />
-                View Scorecard
+                Registry Scorecard
             </button>
 
             {open && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-[var(--heading)]/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh] overflow-hidden">
+                    <div className="fixed inset-0 bg-heading/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+                    <div className="bg-white rounded-sm shadow-premium w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh] overflow-hidden">
 
-                        <div className="p-6 border-b flex justify-between items-center shrink-0">
+                        <div className="p-5 border-b border-border flex justify-between items-center shrink-0 bg-surface-alt">
                             <div>
-                                <h3 className="font-heading text-2xl font-bold">Interview Assessment</h3>
-                                <p className="text-xs text-[var(--muted)] font-medium mt-1">{interview.candidates?.name} — {interview.candidates?.position}</p>
+                                <h3 className="font-bold text-lg text-heading italic">Evaluation Dossier</h3>
+                                <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">{interview.candidates?.name} — {interview.candidates?.position}</p>
                             </div>
-                            <button onClick={() => setOpen(false)} className="p-2 hover:bg-[var(--surface-alt)] rounded-lg transition-colors text-[var(--muted)] hover:text-[var(--heading)]">
+                            <button onClick={() => setOpen(false)} className="p-2 border border-transparent hover:border-border hover:bg-white rounded-sm text-muted hover:text-heading transition-all">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="overflow-y-auto p-6 space-y-6 flex-1 bg-[var(--surface-alt)]">
-                            {hasL1 && <FeedbackSection label="L1 Interview Details" fb={interview.l1_feedback_json!} type="first" />}
-                            {hasL2 && <FeedbackSection label="L2 Interview Details" fb={interview.l2_feedback_json!} type="second" />}
+                        <div className="overflow-y-auto p-6 space-y-6 flex-1 bg-white">
+                            {hasL1 && <FeedbackSection label="First Evaluation Pass" fb={interview.l1_feedback_json!} type="first" />}
+                            {hasL2 && <FeedbackSection label="Final Round Insights" fb={interview.l2_feedback_json!} type="second" />}
                         </div>
 
                         <div className="p-4 border-t bg-white text-center shrink-0">
@@ -251,15 +251,15 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
     };
 
     return (
-        <div className="bg-white border border-[var(--border)] rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-border rounded-sm shadow-soft overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '900px' }}>
                     <thead>
-                        <tr className="bg-[var(--surface-alt)] border-b border-[var(--border)]">
-                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider w-[22%]">Scheduled</th>
-                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider w-[28%]">Candidate</th>
-                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider w-[30%]">Interview Status</th>
-                            <th className="px-6 py-4 text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider text-right w-[20%]">Actions</th>
+                        <tr className="bg-surface-alt border-b border-border">
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[22%]">Scheduled</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[28%]">Candidate</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[30%]">Interview Status</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] text-right w-[20%]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border)]/50">
@@ -306,39 +306,38 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                         {interview.decision ? (
                                             <div className="flex flex-col gap-2">
                                                 <span className={cn(
-                                                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider w-fit border",
-                                                    interview.decision === 'Recommended' ? "bg-green-50 text-green-700 border-green-200" :
-                                                        interview.decision === 'L2 Interview Required' ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
-                                                            "bg-red-50 text-red-700 border-red-200"
+                                                    "px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest w-fit border",
+                                                    interview.decision === 'Recommended' ? "bg-primary text-white border-primary" :
+                                                        interview.decision === 'L2 Interview Required' ? "bg-indigo-600 text-white border-indigo-700" :
+                                                            "bg-red-600 text-white border-red-700"
                                                 )}>
                                                     {interview.decision}
                                                 </span>
                                                 <ScorecardViewer interview={interview} />
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-2 text-[var(--muted)] bg-[var(--surface-alt)] px-3 py-1.5 rounded-lg w-fit border border-[var(--border)]">
-                                                <Activity className="w-3.5 h-3.5 animate-pulse text-[var(--primary)]" />
-                                                <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Response</span>
+                                            <div className="flex items-center gap-2 text-muted bg-surface-alt px-3 py-1.5 rounded-sm w-fit border border-border">
+                                                <Activity className="w-3 h-3 animate-pulse text-primary" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Registry Response</span>
                                             </div>
                                         )}
                                     </td>
                                     <td className="px-6 py-5 text-right align-top">
                                         {!interview.decision && canAct && (
                                             <button onClick={() => openModal(interview)}
-                                                className="btn-primary !px-4 !py-2 !text-xs !rounded-lg w-full md:w-auto">
-                                                Complete Scorecard
+                                                className="bg-primary text-white px-4 py-2 rounded-sm text-[11px] font-bold uppercase tracking-widest hover:bg-primary-hover transition-all w-full md:w-auto shadow-sm">
+                                                Add Evaluation
                                             </button>
                                         )}
                                         {isAwaitingL2 && canActL2 && (
                                             <button onClick={() => openModal(interview)}
-                                                className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all w-full md:w-auto shadow-sm">
+                                                className="bg-indigo-600 text-white px-4 py-2 rounded-sm text-[11px] font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all w-full md:w-auto shadow-sm">
                                                 Finalize L2
                                             </button>
                                         )}
                                         {(!interview.decision && !canAct) && (
-                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">
-                                                <Shield className="w-3 h-3" />
-                                                No Permission
+                                            <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-muted uppercase tracking-[0.2em] italic">
+                                                Registry Lock
                                             </span>
                                         )}
                                     </td>
@@ -353,38 +352,38 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             {selectedInterview && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-[var(--heading)]/60 backdrop-blur-sm" onClick={() => setSelectedInterview(null)} />
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[95vh] overflow-hidden">
+                    <div className="bg-white rounded-sm shadow-premium w-full max-w-4xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[95vh] overflow-hidden">
 
-                        <div className="p-6 border-b flex justify-between items-center bg-white shrink-0">
+                        <div className="p-6 border-b border-border flex justify-between items-center bg-surface-alt shrink-0">
                             <div>
-                                <h2 className="font-heading text-2xl font-bold">Candidate Evaluation</h2>
-                                <p className="text-sm text-[var(--muted)] mt-1 font-medium">{selectedInterview.candidates?.name} — {selectedInterview.candidates?.position}</p>
+                                <h2 className="font-bold text-xl text-heading italic">Candidate Evaluation</h2>
+                                <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">{selectedInterview.candidates?.name} — {selectedInterview.candidates?.position}</p>
                             </div>
-                            <button onClick={() => setSelectedInterview(null)} className="p-2 hover:bg-[var(--surface-alt)] rounded-lg transition-colors text-[var(--muted)] hover:text-[var(--heading)]">
+                            <button onClick={() => setSelectedInterview(null)} className="p-2 border border-transparent hover:border-border hover:bg-white rounded-sm text-muted hover:text-heading transition-all">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <div className="overflow-y-auto p-6 flex-1 space-y-8 bg-[var(--surface-alt)]">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="overflow-y-auto p-6 flex-1 space-y-6 bg-white">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {SCORE_CATEGORIES.map((cat) => (
-                                    <div key={cat.key} className="bg-white p-6 rounded-xl border border-[var(--border)] shadow-sm space-y-4">
-                                        <div className="flex flex-col gap-1">
-                                            <h4 className="text-sm font-bold text-[var(--heading)]">{cat.label}</h4>
-                                            <p className="text-[11px] text-[var(--muted)] font-medium">{cat.description}</p>
+                                    <div key={cat.key} className="bg-surface-alt p-5 rounded-sm border border-border shadow-soft space-y-4">
+                                        <div className="flex flex-col gap-0.5">
+                                            <h4 className="text-[11px] font-bold text-heading uppercase tracking-widest">{cat.label}</h4>
+                                            <p className="text-[9px] text-muted font-medium">{cat.description}</p>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5">
                                             {[1, 2, 3, 4, 5].map((n) => (
                                                 <button
                                                     key={n}
                                                     type="button"
                                                     onClick={() => updateScore(cat.key, n)}
                                                     className={cn(
-                                                        "w-10 h-10 rounded-lg font-bold text-sm transition-all border-2",
+                                                        "w-8 h-8 rounded-sm font-bold text-xs transition-all border",
                                                         feedback[cat.key].score === n
-                                                            ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md"
-                                                            : "bg-white text-[var(--muted)] border-[var(--border)] hover:border-[var(--primary)]"
+                                                            ? "bg-primary text-white border-primary"
+                                                            : "bg-white text-muted border-border hover:border-primary"
                                                     )}
                                                 >
                                                     {n}
@@ -393,9 +392,9 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                         </div>
 
                                         <textarea
-                                            className="w-full bg-[var(--surface-alt)] border border-[var(--border)] rounded-lg p-3 text-sm font-medium placeholder:text-[var(--muted)] resize-none"
-                                            rows={3}
-                                            placeholder={`Observation notes for ${cat.label.toLowerCase()}...`}
+                                            className="w-full bg-white border border-border rounded-sm p-3 text-xs font-medium placeholder:text-muted resize-none focus:border-primary outline-none transition-colors"
+                                            rows={2}
+                                            placeholder={`Notes for ${cat.label.toLowerCase()}...`}
                                             value={feedback[cat.key].notes}
                                             onChange={(e) => updateNotes(cat.key, e.target.value)}
                                         />
@@ -403,26 +402,26 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                 ))}
                             </div>
 
-                            <div className="bg-white p-6 rounded-xl border border-[var(--border)] shadow-sm space-y-3">
-                                <h4 className="text-sm font-bold text-[var(--heading)] flex items-center gap-2">
-                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                                    Overall Review & Synthesis
+                            <div className="bg-surface-alt p-5 rounded-sm border border-border shadow-soft space-y-3">
+                                <h4 className="text-[11px] font-bold text-heading flex items-center gap-2 uppercase tracking-widest">
+                                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                                    Final Recommendation Synthesis
                                 </h4>
                                 <textarea
-                                    className="w-full bg-[var(--surface-alt)] border border-[var(--border)] rounded-lg p-4 text-sm font-medium placeholder:text-[var(--muted)]"
-                                    rows={4}
-                                    placeholder="Provide a holistic summary of the candidate's performance and fit..."
+                                    className="w-full bg-white border border-border rounded-sm p-4 text-xs font-medium placeholder:text-muted focus:border-primary outline-none transition-colors"
+                                    rows={3}
+                                    placeholder="Provide holistic summary..."
                                     value={feedback.overall_notes}
                                     onChange={(e) => setFeedback(prev => ({ ...prev, overall_notes: e.target.value }))}
                                 />
                             </div>
                         </div>
 
-                        <div className="p-6 border-t bg-white flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
+                        <div className="p-6 border-t border-border bg-surface-alt flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-[var(--primary-light)] rounded-xl border border-[var(--primary)]/10">
-                                    <span className="text-[10px] font-bold text-[var(--primary)] uppercase tracking-widest block mb-1">Average Score</span>
-                                    <span className="text-2xl font-bold text-[var(--heading)] tracking-tighter leading-none">{calcAvg(feedback).toFixed(1)}</span>
+                                <div className="p-3 bg-white rounded-sm border border-border shadow-soft">
+                                    <span className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] block mb-1">Average Performance</span>
+                                    <span className="text-xl font-bold text-heading italic leading-none">{calcAvg(feedback).toFixed(1)}</span>
                                 </div>
                             </div>
 
@@ -431,33 +430,32 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     <button
                                         onClick={() => handleDecision('Recommended')}
                                         disabled={isSubmitting || calcAvg(feedback) === 0}
-                                        className="btn-primary"
+                                        className="bg-primary text-white border border-primary-hover px-6 py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all"
                                     >
-                                        <Send className="w-4 h-4" />
-                                        Submit Final Decision
+                                        Finalize Selection
                                     </button>
                                 ) : (
                                     <>
                                         <button
                                             onClick={() => handleDecision('Not Recommended')}
                                             disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="px-6 py-3 rounded-lg border border-red-200 text-red-600 font-bold text-xs uppercase tracking-wider hover:bg-red-50 transition-all"
+                                            className="px-5 py-3 rounded-sm border border-border bg-white text-red-600 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
                                         >
-                                            Skip Candidate
+                                            Reject
                                         </button>
                                         <button
                                             onClick={() => handleDecision('L2 Interview Required')}
                                             disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="px-6 py-3 rounded-lg border border-indigo-200 text-indigo-600 font-bold text-xs uppercase tracking-wider hover:bg-indigo-50 transition-all"
+                                            className="px-5 py-3 rounded-sm border border-border bg-white text-indigo-600 font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all"
                                         >
-                                            Escalate to L2
+                                            Request L2
                                         </button>
                                         <button
                                             onClick={() => handleDecision('Recommended')}
                                             disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="btn-primary"
+                                            className="bg-primary text-white border border-primary-hover px-5 py-3 rounded-sm text-[10px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all"
                                         >
-                                            Recommend Candidate
+                                            Recommend
                                         </button>
                                     </>
                                 )}

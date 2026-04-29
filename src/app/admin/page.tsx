@@ -16,14 +16,14 @@ export default async function AdminDashboard() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="admin-page-header">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
                 <div>
-                    <h1 className="admin-page-title">Recruiter Dashboard</h1>
-                    <p className="admin-page-subtitle">Monitoring candidate flow and pipeline health.</p>
+                    <h1 className="text-xl font-bold text-heading italic tracking-tight">Executive Dossier</h1>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1 opacity-60">System Analytics & Pipeline Management</p>
                 </div>
                 <div className="flex gap-2">
                     {user?.roles?.map(role => (
-                        <span key={role} className="px-3 py-1 bg-white border border-gray-200 text-[var(--muted)] text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm">
+                        <span key={role} className="px-3 py-1 bg-surface-alt border border-border text-primary text-[8px] font-bold uppercase tracking-[0.2em] rounded-sm shadow-soft">
                             {role}
                         </span>
                     ))}

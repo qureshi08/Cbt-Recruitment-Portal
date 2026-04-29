@@ -36,15 +36,15 @@ export default async function ApplicationsPage() {
     }));
 
     return (
-        <div className="space-y-5">
-            <div className="admin-page-header">
+        <div className="space-y-4">
+            <div className="flex items-end justify-between mb-2">
                 <div>
-                    <h1 className="admin-page-title">Applications</h1>
-                    <p className="admin-page-subtitle">Manage all recruitment applications in one place.</p>
+                    <h1 className="text-xl font-bold text-heading italic tracking-tight">Talent Registry</h1>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1 opacity-60">Candidate Pipeline & Historical Records</p>
                 </div>
             </div>
 
-            <div className="card !p-0 overflow-hidden">
+            <div className="bg-white border border-border rounded-sm shadow-soft overflow-hidden">
                 <CandidateTable initialCandidates={enrichedCandidates} userRoles={roles} />
             </div>
         </div>

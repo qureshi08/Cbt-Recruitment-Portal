@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 /* 
-  CBT RECRUITMENT PORTAL — DESIGN SYSTEM 2.3
-  Optimized for Tailwind CSS 4 & "Editorial Intelligence" Branding
+  CBT RECRUITMENT PORTAL — DESIGN SYSTEM 2.4
+  Luxury & Compact Mode — Strict Adherence to convergentbt.com
 */
 
 @theme {
-  /* Colors */
+  /* Colors — Locked to Brand Guidelines */
   --color-primary: #00994D;
   --color-primary-hover: #007a3d;
   --color-primary-light: rgba(0, 153, 77, 0.05);
@@ -17,29 +17,29 @@
   --color-surface-alt: #F7F8F7;
   --color-border: #E2E8E4;
 
-  /* Typography */
+  /* Typography — Balanced Scale */
   --font-heading: "Playfair Display", serif;
   --font-sans: "DM Sans", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* Constraints & Shapes */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
+  /* Constraints — Sharp & Luxury */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-3xl: 24px;
 
-  /* Shadows */
-  --shadow-premium: 0 8px 24px rgba(0, 153, 77, 0.12);
+  /* Shadows — Subtle Elevations */
+  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.04);
+  --shadow-premium: 0 4px 20px rgba(0, 153, 77, 0.08);
 }
 
 /* ─── Base Styles ─────────────────────────────────────────── */
 @layer base {
   body {
-    @apply bg-surface-alt text-body font-sans antialiased;
-    font-size: 16px;
+    @apply bg-white text-body font-sans antialiased;
+    font-size: 15px;
+    /* Compact base */
   }
 
   h1,
@@ -48,38 +48,38 @@
   h4,
   h5,
   h6 {
-    @apply font-heading text-heading font-bold leading-tight;
+    @apply text-heading font-bold leading-tight;
   }
 }
 
-/* ─── Utility Components ──────────────────────────────────── */
+/* ─── Luxury Component Classes ────────────────────────────── */
 @layer components {
 
   .btn-primary {
-    @apply bg-primary text-white px-8 py-3 rounded-sm font-semibold text-base flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-lg hover:bg-primary-hover hover:-translate-y-[1px];
+    @apply bg-heading text-white px-6 py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-primary;
   }
 
   .btn-secondary {
-    @apply bg-transparent border-2 border-primary text-primary px-8 py-3 rounded-sm font-semibold text-base flex items-center justify-center gap-2 transition-all duration-200 hover:bg-primary-light;
+    @apply border border-border text-heading px-6 py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-surface-alt;
   }
 
   .btn-ghost {
-    @apply text-body underline underline-offset-[3px] decoration-transparent hover:decoration-primary transition-all;
+    @apply text-muted hover:text-heading transition-colors text-[10px] font-bold uppercase tracking-widest border-b border-transparent hover:border-heading;
   }
 
   .card {
-    @apply bg-white border border-border rounded-xl p-8 shadow-sm transition-all duration-300 hover:shadow-premium hover:-translate-y-[2px];
+    @apply bg-white border border-border rounded-sm p-6 shadow-soft transition-all duration-300 hover:shadow-premium;
   }
 
   .input-field {
-    @apply w-full bg-white border border-border rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none;
+    @apply w-full bg-white border border-border rounded-sm px-4 py-2.5 text-sm font-medium transition-all focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none placeholder:text-muted/50;
   }
 
   .status-badge {
-    @apply px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center;
+    @apply px-2 py-0.5 rounded-xs text-[9px] font-bold uppercase tracking-widest border inline-flex items-center;
   }
 
-  .accent-left {
-    @apply border-l-[3px] border-primary pl-4;
+  .grid-bg {
+    @apply bg-[radial-gradient(#e5e7eb_1px, transparent_1px)] [background-size:24px_24px];
   }
 }
