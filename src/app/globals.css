@@ -34,9 +34,11 @@ body {
   color: var(--body);
   background: var(--surface-alt);
   font-family: var(--font-body);
-  line-height: 1.6;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  font-size: 16px;
+  font-size: 15px;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll globally */
 }
 
 /* Typography Scale */
@@ -54,41 +56,42 @@ h6 {
 }
 
 h1 {
-  font-size: 2.75rem;
-  font-style: italic;
-}
-
-h2 {
   font-size: 2.25rem;
   font-style: italic;
 }
 
+h2 {
+  font-size: 1.85rem;
+  font-style: italic;
+}
+
 h3 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-style: italic;
 }
 
 h4 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
 }
 
 @media (max-width: 768px) {
   h1 {
-    font-size: 2.25rem;
+    font-size: 1.85rem;
   }
 
   h2 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
 
   h3 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 }
 
 /* Scrollbar Customization */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -97,51 +100,56 @@ h4 {
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border: 3px solid var(--surface-alt);
   border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }
 
 @layer components {
 
-  /* Buttons */
+  /* Compact Buttons */
   .btn-primary {
-    @apply bg-[var(--primary)] text-white px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] active:scale-[0.98] shadow-lg shadow-emerald-900/10 hover:shadow-emerald-900/20 hover:bg-[var(--primary-hover)];
+    @apply bg-[var(--primary)] text-white px-5 py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] active:scale-[0.98] shadow-sm hover:shadow-md hover:bg-[var(--primary-hover)] text-xs;
   }
 
   .btn-secondary {
-    @apply bg-white border-2 border-[var(--border)] text-[var(--heading)] px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] hover:border-[var(--primary)] hover:text-[var(--primary)];
+    @apply bg-white border border-[var(--border)] text-[var(--heading)] px-5 py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] hover:border-[var(--primary)] hover:text-[var(--primary)] text-xs shadow-sm;
   }
 
   .btn-ghost {
-    @apply text-[var(--muted)] font-bold px-4 py-2 rounded-xl transition-all hover:text-[var(--primary)] hover:bg-[var(--primary-light)];
+    @apply text-[var(--muted)] font-bold px-3 py-1.5 rounded-lg transition-all hover:text-[var(--primary)] hover:bg-[var(--primary-light)] text-xs;
   }
 
-  /* Inputs */
+  /* Compact Inputs */
   .input-field {
-    @apply w-full bg-white border border-[var(--border)] rounded-2xl p-4 text-sm font-medium transition-all duration-[var(--duration)] focus:border-[var(--primary)] focus:ring-4 focus:ring-emerald-500/5 placeholder:text-[var(--muted)] outline-none;
+    @apply w-full bg-white border border-[var(--border)] rounded-xl px-4 py-2 text-sm font-medium transition-all duration-[var(--duration)] focus:border-[var(--primary)] focus:ring-2 focus:ring-emerald-500/5 placeholder:text-[var(--muted)] outline-none;
   }
 
-  /* Cards */
+  /* Compact Cards */
   .card {
-    @apply bg-white border border-[var(--border)] rounded-[2rem] p-8 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-900/5 hover:border-[var(--primary)]/20;
+    @apply bg-white border border-[var(--border)] rounded-2xl p-5 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-emerald-900/5;
   }
 
-  /* Utilities */
   .glass {
     @apply bg-white/70 backdrop-blur-xl border border-white/20;
   }
 
-  /* Role Badges */
   .status-badge {
-    @apply px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border;
+    @apply px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border;
   }
 
-  /* Spacing Wrapper */
   .section-padding {
-    @apply py-20 px-6 max-w-7xl mx-auto;
+    @apply py-12 px-6 max-w-7xl mx-auto;
+  }
+
+  /* Global Layout Constrain */
+  .container-flex {
+    @apply flex flex-col md:flex-row gap-6 p-6 h-full max-h-screen overflow-hidden;
+  }
+
+  .content-scroll {
+    @apply flex-1 overflow-auto pr-2;
+  }
+
+  .text-wrap-safe {
+    @apply break-words whitespace-normal overflow-hidden;
   }
 }

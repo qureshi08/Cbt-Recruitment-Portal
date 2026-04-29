@@ -353,24 +353,24 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const batches = ["All", ...Array.from(new Set(candidates.map(c => c.batch_number).filter(Boolean)))];
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             {/* Search and Filter Bar */}
-            <div className="card !p-6 flex flex-col md:flex-row gap-6 items-center bg-white shadow-soft">
+            <div className="bg-white border border-border rounded-2xl p-3 flex flex-col md:flex-row gap-3 items-center shadow-sm">
                 <div className="relative flex-1 w-full">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
                     <input
                         type="text"
                         placeholder="Filter by name, email or mobile..."
-                        className="input-field !pl-12 !h-14 !rounded-2xl shadow-inner border-border/60"
+                        className="w-full bg-gray-50 border border-border rounded-xl pl-9 pr-3 py-2 text-xs font-medium focus:border-primary focus:ring-2 focus:ring-emerald-500/5 placeholder:text-muted outline-none"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-                    <div className="flex flex-col gap-1.5 min-w-[140px]">
-                        <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em] ml-1">Status Phase</span>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-black text-muted uppercase tracking-wider whitespace-nowrap">Status:</span>
                         <select
-                            className="input-field !h-12 !py-0 !px-4 !text-xs !rounded-xl cursor-pointer hover:border-primary transition-colors"
+                            className="border border-border bg-gray-50 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer hover:border-primary transition-colors outline-none text-gray-700"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                         >
@@ -379,10 +379,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             ))}
                         </select>
                     </div>
-                    <div className="flex flex-col gap-1.5 min-w-[100px]">
-                        <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em] ml-1">Batch ID</span>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-black text-muted uppercase tracking-wider whitespace-nowrap">Batch:</span>
                         <select
-                            className="input-field !h-12 !py-0 !px-4 !text-xs !rounded-xl cursor-pointer hover:border-primary transition-colors"
+                            className="border border-border bg-gray-50 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer hover:border-primary transition-colors outline-none text-gray-700"
                             value={batchFilter}
                             onChange={(e) => setBatchFilter(e.target.value)}
                         >
@@ -394,78 +394,73 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-border bg-white shadow-sm">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="bg-white border-b border-border text-[10px]">
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Batch</th>
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Candidate / Contact</th>
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Demographics</th>
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">AI Analysis</th>
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Assessment Score</th>
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Interview</th>
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-6 font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                        <tr className="bg-gray-50 border-b border-border text-[9px]">
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Batch</th>
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Candidate</th>
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Info</th>
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">AI Score</th>
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Assessment</th>
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Interview</th>
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-3 py-3 font-black text-gray-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border bg-white">
+                    <tbody className="divide-y divide-border/60 bg-white">
                         {filteredCandidates.map((candidate) => (
-                            <tr key={candidate.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="px-6 py-6">
-                                    <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
+                            <tr key={candidate.id} className="hover:bg-primary/[0.02] transition-colors">
+                                <td className="px-3 py-3">
+                                    <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
                                         {candidate.batch_number || 'N/A'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-6">
-                                    <div className="flex flex-col gap-1.5">
-                                        <span className="text-sm font-bold text-gray-900 leading-none">{candidate.name}</span>
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[11px] text-gray-500 font-medium">{candidate.email}</span>
-                                            {candidate.phone && (
-                                                <span className="text-[11px] text-primary font-bold flex items-center gap-1.5">
-                                                    <Phone className="w-3 h-3" />
-                                                    {candidate.phone}
-                                                </span>
-                                            )}
-                                            {candidate.cnic && (
-                                                <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1.5 mt-0.5" title="CNIC">
-                                                    <span className="px-1 bg-gray-100 rounded text-[9px]">CNIC</span>
-                                                    {formatCNIC(candidate.cnic)}
-                                                </span>
-                                            )}
-                                        </div>
+                                <td className="px-3 py-3 max-w-[180px]">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-xs font-bold text-gray-900 leading-tight truncate" title={candidate.name}>{candidate.name}</span>
+                                        <span className="text-[10px] text-gray-400 font-medium truncate" title={candidate.email}>{candidate.email}</span>
+                                        {candidate.phone && (
+                                            <span className="text-[10px] text-primary font-bold flex items-center gap-1">
+                                                <Phone className="w-2.5 h-2.5 shrink-0" />
+                                                {candidate.phone}
+                                            </span>
+                                        )}
+                                        {candidate.cnic && (
+                                            <span className="text-[9px] text-gray-400 font-mono truncate" title={`CNIC: ${candidate.cnic}`}>
+                                                {formatCNIC(candidate.cnic)}
+                                            </span>
+                                        )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-6">
-                                    <div className="flex flex-col gap-1 max-w-[200px]">
+                                <td className="px-3 py-3 max-w-[140px]">
+                                    <div className="flex flex-col gap-0.5">
                                         {candidate.location && (
-                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide truncate">
+                                            <span className="text-[9px] font-medium text-gray-500 truncate" title={candidate.location}>
                                                 📍 {candidate.location}
                                             </span>
                                         )}
                                         {candidate.degree_field && (
-                                            <div className="flex items-center gap-1 flex-wrap">
-                                                <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100/50">
-                                                    {candidate.degree_field}
-                                                </span>
-                                                {candidate.graduation_year && (
-                                                    <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-1.5 py-0.5 rounded-sm">
-                                                        '{candidate.graduation_year.slice(-2)}
-                                                    </span>
-                                                )}
-                                                {candidate.education_status && candidate.education_status !== 'Graduated' && (
-                                                    <span className="text-[10px] text-yellow-600 font-bold bg-yellow-50 px-1.5 py-0.5 rounded-sm">
-                                                        Student
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-medium border border-blue-100/50 truncate" title={candidate.degree_field}>
+                                                {candidate.degree_field}
+                                            </span>
                                         )}
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                            {candidate.graduation_year && (
+                                                <span className="text-[8px] text-gray-400 font-bold bg-gray-100 px-1 py-0.5 rounded">
+                                                    '{candidate.graduation_year.slice(-2)}
+                                                </span>
+                                            )}
+                                            {candidate.education_status && candidate.education_status !== 'Graduated' && (
+                                                <span className="text-[8px] text-yellow-600 font-bold bg-yellow-50 px-1 py-0.5 rounded">Student</span>
+                                            )}
+                                        </div>
                                         {!candidate.location && !candidate.degree_field && (
-                                            <span className="text-xs text-gray-400 italic">Not provided</span>
+                                            <span className="text-[9px] text-gray-400 italic">N/A</span>
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-6">
+                                <td className="px-3 py-3">
                                     {candidate.ai_score !== undefined ? (
                                         <div className="flex flex-col items-start gap-1">
                                             <div
@@ -512,10 +507,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 onClick={() => handleAiAnalysis(candidate.id)}
                                                 disabled={analyzingId === candidate.id}
                                                 className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black rounded-xl border transition-all disabled:opacity-50 ${analysisStatus?.id === candidate.id && analysisStatus.status === 'success'
-                                                        ? 'bg-emerald-500 text-white border-emerald-600'
-                                                        : analysisStatus?.id === candidate.id && analysisStatus.status === 'error'
-                                                            ? 'bg-rose-500 text-white border-rose-600'
-                                                            : 'bg-primary/10 text-primary border-primary/10 hover:bg-primary hover:text-white'
+                                                    ? 'bg-emerald-500 text-white border-emerald-600'
+                                                    : analysisStatus?.id === candidate.id && analysisStatus.status === 'error'
+                                                        ? 'bg-rose-500 text-white border-rose-600'
+                                                        : 'bg-primary/10 text-primary border-primary/10 hover:bg-primary hover:text-white'
                                                     }`}
                                             >
                                                 {analyzingId === candidate.id ? (
@@ -568,7 +563,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </div>
                                     )}
                                 </td>
-                                <td className="px-6 py-6">
+                                <td className="px-3 py-3">
                                     {candidate.assessment_score_url ? (
                                         <a
                                             href={candidate.assessment_score_url}
@@ -602,7 +597,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     )}
                                 </td>
                                 {/* Interview Scores */}
-                                <td className="px-6 py-6">
+                                <td className="px-3 py-3">
                                     {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
                                         <div className="flex flex-col gap-1.5">
                                             {candidate.interview_scores.l1_feedback_json && (
@@ -641,7 +636,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         <span className="text-[10px] text-gray-300 italic">—</span>
                                     )}
                                 </td>
-                                <td className="px-6 py-6">
+                                <td className="px-3 py-3">
                                     <div className="flex flex-col items-start gap-1">
                                         <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
                                             {candidate.status}
@@ -653,7 +648,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-6 text-right">
+                                <td className="px-3 py-3 text-right">
                                     <div className="flex justify-end gap-2">
                                         {candidate.status === 'Approved' && (isMaster || isHR) && (
                                             <button

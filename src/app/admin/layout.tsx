@@ -26,32 +26,34 @@ export default async function AdminLayout({
     const roles = user.roles;
 
     return (
-        <div className="flex min-h-screen bg-[#FAFBFC]">
+        <div className="flex h-screen bg-[#FAFBFC] overflow-hidden">
             <Sidebar userRoles={roles} />
-            <div className="flex-1 ml-0 md:ml-60 flex flex-col min-w-0">
-                <header className="h-16 glass sticky top-0 z-20 flex items-center justify-end md:justify-between px-4 md:px-10 shadow-[0_1px_0_0_rgba(0,0,0,0.02)]">
+            <div className="flex-1 ml-0 md:ml-56 flex flex-col min-w-0 h-full overflow-hidden">
+                <header className="h-14 glass sticky top-0 z-20 flex items-center justify-end md:justify-between px-4 md:px-8 border-b border-border/30">
                     <div className="hidden md:block"></div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                         <NotificationBell />
 
-                        <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
-                            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shadow-md shadow-primary/20">
+                        <div className="flex items-center gap-2 bg-white px-2.5 py-1 rounded-full border border-gray-100 shadow-sm">
+                            <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shadow-md shadow-primary/20">
                                 {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </div>
                             <div className="flex flex-col text-left">
-                                <span className="text-[13px] font-semibold text-gray-900 leading-none mb-0.5">
+                                <span className="text-[12px] font-semibold text-gray-900 leading-none">
                                     {user.full_name || 'User'}
                                 </span>
-                                <span className="text-[11px] font-medium text-gray-500 leading-none">
+                                <span className="text-[10px] font-medium text-gray-500 leading-none mt-0.5">
                                     {user.email}
                                 </span>
                             </div>
                         </div>
                     </div>
                 </header>
-                <main className="p-4 md:p-8 lg:p-10 max-w-[1280px] w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    {children}
+                <main className="flex-1 p-3 md:p-5 overflow-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="max-w-[1440px] mx-auto w-full">
+                        {children}
+                    </div>
                 </main>
             </div>
         </div>
