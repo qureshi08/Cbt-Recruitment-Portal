@@ -1306,7 +1306,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 content = [
                     {
                         type: "text",
-                        text: `${prompt}\n\nThe resume is provided as image(s) below. Extract ALL visible information carefully including name, contact details, education, experience, skills, and any other relevant fields.`
+                        text: `${prompt}\n\nSTRICT JSON ONLY.`
                     },
                     ...visionImages.map((b64: string) => ({
                         type: "image_url",
@@ -1324,7 +1324,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     "X-Title": "CBT Recruitment Portal"
                 },
                 body: JSON.stringify({
-                    "model": "google/gemini-2.0-flash-001", // Reverting to stable Flash 2.0 (often free/cheap)
+                    "model": "google/gemini-2.0-flash-001",
                     "messages": [
                         { "role": "user", "content": content }
                     ],
@@ -1336,49 +1336,50 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(`OpenRouter Error: ${errData.error?.message || response.statusText} `);
+                throw new Error(`OpenRouter Error: ${errData.error?.message || response.statusText}`);
             }
 
             const data = await response.json();
             const responseContent = data.choices?.[0]?.message?.content;
             if (!responseContent) throw new Error("AI returned an empty response");
 
-            // Robust JSON extraction
             const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
             const cleanedContent = jsonMatch ? jsonMatch[0] : responseContent;
-
-            try {
-                analysis = JSON.parse(cleanedContent.replace(/```json/gi, "").replace(/```/g, "").trim());
-            } catch (pErr) {
-                console.error("JSON Parse Error. Raw Content:", responseContent);
-                throw new Error("AI response was not in a valid format. Please try again.");
-            }
+            analysis = JSON.parse(cleanedContent.replace(/```json/gi, "").replace(/```/g, "").trim());
         } else {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({
-                model: "gemini-1.5-flash-latest", // Use specific latest identifier
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    maxOutputTokens: 1500
+            // Multi-model fallback list: tries the most capable first, then faster ones
+            const modelsToTry = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"];
+            let lastErr = null;
+
+            for (const modelName of modelsToTry) {
+                try {
+                    const model = genAI.getGenerativeModel({ model: modelName });
+                    const visionImages = (candidate as any)._vision_images || [];
+                    let result;
+
+                    if (visionImages.length > 0) {
+                        const promptPart = { text: `${prompt}\n\nSTRICT JSON ONLY.` };
+                        const imageParts = visionImages.map((b64: string) => ({
+                            inlineData: { data: b64, mimeType: "image/jpeg" }
+                        }));
+                        result = await model.generateContent([promptPart, ...imageParts]);
+                    } else {
+                        result = await model.generateContent(prompt);
+                    }
+
+                    const responseText = result.response.text();
+                    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                    const cleanedResponse = jsonMatch ? jsonMatch[0] : responseText;
+                    analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
+                    if (analysis) break;
+                } catch (err: any) {
+                    console.warn(`Model ${modelName} failed, trying next... Error: ${err.message}`);
+                    lastErr = err;
+                    continue;
                 }
-            });
-            const visionImages = (candidate as any)._vision_images || [];
-
-            let result;
-            if (visionImages.length > 0) {
-                const promptPart = { text: `${prompt}\n\nThe resume is provided as image(s) below. Extract ALL visible information carefully content including contact, education, and skills. Use strict JSON.` };
-                const imageParts = visionImages.map((b64: string) => ({
-                    inlineData: { data: b64, mimeType: "image/jpeg" }
-                }));
-                result = await model.generateContent([promptPart, ...imageParts]);
-            } else {
-                result = await model.generateContent(prompt);
             }
-
-            const responseText = result.response.text();
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            const cleanedResponse = jsonMatch ? jsonMatch[0] : responseText;
-            analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
+            if (!analysis) throw lastErr || new Error("Direct AI communication failed.");
         }
 
         const { error: updateError } = await supabaseAdmin
