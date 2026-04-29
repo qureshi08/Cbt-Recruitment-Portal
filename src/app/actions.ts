@@ -10,7 +10,9 @@ import { cookies } from "next/headers";
 import {
     sendAssessmentEmail,
     sendRecommendedEmail,
-    sendNotRecommendedEmail
+    sendNotRecommendedEmail,
+    notifyRecruitmentTeam,
+    notifyInterviewers
 } from "@/lib/email";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
@@ -415,6 +417,24 @@ export async function submitApplication(formData: FormData) {
             is_read: false
         });
 
+        // Notify recruitment team
+        try {
+            const { data: teamEmails } = await supabaseAdmin
+                .from('team_notifications')
+                .select('email')
+                .eq('category', 'recruitment_team');
+
+            if (teamEmails && teamEmails.length > 0) {
+                await notifyRecruitmentTeam(
+                    teamEmails.map(t => t.email),
+                    'NEW_APPLICATION',
+                    { name, email, position }
+                );
+            }
+        } catch (notifyErr) {
+            console.error("Recruitment team notification failed:", notifyErr);
+        }
+
         revalidatePath("/admin");
         return { success: true };
     } catch (error: any) {
@@ -556,6 +576,30 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             throw new Error(statusResult.error || "Failed to update candidate status.");
         }
 
+        // Notify recruitment team about booking
+        try {
+            const { data: teamEmails } = await supabaseAdmin
+                .from('team_notifications')
+                .select('email')
+                .eq('category', 'recruitment_team');
+
+            if (teamEmails && teamEmails.length > 0) {
+                const { data: cData } = await supabaseAdmin.from('candidates').select('name').eq('id', candidateId).single();
+                const { data: sData } = await supabaseAdmin.from('assessment_slots').select('start_time').eq('id', slotId).single();
+
+                await notifyRecruitmentTeam(
+                    teamEmails.map(t => t.email),
+                    'SLOT_BOOKED',
+                    {
+                        name: cData?.name || 'A candidate',
+                        slotTime: sData ? new Date(sData.start_time).toLocaleString() : 'N/A'
+                    }
+                );
+            }
+        } catch (notifyErr) {
+            console.error("Booking notification failed:", notifyErr);
+        }
+
         revalidatePath("/admin/slots");
         revalidatePath("/admin");
         revalidatePath(`/book-slot/${candidateId}`);
@@ -633,6 +677,24 @@ export async function completeAssessment(candidateId: string) {
             is_read: false
         });
 
+        // Notify Interviewers (Meeting Request)
+        try {
+            const { data: interviewerEmails } = await supabaseAdmin
+                .from('team_notifications')
+                .select('email')
+                .eq('category', 'interviewer');
+
+            if (interviewerEmails && interviewerEmails.length > 0) {
+                await notifyInterviewers(
+                    interviewerEmails.map(t => t.email),
+                    candidate?.name || 'A candidate',
+                    candidateId
+                );
+            }
+        } catch (notifyErr) {
+            console.error("Interviewer notification failed:", notifyErr);
+        }
+
         revalidatePath("/admin/slots");
         revalidatePath("/admin/applications");
         revalidatePath("/admin/interviews");
@@ -643,6 +705,38 @@ export async function completeAssessment(candidateId: string) {
         console.error("completeAssessment error:", error);
         return { error: error.message };
     }
+}
+
+// --- Team Notification Recipient Management ---
+export async function getTeamNotificationRecipients() {
+    const { data, error } = await supabaseAdmin
+        .from('team_notifications')
+        .select('*')
+        .order('category', { ascending: true });
+
+    if (error) throw error;
+    return data;
+}
+
+export async function addTeamNotificationRecipient(email: string, category: string) {
+    const { error } = await supabaseAdmin
+        .from('team_notifications')
+        .insert({ email, category });
+
+    if (error) return { error: error.message };
+    revalidatePath('/admin/settings');
+    return { success: true };
+}
+
+export async function removeTeamNotificationRecipient(id: string) {
+    const { error } = await supabaseAdmin
+        .from('team_notifications')
+        .delete()
+        .eq('id', id);
+
+    if (error) return { error: error.message };
+    revalidatePath('/admin/settings');
+    return { success: true };
 }
 
 export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string, l1FeedbackJson?: object) {

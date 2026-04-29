@@ -157,3 +157,23 @@ create policy "Admins can delete notifications" on public.notifications
 
 create policy "Admins can update notifications" on public.notifications
   for update using (true);
+
+-- TEAM NOTIFICATIONS TABLE
+create table public.team_notifications (
+  id uuid primary key default uuid_generate_v4(),
+  email text not null,
+  category text not null, -- 'recruitment_team' or 'interviewer'
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- RLS for team_notifications
+alter table public.team_notifications enable row level security;
+
+create policy "Admins can view team_notifications" on public.team_notifications
+  for select using (true);
+
+create policy "Master can insert team_notifications" on public.team_notifications
+  for insert with check (true);
+
+create policy "Master can delete team_notifications" on public.team_notifications
+  for delete using (true);

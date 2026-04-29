@@ -71,3 +71,63 @@ export const sendNotRecommendedEmail = async (candidateEmail: string, candidateN
 
   return transporter.sendMail(mailOptions);
 };
+
+export const sendTeamNotification = async (recipients: string[], subject: string, html: string) => {
+  if (!recipients || recipients.length === 0) return null;
+
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    to: recipients.join(','),
+    subject: subject,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+        ${html}
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment System</p>
+      </div>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
+export const notifyRecruitmentTeam = async (teamEmails: string[], type: 'NEW_APPLICATION' | 'SLOT_BOOKED', data: any) => {
+  const subject = type === 'NEW_APPLICATION'
+    ? `New Application: ${data.name}`
+    : `Assessment Scheduled: ${data.name}`;
+
+  const content = type === 'NEW_APPLICATION'
+    ? `
+      <h2 style="color: #009245;">New Application Received</h2>
+      <p><strong>Candidate:</strong> ${data.name}</p>
+      <p><strong>Email:</strong> ${data.email}</p>
+      <p><strong>Position:</strong> ${data.position}</p>
+      <p>A new application has been submitted and is ready for initial screening.</p>
+    `
+    : `
+      <h2 style="color: #009245;">Assessment Slot Booked</h2>
+      <p><strong>Candidate:</strong> ${data.name}</p>
+      <p><strong>Time:</strong> ${data.slotTime}</p>
+      <p>The candidate has selected a slot for their technical assessment.</p>
+    `;
+
+  return sendTeamNotification(teamEmails, subject, content);
+};
+
+export const notifyInterviewers = async (interviewerEmails: string[], candidateName: string, candidateId: string) => {
+  const subject = `Meeting Request: Interview with ${candidateName}`;
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const feedbackLink = `${origin}/admin/interviews`;
+
+  const content = `
+    <h2 style="color: #009245;">Assessment Completed</h2>
+    <p><strong>Candidate:</strong> ${candidateName}</p>
+    <p>The candidate has successfully completed their assessment and is now ready for the interview phase.</p>
+    <p>Please coordinate a meeting time and provide your feedback in the recruitment portal.</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${feedbackLink}" style="background-color: #009245; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Provide Feedback</a>
+    </div>
+  `;
+
+  return sendTeamNotification(interviewerEmails, subject, content);
+};

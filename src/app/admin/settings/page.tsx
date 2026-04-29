@@ -1,7 +1,8 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { fetchAllUsers, getAllRoles, getAiCriteria } from "@/app/actions";
+import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipients } from "@/app/actions";
 import UserManager from "@/components/UserManager";
 import AiCriteriaManager from "@/components/AiCriteriaManager";
+import TeamEmailManager from "@/components/TeamEmailManager";
 import { ShieldAlert } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -27,10 +28,11 @@ export default async function SettingsPage() {
         );
     }
 
-    const [users, roles, aiCriteria] = await Promise.all([
+    const [users, roles, aiCriteria, notificationRecipients] = await Promise.all([
         isMaster ? fetchAllUsers() : Promise.resolve([]),
         isMaster ? getAllRoles() : Promise.resolve([]),
-        getAiCriteria()
+        getAiCriteria(),
+        isMaster ? getTeamNotificationRecipients() : Promise.resolve([])
     ]);
 
     return (
@@ -41,6 +43,13 @@ export default async function SettingsPage() {
             </div>
 
             <AiCriteriaManager initialCriteria={aiCriteria} />
+
+            {isMaster && (
+                <>
+                    <h3 className="text-xl font-bold text-gray-800 mt-8 border-t pt-8">Team Notifications</h3>
+                    <TeamEmailManager initialRecipients={notificationRecipients} />
+                </>
+            )}
 
             {isMaster && (
                 <>
