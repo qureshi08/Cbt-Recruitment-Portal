@@ -1423,7 +1423,23 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             analysis: analysis
         };
     } catch (error: any) {
-        console.error("AI Analysis error:", error);
-        return { error: error.message };
+        console.error("AI Analysis fatal error:", error);
+
+        let userMessage = "The AI service is temporarily unavailable. Please try again in 5 minutes.";
+        const errMsg = error.message?.toLowerCase() || "";
+
+        if (errMsg.includes("404") || errMsg.includes("not found")) {
+            userMessage = "AI Setup Error: The system is trying to use a model that isn't fully enabled on your account. Please ensure 'Gemini 1.5 Flash' is enabled in your Google AI Studio project.";
+        } else if (errMsg.includes("apikey") || errMsg.includes("api key") || errMsg.includes("unauthorized")) {
+            userMessage = "Security Key Error: The AI Key configured in Vercel is invalid or has expired. Please update your GEMINI_API_KEY.";
+        } else if (errMsg.includes("quota") || errMsg.includes("limit") || errMsg.includes("429")) {
+            userMessage = "Usage Limit Reached: Too many resumes were screened at once. Please wait 60 seconds and try again (Free Tier limits).";
+        } else if (errMsg.includes("json")) {
+            userMessage = "Reading Error: The AI couldn't parse this specific resume format. Please try re-uploading the resume as a standard PDF.";
+        } else if (errMsg.includes("empty resume")) {
+            userMessage = "File Error: This resume appears to be empty or unscannable. Please check the file and try again.";
+        }
+
+        return { error: userMessage, rawError: error.message };
     }
 }

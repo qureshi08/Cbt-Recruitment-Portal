@@ -188,6 +188,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [uploadingScore, setUploadingScore] = useState<string | null>(null);
     const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+    const [analysisStatus, setAnalysisStatus] = useState<{ id: string, status: 'success' | 'error', message?: string } | null>(null);
     const [selectedAiReasoning, setSelectedAiReasoning] = useState<Candidate | null>(null);
     const [selectedInterviewScores, setSelectedInterviewScores] = useState<Candidate | null>(null);
 
@@ -202,6 +203,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
 
     const handleAiAnalysis = async (candidateId: string) => {
         setAnalyzingId(candidateId);
+        setAnalysisStatus(null);
         try {
             const result = await analyzeCandidateWithAi(candidateId);
             if (result.success && result.analysis) {
@@ -213,11 +215,14 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         ai_analysis_json: result.analysis
                     } : c
                 ));
+                setAnalysisStatus({ id: candidateId, status: 'success' });
+                // Reset success status after 3 seconds
+                setTimeout(() => setAnalysisStatus(null), 3000);
             } else {
-                alert("AI Analysis failed: " + result.error);
+                setAnalysisStatus({ id: candidateId, status: 'error', message: result.error });
             }
         } catch (err: any) {
-            alert("AI Analysis error: " + err.message);
+            setAnalysisStatus({ id: candidateId, status: 'error', message: "Technical Error: " + err.message });
         } finally {
             setAnalyzingId(null);
         }
@@ -502,17 +507,36 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             )}
                                         </div>
                                     ) : (canApprove && (candidate.resume_url)) ? (
-                                        <div className="flex flex-col gap-2 items-start">
+                                        <div className="flex flex-col gap-2 items-start max-w-[200px]">
                                             <button
                                                 onClick={() => handleAiAnalysis(candidate.id)}
                                                 disabled={analyzingId === candidate.id}
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary text-[10px] font-black rounded-xl border border-primary/10 hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                                                className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black rounded-xl border transition-all disabled:opacity-50 ${analysisStatus?.id === candidate.id && analysisStatus.status === 'success'
+                                                        ? 'bg-emerald-500 text-white border-emerald-600'
+                                                        : analysisStatus?.id === candidate.id && analysisStatus.status === 'error'
+                                                            ? 'bg-rose-500 text-white border-rose-600'
+                                                            : 'bg-primary/10 text-primary border-primary/10 hover:bg-primary hover:text-white'
+                                                    }`}
                                             >
                                                 {analyzingId === candidate.id ? (
-                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-white rounded-full animate-spin" />
+                                                ) : analysisStatus?.id === candidate.id && analysisStatus.status === 'success' ? (
+                                                    <Check className="w-3.5 h-3.5" />
                                                 ) : <Sparkles className="w-3.5 h-3.5" />}
-                                                RUN AI SCREENING
+                                                {analyzingId === candidate.id ? 'ANALYZING...' :
+                                                    analysisStatus?.id === candidate.id && analysisStatus.status === 'success' ? 'DONE!' :
+                                                        'RUN AI SCREENING'}
                                             </button>
+
+                                            {analysisStatus?.id === candidate.id && analysisStatus.status === 'error' && (
+                                                <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg shadow-sm">
+                                                    <p className="text-[9px] text-rose-700 leading-tight">
+                                                        <strong className="block uppercase tracking-widest text-[8px] mb-1">Diagnostic Report:</strong>
+                                                        {analysisStatus.message}
+                                                    </p>
+                                                </div>
+                                            )}
+
                                             {candidate.resume_url && (
                                                 <a
                                                     href={candidate.resume_url}
