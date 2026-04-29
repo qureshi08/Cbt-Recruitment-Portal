@@ -1323,11 +1323,11 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     "X-Title": "CBT Recruitment Portal"
                 },
                 body: JSON.stringify({
-                    "model": "google/gemini-2.0-flash-exp:free", // Use explicitly free model
+                    "model": "google/gemini-2.0-flash-001", // Reverting to stable Flash 2.0 (often free/cheap)
                     "messages": [
                         { "role": "user", "content": content }
                     ],
-                    "max_tokens": 1200, // Further reduced to ensure prompt fitting
+                    "max_tokens": 1200,
                     "response_format": { "type": "json_object" },
                     "temperature": 0.1
                 })
