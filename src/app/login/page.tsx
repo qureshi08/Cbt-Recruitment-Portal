@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { login } from "@/app/actions";
 import { Shield, Mail, Lock, Loader2, ArrowRight, Activity, Cpu } from "lucide-react";
 import Logo from "@/components/Logo";
+import Link from "next/link";
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
