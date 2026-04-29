@@ -14,7 +14,7 @@ export default function Logo({ className, withText = true }: LogoProps) {
         <Link href="/" className={cn("flex items-center group", className)}>
             <div className="flex items-center">
                 {/* CBT Full Logo */}
-                <div className="relative h-9 w-40 transition-transform duration-300 group-hover:scale-[1.01]">
+                <div className="relative h-9 w-32 transition-transform duration-300 group-hover:scale-[1.01]">
                     <Image
                         src="/logo.png"
                         alt="CBT Logo"
@@ -26,7 +26,7 @@ export default function Logo({ className, withText = true }: LogoProps) {
             </div>
 
             {withText && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                     <div className="w-[1px] h-6 bg-border group-hover:bg-primary/20 transition-colors" />
                     <div className="flex flex-col min-w-0">
                         <span className="text-[11px] font-black text-heading tracking-tight uppercase leading-tight italic">
