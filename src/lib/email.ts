@@ -166,8 +166,8 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
         <p>They are now ready for the <strong>L1 Interview</strong> phase.</p>
         <p>Please confirm your availability below:</p>
         <div style="margin: 25px 0; display: flex; gap: 10px;">
-          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=true" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Available</a>
-          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=false" style="background-color: #eee; color: #333; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Not Available</a>
+          <a href="${origin}/respond?id=${data.candidateId}&email=[INTERVIEWER_EMAIL]&available=true" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Available</a>
+          <a href="${origin}/respond?id=${data.candidateId}&email=[INTERVIEWER_EMAIL]&available=false" style="background-color: #eee; color: #333; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Not Available</a>
         </div>
         <p style="font-size: 12px; color: #666;">Note: After clicking, you will be able to suggest a preferred time.</p>
       `;
@@ -180,8 +180,8 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
         <p>L2 Interview has been requested for candidate <strong>${data.name}</strong>.</p>
         <p>Please confirm your availability for this session:</p>
         <div style="margin: 25px 0;">
-          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=true" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Available</a>
-          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=false" style="background-color: #eee; color: #333; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Not Available</a>
+          <a href="${origin}/respond?id=${data.candidateId}&email=[INTERVIEWER_EMAIL]&available=true" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Available</a>
+          <a href="${origin}/respond?id=${data.candidateId}&email=[INTERVIEWER_EMAIL]&available=false" style="background-color: #eee; color: #333; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Not Available</a>
         </div>
       `;
       break;

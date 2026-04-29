@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Clock, Send, Mail, User, Briefcase, Loader2, Sparkles, Check, X, Calendar, ShieldCheck, AlertCircle } from "lucide-react";
 import { submitInterviewerAvailability, getCandidateBasic, getInterviewerNameByEmail } from "@/app/actions";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 
 function AvailabilityForm() {
-    const params = useParams();
-    const candidateId = params.candidateId as string;
+    const searchParams = useSearchParams();
+    const candidateId = searchParams.get('id') as string;
 
     const [candidate, setCandidate] = useState<{ name: string, position: string } | null>(null);
     const [email, setEmail] = useState("");
@@ -24,14 +24,17 @@ function AvailabilityForm() {
     useEffect(() => {
         let isMounted = true;
         const init = async () => {
+            if (!candidateId) {
+                if (isMounted) setIsLoading(false);
+                return;
+            };
             try {
                 const cData = await getCandidateBasic(candidateId);
                 if (!isMounted) return;
                 setCandidate(cData);
 
-                const urlParams = new URLSearchParams(window.location.search);
-                const urlEmail = urlParams.get('email');
-                const urlAvail = urlParams.get('available');
+                const urlEmail = searchParams.get('email');
+                const urlAvail = searchParams.get('available');
 
                 if (urlAvail === 'true') setIsAvailable(true);
                 if (urlAvail === 'false') setIsAvailable(false);
@@ -52,11 +55,11 @@ function AvailabilityForm() {
         };
         init();
         return () => { isMounted = false; };
-    }, [candidateId]);
+    }, [candidateId, searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isAvailable === null || (!email && !isLegacyLink)) return;
+        if (isAvailable === null || (!email && !isLegacyLink) || !candidateId) return;
 
         setIsSubmitting(true);
         let formattedTime = "";
@@ -73,12 +76,12 @@ function AvailabilityForm() {
 
     if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-primary/20" /></div>;
 
-    if (isLegacyLink) return (
+    if (!candidateId || isLegacyLink) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
             <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-rose-100 p-10 text-center">
                 <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-                <h1 className="text-xl font-bold mb-2">Incomplete Link</h1>
-                <p className="text-gray-500 text-sm">Please use the latest link from your email inbox.</p>
+                <h1 className="text-xl font-bold mb-2">Invalid or Legacy Link</h1>
+                <p className="text-gray-500 text-sm">Please use the latest invitation link from your email.</p>
             </div>
         </div>
     );
