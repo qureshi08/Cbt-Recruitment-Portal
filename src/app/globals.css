@@ -11,19 +11,19 @@
   --primary: #009245;
   --primary-hover: #007a3a;
   --primary-light: rgba(0, 146, 69, 0.08);
-  
+
   --heading: #0f172a;
   --body: #475569;
   --muted: #94a3b8;
-  
+
   --surface: #ffffff;
   --surface-alt: #f8fafc;
   --border: #e2e8f0;
-  
+
   /* Fonts */
   --font-heading: 'Playfair Display', serif;
   --font-body: 'DM Sans', sans-serif;
-  
+
   /* Transitions */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --duration: 0.3s;
@@ -40,7 +40,12 @@ body {
 }
 
 /* Typography Scale */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-heading);
   color: var(--heading);
   line-height: 1.2;
@@ -48,15 +53,37 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-h1 { font-size: 2.75rem; font-style: italic; }
-h2 { font-size: 2.25rem; font-style: italic; }
-h3 { font-size: 1.75rem; font-style: italic; }
-h4 { font-size: 1.25rem; }
+h1 {
+  font-size: 2.75rem;
+  font-style: italic;
+}
+
+h2 {
+  font-size: 2.25rem;
+  font-style: italic;
+}
+
+h3 {
+  font-size: 1.75rem;
+  font-style: italic;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
 
 @media (max-width: 768px) {
-  h1 { font-size: 2.25rem; }
-  h2 { font-size: 1.75rem; }
-  h3 { font-size: 1.5rem; }
+  h1 {
+    font-size: 2.25rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
 }
 
 /* Scrollbar Customization */
@@ -79,17 +106,14 @@ h4 { font-size: 1.25rem; }
 }
 
 @layer components {
+
   /* Buttons */
   .btn-primary {
-    @apply bg-[var(--primary)] text-white px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 
-           transition-all duration-[var(--duration)] var(--ease) active:scale-[0.98] 
-           shadow-lg shadow-emerald-900/10 hover:shadow-emerald-900/20 hover:bg-[var(--primary-hover)];
+    @apply bg-[var(--primary)] text-white px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] active:scale-[0.98] shadow-lg shadow-emerald-900/10 hover:shadow-emerald-900/20 hover:bg-[var(--primary-hover)];
   }
 
   .btn-secondary {
-    @apply bg-white border-2 border-[var(--border)] text-[var(--heading)] px-8 py-3.5 rounded-2xl font-bold 
-           flex items-center justify-center gap-2 transition-all duration-[var(--duration)] var(--ease) 
-           hover:border-[var(--primary)] hover:text-[var(--primary)];
+    @apply bg-white border-2 border-[var(--border)] text-[var(--heading)] px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-[var(--duration)] ease-[var(--ease)] hover:border-[var(--primary)] hover:text-[var(--primary)];
   }
 
   .btn-ghost {
@@ -98,15 +122,12 @@ h4 { font-size: 1.25rem; }
 
   /* Inputs */
   .input-field {
-    @apply w-full bg-white border border-[var(--border)] rounded-2xl p-4 text-sm font-medium 
-           transition-all duration-[var(--duration)] focus:border-[var(--primary)] focus:ring-4 focus:ring-emerald-500/5 
-           placeholder:text-[var(--muted)] outline-none;
+    @apply w-full bg-white border border-[var(--border)] rounded-2xl p-4 text-sm font-medium transition-all duration-[var(--duration)] focus:border-[var(--primary)] focus:ring-4 focus:ring-emerald-500/5 placeholder:text-[var(--muted)] outline-none;
   }
 
   /* Cards */
   .card {
-    @apply bg-white border border-[var(--border)] rounded-[2rem] p-8 shadow-sm transition-all duration-500
-           hover:shadow-2xl hover:shadow-emerald-900/5 hover:border-[var(--primary)]/20;
+    @apply bg-white border border-[var(--border)] rounded-[2rem] p-8 shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-900/5 hover:border-[var(--primary)]/20;
   }
 
   /* Utilities */

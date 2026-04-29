@@ -36,6 +36,8 @@ const config: Config = {
       boxShadow: {
         'premium': '0 10px 40px -10px rgba(0, 146, 69, 0.12)',
         'elevated': '0 20px 60px -12px rgba(15, 23, 42, 0.12)',
+        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+        'hover': '0 10px 30px -4px rgba(0, 146, 69, 0.08)',
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',

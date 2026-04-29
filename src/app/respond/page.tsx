@@ -43,7 +43,7 @@ function AvailabilityForm() {
                     const decodedEmail = decodeURIComponent(urlEmail);
                     setEmail(decodedEmail);
                     const name = await getInterviewerNameByEmail(decodedEmail);
-                    if (isMounted) setInterviewerName(name || "Interviewer");
+                    if (isMounted) setInterviewerName(name || decodedEmail.split('@')[0]);
                 } else if (urlEmail === "[INTERVIEWER_EMAIL]") {
                     setIsLegacyLink(true);
                 }
@@ -105,11 +105,13 @@ function AvailabilityForm() {
                     <h1 className="text-2xl font-bold italic tracking-tight">Confirm Availability</h1>
                 </div>
                 <div className="p-8 space-y-6">
-                    <div className="p-4 rounded-2xl bg-gray-50 border border-border flex items-center gap-4">
-                        <ShieldCheck className="w-6 h-6 text-primary shrink-0" />
+                    <div className="p-5 rounded-3xl bg-surface-alt border-2 border-primary/10 flex items-center gap-5 shadow-soft">
+                        <div className="w-12 h-12 rounded-2xl bg-heading flex items-center justify-center shadow-lg transform -rotate-3">
+                            <User className="w-6 h-6 text-white" />
+                        </div>
                         <div className="min-w-0">
-                            <p className="text-sm font-bold truncate italic">{interviewerName}</p>
-                            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">{email}</p>
+                            <p className="text-sm font-black text-heading truncate italic tracking-tight">{interviewerName || "Anonymous Representative"}</p>
+                            <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">{email || 'system@cbt.com'}</p>
                         </div>
                     </div>
 

@@ -1323,12 +1323,13 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     "X-Title": "CBT Recruitment Portal"
                 },
                 body: JSON.stringify({
-                    "model": "google/gemini-2.0-flash-001",
+                    "model": "google/gemini-2.0-flash-exp:free", // Use explicitly free model
                     "messages": [
                         { "role": "user", "content": content }
                     ],
-                    "max_tokens": 2500,
-                    "response_format": { "type": "json_object" }
+                    "max_tokens": 1200, // Further reduced to ensure prompt fitting
+                    "response_format": { "type": "json_object" },
+                    "temperature": 0.1
                 })
             });
 
@@ -1338,18 +1339,33 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             }
 
             const data = await response.json();
-            const responseContent = data.choices[0].message.content;
-            // Protective stripping of markdown fences
-            const cleanedContent = responseContent.replace(/```json/gi, "").replace(/```/g, "").trim();
-            analysis = JSON.parse(cleanedContent);
+            const responseContent = data.choices?.[0]?.message?.content;
+            if (!responseContent) throw new Error("AI returned an empty response");
+
+            // Robust JSON extraction
+            const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+            const cleanedContent = jsonMatch ? jsonMatch[0] : responseContent;
+
+            try {
+                analysis = JSON.parse(cleanedContent.replace(/```json/gi, "").replace(/```/g, "").trim());
+            } catch (pErr) {
+                console.error("JSON Parse Error. Raw Content:", responseContent);
+                throw new Error("AI response was not in a valid format. Please try again.");
+            }
         } else {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const model = genAI.getGenerativeModel({
+                model: "gemini-1.5-flash", // Use Flash instead of Pro for the free tier
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    maxOutputTokens: 1500
+                }
+            });
             const visionImages = (candidate as any)._vision_images || [];
 
             let result;
             if (visionImages.length > 0) {
-                const promptPart = { text: `${prompt}\n\nThe resume is provided as image(s) below. Extract ALL visible information carefully.` };
+                const promptPart = { text: `${prompt}\n\nThe resume is provided as image(s) below. Extract ALL visible information carefully content including contact, education, and skills. Use strict JSON.` };
                 const imageParts = visionImages.map((b64: string) => ({
                     inlineData: { data: b64, mimeType: "image/jpeg" }
                 }));
@@ -1359,8 +1375,9 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             }
 
             const responseText = result.response.text();
-            const cleanedResponse = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            analysis = JSON.parse(cleanedResponse);
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            const cleanedResponse = jsonMatch ? jsonMatch[0] : responseText;
+            analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
         }
 
         const { error: updateError } = await supabaseAdmin
