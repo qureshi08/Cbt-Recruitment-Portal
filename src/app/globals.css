@@ -80,6 +80,7 @@
   }
 
   .grid-bg {
-    @apply bg-[radial-gradient(#e5e7eb_1px, transparent_1px)] [background-size:24px_24px];
+    background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
