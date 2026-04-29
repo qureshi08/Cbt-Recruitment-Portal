@@ -154,9 +154,12 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       body = `
         <p>Candidate <strong>${data.name}</strong> has completed their technical assessment.</p>
         <p>They are now ready for the <strong>L1 Interview</strong> phase.</p>
-        <div style="margin: 25px 0;">
-          <a href="${origin}/admin/interviews" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review & Submit Feedback</a>
+        <p>Please confirm your availability below:</p>
+        <div style="margin: 25px 0; display: flex; gap: 10px;">
+          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=true" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Available</a>
+          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=false" style="background-color: #eee; color: #333; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Not Available</a>
         </div>
+        <p style="font-size: 12px; color: #666;">Note: After clicking, you will be able to suggest a preferred time.</p>
       `;
       break;
 
@@ -164,10 +167,25 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       subject = `[L2 Request] Interview with ${data.name}`;
       title = 'Meeting Request: L2 Interview';
       body = `
-        <p>L2 Interview has been requested for candidate <strong>${data.name}</strong> by the L1 panel.</p>
-        <p>Please review the L1 feedback and conduct the follow-up session.</p>
+        <p>L2 Interview has been requested for candidate <strong>${data.name}</strong>.</p>
+        <p>Please confirm your availability for this session:</p>
         <div style="margin: 25px 0;">
-          <a href="${origin}/admin/interviews" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Access Interview Panel</a>
+          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=true" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Available</a>
+          <a href="${origin}/respond/${data.candidateId}?email=[INTERVIEWER_EMAIL]&available=false" style="background-color: #eee; color: #333; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Not Available</a>
+        </div>
+      `;
+      break;
+
+    case 'AVAILABILITY_RESPONSE':
+      subject = `[Response] ${data.candidateName} - ${data.isAvailable ? 'Available' : 'Unavailable'}`;
+      title = 'Interviewer Availability Update';
+      body = `
+        <p>An interviewer has responded to the broadcast for <strong>${data.candidateName}</strong>.</p>
+        <p><strong>Interviewer:</strong> ${data.interviewerEmail}</p>
+        <p><strong>Status:</strong> ${data.isAvailable ? '<span style="color: #009245; font-weight: bold;">Available</span>' : '<span style="color: #ef4444; font-weight: bold;">Unavailable</span>'}</p>
+        ${data.isAvailable && data.preferredTime ? `<p><strong>Suggested Time:</strong> ${data.preferredTime}</p>` : ''}
+        <div style="margin-top: 25px;">
+          <a href="${origin}/admin/interviews" style="color: #009245; font-weight: bold;">View Candidate Schedule</a>
         </div>
       `;
       break;

@@ -665,12 +665,14 @@ export async function completeAssessment(candidateId: string) {
             message: `${candidate?.name || 'Candidate'} is ready for interview feedback.`,
             is_read: false
         });
-
         // Notify L1 Interviewers
         try {
             const recipients = await getRecipientsByRoles(['l1_interviewer']);
             if (recipients.length > 0) {
-                await notifyWorkflowStage('INTERVIEW_L1', recipients, { name: candidate?.name || 'A candidate' });
+                await notifyWorkflowStage('INTERVIEW_L1', recipients, {
+                    name: candidate?.name || 'A candidate',
+                    candidateId: candidateId
+                });
             }
         } catch (notifyErr) {
             console.error("L1 Interview notification failed:", notifyErr);
@@ -734,6 +736,46 @@ export async function removeTeamNotificationRecipient(id: string) {
     return { success: true };
 }
 
+export async function submitInterviewerAvailability(candidateId: string, email: string, isAvailable: boolean, preferredTime?: string) {
+    try {
+        const { data: candidate } = await supabaseAdmin
+            .from('candidates')
+            .select('name')
+            .eq('id', candidateId)
+            .single();
+
+        await logAction('INTERVIEWER_AVAILABILITY', candidateId, 'candidate', {
+            interviewer_email: email,
+            is_available: isAvailable,
+            preferred_time: preferredTime
+        });
+
+        const recipients = await getRecipientsByRoles(['recruitment_team']);
+        if (recipients.length > 0) {
+            await notifyWorkflowStage('AVAILABILITY_RESPONSE', recipients, {
+                candidateName: candidate?.name || 'A candidate',
+                interviewerEmail: email,
+                isAvailable,
+                preferredTime
+            });
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("submitInterviewerAvailability error:", error);
+        return { error: error.message };
+    }
+}
+
+export async function getCandidateBasic(id: string) {
+    const { data, error } = await supabaseAdmin
+        .from('candidates')
+        .select('name, position')
+        .eq('id', id)
+        .single();
+    return data;
+}
+
 export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string, l1FeedbackJson?: object) {
     try {
         const user = await getCurrentUser();
@@ -755,12 +797,14 @@ export async function requestL2Interview(interviewId: string, candidateId: strin
         // 2. Update Candidate Status
         await updateCandidateStatus(candidateId, "L2 Interview Required");
 
-        // Notify L2 Interviewers
         try {
             const recipients = await getRecipientsByRoles(['l2_interviewer']);
             if (recipients.length > 0) {
                 const { data: cData } = await supabaseAdmin.from('candidates').select('name').eq('id', candidateId).single();
-                await notifyWorkflowStage('INTERVIEW_L2', recipients, { name: cData?.name || 'A candidate' });
+                await notifyWorkflowStage('INTERVIEW_L2', recipients, {
+                    name: cData?.name || 'A candidate',
+                    candidateId: candidateId
+                });
             }
         } catch (notifyErr) {
             console.error("L2 Interview notification failed:", notifyErr);
