@@ -778,6 +778,15 @@ export async function getCandidateBasic(id: string) {
     return data;
 }
 
+export async function getInterviewerNameByEmail(email: string) {
+    const { data } = await supabaseAdmin
+        .from('user_roles')
+        .select('full_name')
+        .eq('email', email)
+        .single();
+    return data?.full_name || null;
+}
+
 export async function requestL2Interview(interviewId: string, candidateId: string, l1Feedback: string, l1FeedbackJson?: object) {
     try {
         const user = await getCurrentUser();

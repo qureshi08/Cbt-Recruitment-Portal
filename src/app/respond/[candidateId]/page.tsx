@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { Clock, Send, Mail, User, Briefcase, Loader2, Sparkles, Check, X, Calendar } from "lucide-react";
-import { submitInterviewerAvailability, getCandidateBasic } from "@/app/actions";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { Clock, Send, Mail, User, Briefcase, Loader2, Sparkles, Check, X, Calendar, ShieldCheck, AlertCircle } from "lucide-react";
+import { submitInterviewerAvailability, getCandidateBasic, getInterviewerNameByEmail } from "@/app/actions";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 
@@ -23,49 +23,53 @@ function AvailabilityForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [isLoading, setIsLoading] = useState(true);
+    const [isLegacyLink, setIsLegacyLink] = useState(false);
 
     useEffect(() => {
-        const fetchCandidate = async () => {
-            const data = await getCandidateBasic(candidateId);
-            setCandidate(data);
+        const initPortal = async () => {
+            // 1. Fetch Candidate
+            const cData = await getCandidateBasic(candidateId);
+            setCandidate(cData);
 
-            // Try to extract email from URL
+            // 2. Extract and Verify Identity
             const urlEmail = searchParams.get('email');
-            if (urlEmail) {
-                setEmail(decodeURIComponent(urlEmail));
+            if (urlEmail && urlEmail !== "[INTERVIEWER_EMAIL]") {
+                const decodedEmail = decodeURIComponent(urlEmail);
+                setEmail(decodedEmail);
+
+                // Fetch Name automatically
+                const name = await getInterviewerNameByEmail(decodedEmail);
+                setInterviewerName(name || "Interviewer");
+            } else if (urlEmail === "[INTERVIEWER_EMAIL]") {
+                setIsLegacyLink(true);
             }
 
             setIsLoading(false);
         };
-        fetchCandidate();
+        initPortal();
     }, [candidateId, searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isAvailable === null || !email || !interviewerName) return;
+        if (isAvailable === null || (!email && !isLegacyLink)) return;
 
         setIsSubmitting(true);
 
-        // Format the date nicely for the email notification
         let formattedTime = "";
         if (preferredDateTime) {
             const dt = new Date(preferredDateTime);
             formattedTime = dt.toLocaleString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
+                weekday: 'short', month: 'short', day: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
             });
         }
 
         const result = await submitInterviewerAvailability(
             candidateId,
-            email,
+            email || "unknown@interviewer.com",
             isAvailable,
             formattedTime,
-            interviewerName
+            interviewerName || "Anonymous Interviewer"
         );
 
         if (result.success) setStatus('success');
@@ -73,163 +77,160 @@ function AvailabilityForm() {
         setIsSubmitting(false);
     };
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    if (isLoading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+            <Loader2 className="w-12 h-12 animate-spin text-primary/30" />
+            <p className="mt-4 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] italic">Authenticating...</p>
+        </div>
+    );
+
+    if (isLegacyLink) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+                <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-xl border border-rose-100 p-10 text-center">
+                    <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertCircle className="w-10 h-10 text-rose-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Incomplete Link</h1>
+                    <p className="text-gray-500 mb-8 leading-relaxed">This invitation link is missing identity details. Please check your latest email for a refreshed link or contact the recruitment team.</p>
+                </div>
+            </div>
+        );
+    }
 
     if (status === 'success') {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-transparent p-6">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
                 <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl shadow-primary/10 border border-surface p-10 text-center animate-in zoom-in duration-500">
-                    <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8 relative">
-                        <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20" />
-                        <Check className="w-12 h-12 text-emerald-500 relative z-10" />
+                    <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-8">
+                        <Check className="w-12 h-12 text-emerald-500" />
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-3 italic">Response Shared</h1>
-                    <p className="text-gray-500 mb-10 px-4 leading-relaxed">Thank you, <strong>{interviewerName}</strong>. The recruitment team has been updated regarding your availability for {candidate?.name}.</p>
-                    <button onClick={() => window.close()} className="w-full btn-primary h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow">Close Portal</button>
-                    <p className="mt-8 text-[11px] text-gray-400 uppercase tracking-[0.2em] font-black italic opacity-50">CBT Recruitment Portal</p>
+                    <p className="text-gray-500 mb-10 px-4 leading-relaxed">Thank you, <strong>{interviewerName}</strong>. Your availability for <strong>{candidate?.name}</strong> has been successfully recorded.</p>
+                    <button onClick={() => window.close()} className="w-full btn-primary h-14 rounded-2xl font-bold">Portal Closed</button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]">
-            <div className="mb-8 scale-110"><Logo withText={true} /></div>
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 bg-[radial-gradient(#009245_1px,transparent_1px)] [background-size:32px_32px] [background-opacity:0.02]">
+            <div className="mb-10 opacity-80"><Logo withText={true} /></div>
 
-            <main className="max-w-xl w-full bg-white rounded-[3rem] shadow-2xl shadow-primary/10 border border-surface overflow-hidden transition-all duration-500 ease-in-out">
-                {/* Visual Header */}
-                <div className="bg-primary p-10 text-white relative">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-6">
-                            <span className="px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.1em] border border-white/10 shadow-sm">
-                                <Sparkles className="w-3 h-3 inline mr-1.5 mb-0.5" />
-                                Appointment Request
-                            </span>
-                        </div>
-                        <h1 className="text-3xl font-bold mb-2 italic">Confirm Availability</h1>
-                        <p className="text-white/70 text-sm font-medium">Coordinate your interview session with the candidate.</p>
+            <main className="max-w-xl w-full bg-white rounded-[3rem] shadow-2xl shadow-primary/20 border border-surface overflow-hidden">
+                <div className="bg-primary p-12 text-white relative">
+                    <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                        <span className="px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 mb-6">
+                            Verified Access Only
+                        </span>
+                        <h1 className="text-4xl font-bold mb-2 italic tracking-tight">Confirm Availability</h1>
+                        <p className="text-white/60 text-sm max-w-sm">A fast-track response portal for CBT Interviewers.</p>
                     </div>
                 </div>
 
-                {/* Candidate Info Overview */}
-                <div className="px-10 pt-10 pb-2">
-                    <div className="bg-gray-50/80 rounded-[2rem] p-6 border border-border flex items-center gap-5 transition-transform hover:scale-[1.02] duration-300">
-                        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center shrink-0 border border-border">
-                            <User className="w-8 h-8 text-primary" />
+                <div className="p-10 space-y-10">
+                    {/* Verified Identity Header */}
+                    <div className="flex items-center justify-between p-6 rounded-[2rem] bg-gray-50 border border-border shadow-inner">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-border">
+                                <ShieldCheck className="w-7 h-7 text-primary" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 italic leading-none">{interviewerName}</h3>
+                                <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-1.5">{email}</p>
+                            </div>
                         </div>
-                        <div className="min-w-0">
-                            <h2 className="text-xl font-bold text-gray-900 leading-tight truncate italic">{candidate?.name || 'Candidate'}</h2>
-                            <p className="text-[11px] text-gray-400 flex items-center gap-1.5 font-bold uppercase tracking-widest mt-0.5">
-                                <Briefcase className="w-3.5 h-3.5 opacity-60" />
-                                {candidate?.position || 'CGAP Program'}
-                            </p>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md uppercase tracking-tighter">Identity Verified</span>
                         </div>
                     </div>
-                </div>
 
-                <form onSubmit={handleSubmit} className="p-10 pt-6 space-y-8">
-                    {/* Status Toggle */}
+                    {/* Candidate Preview */}
                     <div className="space-y-4">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Status</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                type="button"
-                                onClick={() => setIsAvailable(true)}
-                                className={cn(
-                                    "flex items-center justify-center gap-3 h-16 rounded-[1.5rem] border-2 transition-all font-bold text-base",
-                                    isAvailable === true
-                                        ? "bg-emerald-50 border-primary text-primary shadow-lg shadow-primary/5"
-                                        : "bg-white border-border text-gray-400 grayscale opacity-60 hover:grayscale-0 hover:opacity-100"
-                                )}
-                            >
-                                <Check className="w-5 h-5" /> Available
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsAvailable(false)}
-                                className={cn(
-                                    "flex items-center justify-center gap-3 h-16 rounded-[1.5rem] border-2 transition-all font-bold text-base",
-                                    isAvailable === false
-                                        ? "bg-rose-50 border-rose-500 text-rose-600 shadow-lg shadow-rose-500/5"
-                                        : "bg-white border-border text-gray-400 grayscale opacity-60 hover:grayscale-0 hover:opacity-100"
-                                )}
-                            >
-                                <X className="w-5 h-5" /> Not Available
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Name Input */}
-                        <div className="space-y-2 text-left">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                                <User className="w-3 h-3" /> Interviewer Name
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={interviewerName}
-                                onChange={(e) => setInterviewerName(e.target.value)}
-                                placeholder="Your Name"
-                                className="input-field h-14 bg-gray-50/50 border-gray-200 rounded-2xl focus:bg-white text-base font-medium transition-all"
-                            />
-                        </div>
-
-                        {/* Email Indicator (Auto-detected) */}
-                        <div className="space-y-2 text-left">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                                <Mail className="w-3 h-3" /> Professional Email
-                            </label>
-                            <div className="h-14 bg-gray-100/50 border border-border rounded-2xl px-5 flex items-center text-gray-500 text-sm font-medium overflow-hidden italic">
-                                <span className="truncate">{email || "Email required"}</span>
-                                {email && <Check className="ml-auto w-4 h-4 text-emerald-500 shrink-0" />}
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-1">Candidate Profile</p>
+                        <div className="flex items-center gap-5 p-1 px-2">
+                            <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center"><User className="w-5 h-5 text-primary" /></div>
+                            <div>
+                                <p className="text-base font-bold text-gray-800 italic">{candidate?.name}</p>
+                                <p className="text-[11px] text-gray-400 font-medium">{candidate?.position}</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Preferred Date & Time Selector */}
-                    {isAvailable && (
-                        <div className="space-y-2 text-left animate-in fade-in slide-in-from-top-4 duration-500">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                                <Calendar className="w-3.5 h-3.5" /> Preferred Date & Time
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="datetime-local"
-                                    value={preferredDateTime}
-                                    onChange={(e) => setPreferredDateTime(e.target.value)}
-                                    className="input-field h-14 bg-gray-50/50 border-gray-200 rounded-2xl focus:bg-white text-base font-medium pr-12 transition-all appearance-none"
-                                    required={isAvailable}
-                                />
-                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    <Clock className="w-5 h-5 text-gray-300" />
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Status Toggle */}
+                        <div className="space-y-4">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-1">Select Attendance</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAvailable(true)}
+                                    className={cn(
+                                        "flex items-center justify-center gap-3 h-16 rounded-[1.5rem] border-2 transition-all font-bold text-lg",
+                                        isAvailable === true
+                                            ? "bg-emerald-50 border-primary text-primary"
+                                            : "bg-white border-border text-gray-400 opacity-60 hover:opacity-100"
+                                    )}
+                                >
+                                    <Check className="w-6 h-6" /> Available
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAvailable(false)}
+                                    className={cn(
+                                        "flex items-center justify-center gap-3 h-16 rounded-[1.5rem] border-2 transition-all font-bold text-lg",
+                                        isAvailable === false
+                                            ? "bg-rose-50 border-rose-500 text-rose-600"
+                                            : "bg-white border-border text-gray-400 opacity-60 hover:opacity-100"
+                                    )}
+                                >
+                                    <X className="w-6 h-6" /> Unavailable
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Preferred Date & Time Selector */}
+                        {isAvailable && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-1 flex items-center gap-2">
+                                    <Calendar className="w-3.5 h-3.5" /> Proposed Date & Time
+                                </label>
+                                <div className="relative group">
+                                    <input
+                                        type="datetime-local"
+                                        value={preferredDateTime}
+                                        onChange={(e) => setPreferredDateTime(e.target.value)}
+                                        className="input-field h-16 bg-gray-50/50 border-gray-200 rounded-2xl focus:bg-white text-lg font-bold pr-12 transition-all appearance-none shadow-sm group-hover:border-primary/30"
+                                        required={isAvailable}
+                                    />
+                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300 group-hover:text-primary transition-colors">
+                                        <Clock className="w-6 h-6" />
+                                    </div>
                                 </div>
                             </div>
-                            <p className="text-[10px] text-gray-400 ml-1 font-medium italic opacity-70 italic">Select your preferred slot to help the recruitment team schedule the call.</p>
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isSubmitting || isAvailable === null || !email || !interviewerName || (isAvailable && !preferredDateTime)}
-                        className="w-full btn-primary h-16 rounded-[1.5rem] flex items-center justify-center gap-3 font-bold text-xl shadow-2xl shadow-primary/20 disabled:opacity-30 disabled:shadow-none hover:scale-[1.01] active:scale-[0.99] transition-all group"
-                    >
-                        {isSubmitting ? (
-                            <Loader2 className="w-6 h-6 animate-spin" />
-                        ) : (
-                            <>
-                                <Send className="w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                Submit Response
-                            </>
                         )}
-                    </button>
-                </form>
+
+                        <button
+                            type="submit"
+                            disabled={isSubmitting || isAvailable === null || (isAvailable && !preferredDateTime)}
+                            className="w-full btn-primary h-20 rounded-[2rem] flex items-center justify-center gap-3 font-bold text-2xl shadow-2xl shadow-primary/30 disabled:opacity-30 disabled:shadow-none hover:scale-[1.01] active:scale-[0.99] transition-all group"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="w-8 h-8 animate-spin" />
+                            ) : (
+                                <>
+                                    <Send className="w-8 h-8 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                    Share Availability
+                                </>
+                            )}
+                        </button>
+                    </form>
+                </div>
             </main>
 
-            <footer className="mt-12 text-gray-400 text-[10px] font-black uppercase tracking-[0.25em] text-center opacity-40 italic">
-                <p>&copy; {new Date().getFullYear()} Convergent Business Technologies</p>
-                <p className="mt-1.5 opacity-50">Automated Recruitment Workflow</p>
+            <footer className="mt-12 text-gray-300 text-[10px] font-black uppercase tracking-[0.4em] text-center opacity-30 italic">
+                Convergent Business Technologies - Internal Recruitment Workflow
             </footer>
         </div>
     );
@@ -240,7 +241,6 @@ export default function AvailabilityResponsePage() {
         <Suspense fallback={
             <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
                 <Loader2 className="w-10 h-10 animate-spin text-primary opacity-20" />
-                <p className="mt-4 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] italic">Accessing Portal...</p>
             </div>
         }>
             <AvailabilityForm />
