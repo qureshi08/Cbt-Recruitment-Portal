@@ -94,23 +94,32 @@ export const sendTeamNotification = async (recipients: string[], subject: string
 export const notifyRole = async (emails: string[], subject: string, title: string, body: string) => {
   if (!emails || emails.length === 0) return null;
 
-  const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
-    to: emails.join(','),
-    subject: subject,
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #009245; margin-bottom: 20px;">${title}</h2>
-        <div style="color: #333; line-height: 1.6;">
-          ${body}
-        </div>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="font-size: 11px; color: #888;">Automated System Notification from CBT Recruitment Portal</p>
-      </div>
-    `,
-  };
+  const results = [];
 
-  return transporter.sendMail(mailOptions);
+  // Send individual emails to allow for personalization and better tracking
+  for (const email of emails) {
+    const personalizedBody = body.replace(/\[INTERVIEWER_EMAIL\]/g, encodeURIComponent(email));
+
+    const mailOptions = {
+      from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+      to: email,
+      subject: subject,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #009245; margin-bottom: 20px;">${title}</h2>
+          <div style="color: #333; line-height: 1.6;">
+            ${personalizedBody}
+          </div>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 11px; color: #888;">Automated System Notification from CBT Recruitment Portal</p>
+        </div>
+      `,
+    };
+
+    results.push(transporter.sendMail(mailOptions));
+  }
+
+  return Promise.all(results);
 };
 
 export const notifyWorkflowStage = async (stage: string, emails: string[], data: any) => {
@@ -182,7 +191,8 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       title = 'Interviewer Availability Update';
       body = `
         <p>An interviewer has responded to the broadcast for <strong>${data.candidateName}</strong>.</p>
-        <p><strong>Interviewer:</strong> ${data.interviewerEmail}</p>
+        <p><strong>Interviewer:</strong> ${data.interviewerName || data.interviewerEmail}</p>
+        ${data.interviewerName ? `<p><strong>Email:</strong> ${data.interviewerEmail}</p>` : ''}
         <p><strong>Status:</strong> ${data.isAvailable ? '<span style="color: #009245; font-weight: bold;">Available</span>' : '<span style="color: #ef4444; font-weight: bold;">Unavailable</span>'}</p>
         ${data.isAvailable && data.preferredTime ? `<p><strong>Suggested Time:</strong> ${data.preferredTime}</p>` : ''}
         <div style="margin-top: 25px;">

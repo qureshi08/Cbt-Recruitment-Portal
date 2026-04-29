@@ -736,7 +736,7 @@ export async function removeTeamNotificationRecipient(id: string) {
     return { success: true };
 }
 
-export async function submitInterviewerAvailability(candidateId: string, email: string, isAvailable: boolean, preferredTime?: string) {
+export async function submitInterviewerAvailability(candidateId: string, email: string, isAvailable: boolean, preferredTime?: string, interviewerName?: string) {
     try {
         const { data: candidate } = await supabaseAdmin
             .from('candidates')
@@ -746,6 +746,7 @@ export async function submitInterviewerAvailability(candidateId: string, email: 
 
         await logAction('INTERVIEWER_AVAILABILITY', candidateId, 'candidate', {
             interviewer_email: email,
+            interviewer_name: interviewerName || email,
             is_available: isAvailable,
             preferred_time: preferredTime
         });
@@ -755,6 +756,7 @@ export async function submitInterviewerAvailability(candidateId: string, email: 
             await notifyWorkflowStage('AVAILABILITY_RESPONSE', recipients, {
                 candidateName: candidate?.name || 'A candidate',
                 interviewerEmail: email,
+                interviewerName: interviewerName || email,
                 isAvailable,
                 preferredTime
             });
