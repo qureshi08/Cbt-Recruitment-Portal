@@ -1084,8 +1084,9 @@ export async function ensureBuckets() {
 
 export async function analyzeCandidateWithAi(candidateId: string) {
     try {
-        const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
-        const isOpenRouter = apiKey?.startsWith('sk-or-');
+        // Prioritize direct Gemini API over OpenRouter for stability/free tier
+        const apiKey = process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY;
+        const isOpenRouter = !!process.env.OPENROUTER_API_KEY && !process.env.GEMINI_API_KEY;
 
         if (!apiKey) throw new Error("API Key (OPENROUTER_API_KEY or GEMINI_API_KEY) is not configured in .env.local");
 
