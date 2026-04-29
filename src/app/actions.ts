@@ -455,8 +455,8 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         // Trigger Email Notifications
         if (candidate) {
             try {
-                const origin = process.env.NEXT_PUBLIC_APP_URL ||
-                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+                // Use production URL as reliable fallback for emails
+                const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
 
                 // --- Log Action ---
                 await logAction('STATUS_UPDATE', candidateId, 'candidate', { new_status: status });

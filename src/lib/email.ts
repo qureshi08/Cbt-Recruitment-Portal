@@ -114,7 +114,8 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
 };
 
 export const notifyWorkflowStage = async (stage: string, emails: string[], data: any) => {
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // Use the memory-defined production URL as the primary fallback to avoid localhost issues in emails
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
   let subject = '';
   let title = '';
   let body = '';
