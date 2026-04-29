@@ -1,132 +1,85 @@
 @import "tailwindcss";
-@config "../../tailwind.config.ts";
 
 /* 
-  CBT RECRUITMENT PORTAL — DESIGN SYSTEM 2.2
-  Strict Adherence to "Editorial Intelligence" Brand Guidelines
+  CBT RECRUITMENT PORTAL — DESIGN SYSTEM 2.3
+  Optimized for Tailwind CSS 4 & "Editorial Intelligence" Branding
 */
 
-:root {
-  /* Brand Colors — SKILL.md defined */
-  --primary: #00994D;
-  /* CBT Botanical Green */
-  --primary-hover: #007a3d;
-  --primary-light: rgba(0, 153, 77, 0.05);
+@theme {
+  /* Colors */
+  --color-primary: #00994D;
+  --color-primary-hover: #007a3d;
+  --color-primary-light: rgba(0, 153, 77, 0.05);
 
-  /* Primary Palette */
-  --heading: #0C1A10;
-  /* Ink — High-contrast premium black */
-  --surface: #FFFFFF;
-  --surface-alt: #F7F8F7;
-  /* Bone — Tonal background shifts */
-  --border: #E2E8E4;
-  /* Muted Grey */
+  --color-heading: #0C1A10;
+  --color-body: #374151;
+  --color-muted: #6B7280;
+  --color-surface-alt: #F7F8F7;
+  --color-border: #E2E8E4;
 
-  /* Neutrals */
-  --body: #374151;
-  /* Graphite */
-  --muted: #6B7280;
-  /* Steel */
+  /* Typography */
+  --font-heading: "Playfair Display", serif;
+  --font-sans: "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 
-  /* Fonts */
-  --font-heading: 'Playfair Display', serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Constraints & Shapes */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
 
-  /* Spacing (Tokens match SKILL.md scale) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
+  /* Shadows */
+  --shadow-premium: 0 8px 24px rgba(0, 153, 77, 0.12);
 }
 
-/* ─── Base Reset ──────────────────────────────────────────── */
-html {
-  height: 100%;
-  overflow-x: hidden;
+/* ─── Base Styles ─────────────────────────────────────────── */
+@layer base {
+  body {
+    @apply bg-surface-alt text-body font-sans antialiased;
+    font-size: 16px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading text-heading font-bold leading-tight;
+  }
 }
 
-body {
-  color: var(--body);
-  background: var(--surface-alt);
-  font-family: var(--font-body);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  font-size: 16px;
-  /* --text-base */
-  overflow-x: hidden;
-}
-
-/* ─── Typography ──────────────────────────────────────────── */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-heading);
-  color: var(--heading);
-  line-height: 1.2;
-  font-weight: 700;
-  margin: 0;
-}
-
-/* ─── Component Classes ───────────────────────────────────── */
+/* ─── Utility Components ──────────────────────────────────── */
 @layer components {
 
-  /* SKILL.md Specific Components */
   .btn-primary {
-    @apply bg-[var(--primary)] text-white px-8 py-3 rounded-[6px] font-semibold text-base flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-lg hover:bg-[var(--primary-hover)] hover:-translate-y-[1px];
+    @apply bg-primary text-white px-8 py-3 rounded-sm font-semibold text-base flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-lg hover:bg-primary-hover hover:-translate-y-[1px];
   }
 
   .btn-secondary {
-    @apply bg-transparent border-2 border-[var(--primary)] text-[var(--primary)] px-8 py-3 rounded-[6px] font-semibold text-base flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[var(--primary-light)];
+    @apply bg-transparent border-2 border-primary text-primary px-8 py-3 rounded-sm font-semibold text-base flex items-center justify-center gap-2 transition-all duration-200 hover:bg-primary-light;
   }
 
   .btn-ghost {
-    @apply text-[var(--body)] underline underline-offset-[3px] decoration-1 decoration-transparent hover:decoration-[var(--primary)] transition-all cursor-pointer;
+    @apply text-body underline underline-offset-[3px] decoration-transparent hover:decoration-primary transition-all;
   }
 
   .card {
-    @apply bg-white border border-[var(--border)] rounded-[12px] p-8 shadow-sm transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0, 153, 77, 0.12)] hover:-translate-y-[2px];
+    @apply bg-white border border-border rounded-xl p-8 shadow-sm transition-all duration-300 hover:shadow-premium hover:-translate-y-[2px];
   }
 
   .input-field {
-    @apply w-full bg-white border border-[var(--border)] rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/5 outline-none;
-  }
-
-  /* Admin Layout Utilities */
-  .admin-sidebar {
-    @apply bg-white border-r border-[var(--border)] flex flex-col h-screen fixed left-0 top-0 z-50;
-  }
-
-  .admin-header {
-    @apply h-14 bg-white/80 backdrop-blur-xl sticky top-0 z-20 flex items-center justify-between px-6 border-b border-[var(--border)] shrink-0;
-  }
-
-  .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all;
-  }
-
-  .sidebar-link-active {
-    @apply bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/10;
-  }
-
-  .sidebar-link-inactive {
-    @apply text-[var(--muted)] hover:bg-[var(--surface-alt)] hover:text-[var(--heading)];
+    @apply w-full bg-white border border-border rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none;
   }
 
   .status-badge {
     @apply px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center;
   }
 
-  /* Structural Accents */
   .accent-left {
-    @apply border-l-[3px] border-[var(--primary)] pl-4;
+    @apply border-l-[3px] border-primary pl-4;
   }
 }

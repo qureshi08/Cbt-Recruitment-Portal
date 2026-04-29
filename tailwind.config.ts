@@ -14,40 +14,33 @@ const config: Config = {
       },
       colors: {
         primary: {
-          DEFAULT: "#009245",
-          hover: "#007a3a",
-          light: "rgba(0, 146, 69, 0.08)",
+          DEFAULT: "#00994D", // CBT Botanical Green
+          hover: "#007a3d",
+          light: "rgba(0, 153, 77, 0.05)",
         },
-        heading: "#0f172a",
-        body: "#475569",
-        muted: "#94a3b8",
+        heading: "#0C1A10", // Ink
+        body: "#374151", // Graphite
+        muted: "#6B7280", // Steel
         surface: {
-          DEFAULT: "#ffffff",
-          alt: "#f8fafc",
+          DEFAULT: "#FFFFFF",
+          alt: "#F7F8F7", // Bone
         },
-        border: "#e2e8f0",
+        border: "#E2E8E4", // Muted Grey
       },
       borderRadius: {
+        'xs': '4px',
+        'sm': '6px',
+        'md': '8px',
+        'lg': '10px',
         'xl': '12px',
         '2xl': '16px',
         '3xl': '24px',
-        '4xl': '32px',
       },
       boxShadow: {
-        'premium': '0 10px 40px -10px rgba(0, 146, 69, 0.12)',
-        'elevated': '0 20px 60px -12px rgba(15, 23, 42, 0.12)',
-        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
-        'hover': '0 10px 30px -4px rgba(0, 146, 69, 0.08)',
+        'premium': '0 8px 24px rgba(0, 153, 77, 0.12)',
+        'elevated': '0 20px 60px -12px rgba(12, 26, 16, 0.12)',
+        'soft': '0 4px 12px rgba(0, 0, 0, 0.04)',
       },
-      animation: {
-        'float': 'float 6s ease-in-out infinite',
-      },
-      keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-20px)' },
-        }
-      }
     },
   },
   plugins: [],
