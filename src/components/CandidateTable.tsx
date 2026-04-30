@@ -631,9 +631,9 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
                                                 {candidate.status}
                                             </span>
-                                            {candidate.last_action_by && (
+                                            {candidate.last_action_by && candidate.status !== 'Applied' && (
                                                 <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                                                    By: {candidate.last_action_by}
+                                                    Updated by: {candidate.last_action_by}
                                                 </span>
                                             )}
                                         </div>
