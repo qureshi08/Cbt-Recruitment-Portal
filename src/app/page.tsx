@@ -6,8 +6,10 @@ export default function Home() {
     return (
         <div className="min-h-screen md:h-screen bg-white selection:bg-primary/10 flex flex-col md:overflow-hidden overflow-y-auto">
             {/* Compact Header — 56px */}
-            <nav className="h-12 flex items-center px-5 md:px-8 shrink-0 border-b border-border/40 bg-white/95 backdrop-blur-sm">
-                <Logo />
+            <nav className="h-12 flex items-center border-b border-border/40 bg-white/95 backdrop-blur-sm shrink-0">
+                <div className="container-main w-full">
+                    <Logo />
+                </div>
             </nav>
 
             <main className="flex-1 flex items-center px-5 md:px-8 py-10 md:py-0 overflow-hidden">
