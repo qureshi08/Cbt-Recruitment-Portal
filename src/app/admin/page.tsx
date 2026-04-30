@@ -23,7 +23,7 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="flex gap-2">
                     {user?.roles?.map(role => (
-                        <span key={role} className="px-3 py-1 bg-surface-alt border border-border text-primary text-[8px] font-bold uppercase tracking-[0.2em] rounded-sm shadow-soft">
+                        <span key={role} className="px-3 py-1 bg-surface border border-border text-primary text-[8px] font-bold uppercase tracking-[0.2em] rounded-sm shadow-soft">
                             {role}
                         </span>
                     ))}

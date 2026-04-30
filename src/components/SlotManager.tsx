@@ -74,10 +74,10 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
 
     return (
         <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-border/50 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-md border border-border shadow-soft">
                 <div>
-                    <h3 className="text-lg font-black text-heading uppercase tracking-tight italic">Availability Management</h3>
-                    <p className="text-xs text-muted font-medium mt-1 uppercase tracking-widest">Global assessment slot inventory</p>
+                    <h3 className="text-lg font-bold text-heading font-heading italic">Availability Management</h3>
+                    <p className="text-[10px] text-muted font-bold mt-1 uppercase tracking-widest">Global assessment slot inventory</p>
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -95,26 +95,26 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                         <div
                             key={slot.id}
                             className={cn(
-                                "group relative bg-white border-2 rounded-2xl p-5 flex flex-col transition-all duration-300 hover:shadow-xl",
-                                isLocked ? "border-gray-100 opacity-95" : "border-primary/10 hover:border-primary shadow-sm"
+                                "group relative bg-white border rounded-md p-6 flex flex-col transition-all duration-300 hover:shadow-premium",
+                                isLocked ? "border-gray-100 opacity-95" : "border-border hover:border-primary shadow-soft"
                             )}
                         >
                             <div className="flex justify-between items-start mb-6">
                                 <div className={cn(
-                                    "p-2.5 rounded-xl shadow-sm",
-                                    isLocked ? "bg-gray-100 text-gray-400" : "bg-primary/10 text-primary group-hover:scale-110 transition-transform"
+                                    "p-2.5 rounded-sm shadow-sm",
+                                    isLocked ? "bg-surface text-muted" : "bg-primary/10 text-primary group-hover:scale-110 transition-transform"
                                 )}>
                                     <CalendarIcon className="w-5 h-5" />
                                 </div>
                                 {isLocked ? (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-sm border border-rose-100">
                                         <Lock className="w-3 h-3" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest">Locked</span>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest">Locked</span>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-sm border border-emerald-100">
                                         <Unlock className="w-3 h-3" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest">Open</span>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest">Open</span>
                                     </div>
                                 )}
                             </div>
@@ -138,10 +138,10 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                 <div className="pt-4 border-t border-gray-50">
                                     {slot.candidates ? (
                                         <div className="space-y-3">
-                                            <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100">
-                                                <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Booked By</p>
-                                                <p className="text-[13px] font-black text-heading truncate">{slot.candidates.name}</p>
-                                                <span className="text-[10px] font-bold text-primary mt-1 block tracking-tight">{slot.candidates.status}</span>
+                                            <div className="bg-surface p-4 rounded-sm border border-border">
+                                                <p className="text-[9px] font-bold text-muted uppercase tracking-widest mb-1">Booked By</p>
+                                                <p className="text-[13px] font-bold text-heading truncate">{slot.candidates.name}</p>
+                                                <span className="text-[10px] font-bold text-primary mt-1 block tracking-tight uppercase tracking-widest">{slot.candidates.status}</span>
                                             </div>
                                             {slot.candidates.status === "Assessment Scheduled" && (
                                                 <button
@@ -173,13 +173,13 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                 })}
 
                 {slots.length === 0 && (
-                    <div className="col-span-full py-16 text-center text-muted bg-gray-50 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center gap-3">
-                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-300">
+                    <div className="col-span-full py-20 text-center text-muted bg-surface border-2 border-dashed border-border rounded-md flex flex-col items-center justify-center gap-4">
+                        <div className="w-12 h-12 bg-white rounded-sm shadow-sm flex items-center justify-center text-border">
                             <CalendarIcon className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-gray-600">No Assessment Slots</p>
-                            <p className="text-xs mt-1">Start by creating manual inventory for candidates to book.</p>
+                            <p className="text-sm font-bold text-heading font-heading italic">No Assessment Inventory</p>
+                            <p className="text-[11px] mt-1 font-bold uppercase tracking-widest">Create manual slots for candidate booking</p>
                         </div>
                     </div>
                 )}
@@ -189,31 +189,31 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-heading/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
-                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div className="p-8 border-b border-border flex justify-between items-start bg-surface-alt">
+                    <div className="bg-white rounded-md shadow-premium w-full max-w-lg relative z-10 overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div className="p-10 border-b border-border flex justify-between items-start bg-surface">
                             <div>
-                                <h3 className="font-black text-heading text-xl uppercase italic tracking-tight">Create Inventory</h3>
-                                <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mt-1">Define New Assessment Period</p>
+                                <h3 className="font-bold text-heading text-2xl font-heading italic">Create Inventory</h3>
+                                <p className="text-[10px] font-bold text-muted uppercase tracking-[0.3em] mt-1">Define New Assessment Period</p>
                             </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="p-2.5 bg-white text-muted rounded-xl shadow-sm hover:rotate-90 transition-all hover:text-heading border border-border/50"
+                                className="p-2 bg-white text-muted rounded-sm shadow-sm hover:rotate-90 transition-all hover:text-heading border border-border"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleCreateSlot} className="p-8 space-y-5">
+                        <form onSubmit={handleCreateSlot} className="p-10 space-y-8">
                             <div className="space-y-2">
-                                <label className="text-[11px] font-black text-muted uppercase tracking-widest pl-1">Target Date</label>
-                                <input type="date" name="date" required className="input-field !py-3 !rounded-xl font-bold text-heading" />
+                                <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Target Date</label>
+                                <input type="date" name="date" required className="input-field" />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[11px] font-black text-muted uppercase tracking-widest pl-1">Start Time</label>
-                                <input type="time" name="startTime" required className="input-field !py-3 !rounded-xl font-bold text-heading" />
-                                <div className="flex items-start gap-2 bg-primary/5 p-3 rounded-xl border border-primary/10 mt-3">
+                                <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Start Time</label>
+                                <input type="time" name="startTime" required className="input-field" />
+                                <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border mt-3">
                                     <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                                    <p className="text-[10px] text-primary/80 font-bold leading-relaxed uppercase tracking-tight">
+                                    <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
                                         System Protocol: Assessment windows are strictly 120 minutes in duration.
                                         Ending time will be automatically calculated.
                                     </p>

@@ -140,7 +140,7 @@ export default function ApplicationForm() {
             <div className="space-y-1 pt-4">
                 <Label icon={Upload}>Resume / CV (PDF)</Label>
                 <div className={cn(
-                    "relative border border-dashed rounded-sm p-8 text-center transition-all duration-300 bg-surface-alt/50",
+                    "relative border border-dashed rounded-sm p-8 text-center transition-all duration-300 bg-surface/50",
                     fileName ? "border-primary bg-primary-light" : "border-border hover:border-primary/40"
                 )}>
                     <input type="file" name="resume" required className="absolute inset-0 opacity-0 cursor-pointer z-10" accept=".pdf,.doc,.docx" onChange={handleFileChange} />

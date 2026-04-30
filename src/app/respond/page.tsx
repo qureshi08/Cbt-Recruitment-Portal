@@ -105,7 +105,7 @@ function AvailabilityForm() {
                     <h1 className="text-2xl font-bold italic tracking-tight">Confirm Availability</h1>
                 </div>
                 <div className="p-8 space-y-6">
-                    <div className="p-5 rounded-3xl bg-surface-alt border-2 border-primary/10 flex items-center gap-5 shadow-soft">
+                    <div className="p-5 rounded-3xl bg-surface border-2 border-primary/10 flex items-center gap-5 shadow-soft">
                         <div className="w-12 h-12 rounded-2xl bg-heading flex items-center justify-center shadow-lg transform -rotate-3">
                             <User className="w-6 h-6 text-white" />
                         </div>

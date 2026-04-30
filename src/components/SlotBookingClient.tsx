@@ -42,13 +42,13 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
 
     if (isSuccess) {
         return (
-            <div className="bg-white border border-border rounded-sm shadow-premium max-w-lg mx-auto p-10 text-center space-y-6 animate-in fade-in zoom-in duration-500">
-                <div className="w-16 h-16 bg-primary text-white rounded-sm flex items-center justify-center mx-auto shadow-premium">
-                    <CheckCircle2 className="w-8 h-8" />
+            <div className="card max-w-lg mx-auto p-12 text-center space-y-8 animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-primary text-white rounded-sm flex items-center justify-center mx-auto shadow-premium">
+                    <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <div className="space-y-1">
-                    <h2 className="text-xl font-bold text-heading italic">Registry Entry Successful</h2>
-                    <p className="text-muted font-bold text-[10px] uppercase tracking-widest leading-relaxed">
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-heading font-heading italic leading-tight">Registry Entry Successful</h2>
+                    <p className="text-muted font-bold text-[11px] uppercase tracking-widest leading-relaxed opacity-80">
                         Your assessment has been officially scheduled. Please monitor your secure channel for further instructions.
                     </p>
                 </div>
@@ -56,20 +56,21 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                     onClick={() => {
                         window.location.reload();
                     }}
-                    className="bg-primary text-white border border-primary-hover px-6 py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all"
+                    className="btn-primary w-full py-4 text-xs tracking-[0.2em]"
                 >
-                    View My Registry Details
+                    View Registry Details
                 </button>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="text-center space-y-2">
-                <h1 className="text-2xl font-black text-heading tracking-tight italic">Registry Scheduling</h1>
-                <p className="text-muted font-bold text-[10px] uppercase tracking-[0.2em]">
-                    Welcome, <span className="text-primary">{candidateName}</span> — Identify your 120-minute evaluation window
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="text-center space-y-3">
+                <span className="text-[10px] font-bold text-primary uppercase tracking-[0.5em]">Official Sequence</span>
+                <h1 className="text-3xl font-bold text-heading tracking-tight font-heading italic">Registry Scheduling</h1>
+                <p className="text-muted font-bold text-[11px] uppercase tracking-[0.2em] opacity-60">
+                    Welcome, <span className="text-heading">{candidateName}</span> — Identify your 120-minute evaluation window
                 </p>
             </div>
 
@@ -92,9 +93,9 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                         key={slot.id}
                         onClick={() => setSelectedSlot(slot.id)}
                         className={cn(
-                            "bg-white border rounded-sm p-5 cursor-pointer transition-all flex flex-col items-center gap-3 text-center group",
+                            "bg-white border rounded-sm p-6 cursor-pointer transition-all flex flex-col items-center gap-4 text-center group",
                             selectedSlot === slot.id
-                                ? "border-primary bg-surface-alt shadow-premium ring-1 ring-primary/20"
+                                ? "border-primary bg-surface shadow-premium ring-1 ring-primary/20"
                                 : "border-border hover:border-primary shadow-soft"
                         )}
                     >
@@ -115,11 +116,11 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
             </div>
 
             {selectedSlot && (
-                <div className="fixed bottom-10 left-0 right-0 px-6 flex justify-center animate-in slide-in-from-bottom-4 duration-300">
+                <div className="fixed bottom-12 left-0 right-0 px-6 flex justify-center animate-in slide-in-from-bottom-4 duration-300 pointer-events-none">
                     <button
                         onClick={handleBooking}
                         disabled={isSubmitting}
-                        className="bg-heading text-white border border-heading hover:bg-black px-10 py-3 text-[11px] font-bold uppercase tracking-[0.2em] shadow-premium flex items-center gap-3 hover:scale-105 transition-all"
+                        className="btn-primary-v2 w-full max-w-xs py-4 text-xs tracking-[0.2em] shadow-premium pointer-events-auto"
                     >
                         {isSubmitting ? (
                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

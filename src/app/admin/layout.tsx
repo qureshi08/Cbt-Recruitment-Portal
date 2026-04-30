@@ -25,14 +25,14 @@ export default async function AdminLayout({
     const roles = user.roles;
 
     return (
-        <div className="flex h-screen bg-surface-alt overflow-hidden grid-bg">
+        <div className="flex h-screen bg-surface overflow-hidden">
             <Sidebar userRoles={roles} />
 
             {/* Main content — compact offset */}
             <div className="flex-1 ml-0 md:ml-[260px] flex flex-col min-w-0 h-full overflow-hidden">
 
                 {/* Top Header — SLIM & REFINED */}
-                <header className="h-14 bg-white border-b border-border sticky top-0 z-20 flex items-center justify-between px-6 shrink-0">
+                <header className="h-14 bg-white border-b border-border/50 sticky top-0 z-20 flex items-center justify-between px-6 shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
                     </div>
 
@@ -57,8 +57,8 @@ export default async function AdminLayout({
                 </header>
 
                 {/* Main View Area — Compressed Spacing */}
-                <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8">
-                    <div className="max-w-6xl w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-10">
+                    <div className="max-w-[var(--container-max)] w-full mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
                         {children}
                     </div>
                 </main>

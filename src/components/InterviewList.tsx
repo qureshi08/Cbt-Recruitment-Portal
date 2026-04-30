@@ -98,7 +98,7 @@ function FeedbackSection({ label, fb, type }: { label: string; fb: StructuredFee
             "rounded-sm border p-5 space-y-4 bg-white shadow-soft",
             isSecond ? "border-indigo-100" : "border-border"
         )}>
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--surface-alt)]">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--surface)]">
                 <p className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</p>
                 {avg > 0 && (
                     <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ function FeedbackSection({ label, fb, type }: { label: string; fb: StructuredFee
                 })}
             </div>
             {fb.overall_notes && (
-                <div className="pt-3 border-t border-[var(--surface-alt)]">
+                <div className="pt-3 border-t border-[var(--surface)]">
                     <p className="text-[10px] font-bold text-[var(--muted)] uppercase mb-1">Interviewer Synthesis</p>
                     <p className="text-sm text-[var(--heading)] italic leading-relaxed">"{fb.overall_notes}"</p>
                 </div>
@@ -148,7 +148,7 @@ function ScorecardViewer({ interview }: { interview: Interview }) {
         <div className="mt-1">
             <button
                 onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-2 text-[10px] font-bold text-primary hover:text-primary-hover transition-all bg-surface-alt px-3 py-1 rounded-sm border border-border uppercase tracking-widest"
+                className="inline-flex items-center gap-2 text-[10px] font-bold text-primary hover:text-primary-hover transition-all bg-surface px-3 py-1 rounded-sm border border-border uppercase tracking-widest"
             >
                 <FileText className="w-3 h-3" />
                 Registry Scorecard
@@ -159,7 +159,7 @@ function ScorecardViewer({ interview }: { interview: Interview }) {
                     <div className="fixed inset-0 bg-heading/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
                     <div className="bg-white rounded-sm shadow-premium w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh] overflow-hidden">
 
-                        <div className="p-5 border-b border-border flex justify-between items-center shrink-0 bg-surface-alt">
+                        <div className="p-5 border-b border-border flex justify-between items-center shrink-0 bg-surface">
                             <div>
                                 <h3 className="font-bold text-lg text-heading italic">Evaluation Dossier</h3>
                                 <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">{interview.candidates?.name} — {interview.candidates?.position}</p>
@@ -255,7 +255,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '900px' }}>
                     <thead>
-                        <tr className="bg-surface-alt border-b border-border">
+                        <tr className="bg-surface border-b border-border">
                             <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[22%]">Scheduled</th>
                             <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[28%]">Candidate</th>
                             <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[30%]">Interview Status</th>
@@ -270,7 +270,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             const canActL2 = isAwaitingL2 && (userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));
 
                             return (
-                                <tr key={interview.id} className="hover:bg-[var(--surface-alt)] transition-colors group">
+                                <tr key={interview.id} className="hover:bg-[var(--surface)] transition-colors group">
                                     <td className="px-6 py-5 align-top">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-[var(--heading)]">
@@ -316,7 +316,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                                 <ScorecardViewer interview={interview} />
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-2 text-muted bg-surface-alt px-3 py-1.5 rounded-sm w-fit border border-border">
+                                            <div className="flex items-center gap-2 text-muted bg-surface px-3 py-1.5 rounded-sm w-fit border border-border">
                                                 <Activity className="w-3 h-3 animate-pulse text-primary" />
                                                 <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Registry Response</span>
                                             </div>
@@ -354,7 +354,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                     <div className="fixed inset-0 bg-[var(--heading)]/60 backdrop-blur-sm" onClick={() => setSelectedInterview(null)} />
                     <div className="bg-white rounded-sm shadow-premium w-full max-w-4xl relative z-10 animate-in fade-in zoom-in duration-300 flex flex-col max-h-[95vh] overflow-hidden">
 
-                        <div className="p-6 border-b border-border flex justify-between items-center bg-surface-alt shrink-0">
+                        <div className="p-6 border-b border-border flex justify-between items-center bg-surface shrink-0">
                             <div>
                                 <h2 className="font-bold text-xl text-heading italic">Candidate Evaluation</h2>
                                 <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">{selectedInterview.candidates?.name} — {selectedInterview.candidates?.position}</p>
@@ -367,7 +367,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                         <div className="overflow-y-auto p-6 flex-1 space-y-6 bg-white">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {SCORE_CATEGORIES.map((cat) => (
-                                    <div key={cat.key} className="bg-surface-alt p-5 rounded-sm border border-border shadow-soft space-y-4">
+                                    <div key={cat.key} className="bg-surface p-5 rounded-sm border border-border shadow-soft space-y-4">
                                         <div className="flex flex-col gap-0.5">
                                             <h4 className="text-[11px] font-bold text-heading uppercase tracking-widest">{cat.label}</h4>
                                             <p className="text-[9px] text-muted font-medium">{cat.description}</p>
@@ -402,7 +402,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                 ))}
                             </div>
 
-                            <div className="bg-surface-alt p-5 rounded-sm border border-border shadow-soft space-y-3">
+                            <div className="bg-surface p-5 rounded-sm border border-border shadow-soft space-y-3">
                                 <h4 className="text-[11px] font-bold text-heading flex items-center gap-2 uppercase tracking-widest">
                                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                                     Final Recommendation Synthesis
@@ -417,7 +417,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             </div>
                         </div>
 
-                        <div className="p-6 border-t border-border bg-surface-alt flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
+                        <div className="p-6 border-t border-border bg-surface flex flex-col md:flex-row items-center justify-between gap-6 shrink-0">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-white rounded-sm border border-border shadow-soft">
                                     <span className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] block mb-1">Average Performance</span>

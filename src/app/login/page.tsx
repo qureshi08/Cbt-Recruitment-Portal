@@ -45,7 +45,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen bg-surface-alt flex flex-col items-center justify-center p-6 grid-bg">
+        <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 grid-bg">
             <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
 
                 {/* Branding Block */}

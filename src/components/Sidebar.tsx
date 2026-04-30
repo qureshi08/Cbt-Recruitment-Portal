@@ -64,9 +64,9 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                 )}
             >
                 {/* Logo Header — Strictly Aligned */}
-                <div className="px-6 py-6 border-b border-border flex items-center justify-between min-h-[80px]">
+                <div className="px-6 py-6 border-b border-border flex items-center justify-between min-h-[80px] bg-white">
                     <Logo withText={true} />
-                    <button onClick={() => setIsOpen(false)} className="md:hidden p-1 rounded-sm hover:bg-surface-alt">
+                    <button onClick={() => setIsOpen(false)} className="md:hidden p-1 rounded-sm hover:bg-surface">
                         <X className="w-5 h-5 text-muted" />
                     </button>
                 </div>
@@ -89,7 +89,7 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                                             "flex items-center justify-between px-3 py-2.5 rounded-sm transition-all group",
                                             isActive
                                                 ? "bg-primary text-white shadow-premium font-bold"
-                                                : "text-body hover:bg-surface-alt hover:text-heading"
+                                                : "text-body hover:bg-surface hover:text-heading"
                                         )}
                                     >
                                         <div className="flex items-center gap-3">
@@ -104,7 +104,7 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                     </div>
 
                     <div className="mt-auto px-4">
-                        <div className="p-4 bg-surface-alt rounded-sm border border-border mb-4">
+                        <div className="p-4 bg-surface rounded-sm border border-border mb-4">
                             <div className="flex items-center gap-3 text-heading mb-2">
                                 <Shield className="w-4 h-4 text-primary" />
                                 <span className="text-[11px] font-black uppercase tracking-widest">Master Auth</span>
@@ -126,7 +126,7 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-border bg-surface-alt/50">
+                <div className="px-6 py-4 border-t border-border bg-surface">
                     <p className="text-[9px] font-black text-muted uppercase tracking-[0.2em] leading-none">
                         © 2026 Convergent
                     </p>

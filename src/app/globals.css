@@ -6,45 +6,53 @@
 */
 
 @theme {
-  /* Colors — Locked to Brand Guidelines */
+  /* Colors — CBT Branding Palette */
   --color-primary: #00994D;
-  --color-primary-hover: #007a3d;
-  --color-primary-light: rgba(0, 153, 77, 0.05);
-
+  /* Botanical Green */
+  --color-primary-dark: #007A3D;
+  /* Hover State */
   --color-heading: #0C1A10;
+  /* Ink Black */
+  --color-surface: #F7F8F7;
+  /* Bone Background */
   --color-body: #374151;
+  /* Graphite Body */
   --color-muted: #6B7280;
-  --color-surface-alt: #F7F8F7;
+  /* Steel Neutral */
   --color-border: #E2E8E4;
+  /* Structural Grey */
+  --color-white: #FFFFFF;
 
-  /* Typography — Balanced Scale */
+  /* Typography — Editorial Hierarchy */
   --font-heading: "Playfair Display", serif;
   --font-sans: "DM Sans", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* Constraints — Sharp & Luxury */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  /* Radii — Balanced & Structural */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 
-  /* Shadows — Subtle Elevations */
-  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.04);
-  --shadow-premium: 0 4px 20px rgba(0, 153, 77, 0.08);
+  /* Shadows — Premium Depth */
+  --shadow-soft: 0 4px 12px rgba(12, 26, 16, 0.04);
+  --shadow-premium: 0 12px 40px rgba(0, 153, 77, 0.09);
 }
 
 /* ─── Base Styles ─────────────────────────────────────────── */
 @layer base {
   body {
     @apply bg-white text-body font-sans antialiased;
-    font-size: 15px;
-    /* Compact base */
+    font-size: 16px;
+    line-height: 1.6;
   }
 
   h1,
   h2,
-  h3,
+  h3 {
+    @apply text-heading font-bold font-heading leading-tight;
+    letter-spacing: -0.02em;
+  }
+
   h4,
   h5,
   h6 {
@@ -52,35 +60,63 @@
   }
 }
 
-/* ─── Luxury Component Classes ────────────────────────────── */
+/* ─── Editorial Component Classes ──────────────────────────── */
 @layer components {
 
   .btn-primary {
-    @apply bg-heading text-white px-6 py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-primary;
+    @apply bg-primary text-white px-6 py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300;
+  }
+
+  .btn-primary:hover {
+    @apply bg-primary-dark -translate-y-px;
+  }
+
+  .btn-primary-v2 {
+    @apply bg-heading text-white px-6 py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300;
+  }
+
+  .btn-primary-v2:hover {
+    @apply bg-primary -translate-y-px;
   }
 
   .btn-secondary {
-    @apply border border-border text-heading px-6 py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-surface-alt;
+    @apply border-2 border-primary text-primary px-6 py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-300;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-primary/5;
   }
 
   .btn-ghost {
-    @apply text-muted hover:text-heading transition-colors text-[10px] font-bold uppercase tracking-widest border-b border-transparent hover:border-heading;
+    @apply text-body hover:text-primary transition-all text-[11px] font-bold uppercase tracking-widest underline decoration-transparent underline-offset-4 hover:decoration-primary;
   }
 
   .card {
-    @apply bg-white border border-border rounded-sm p-6 shadow-soft transition-all duration-300 hover:shadow-premium;
+    @apply bg-white border border-border rounded-md p-8 shadow-soft transition-all duration-500;
+  }
+
+  .card:hover {
+    @apply shadow-premium -translate-y-1;
   }
 
   .input-field {
-    @apply w-full bg-white border border-border rounded-sm px-4 py-2.5 text-sm font-medium transition-all focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none placeholder:text-muted/50;
+    @apply w-full bg-white border border-border rounded-sm px-4 py-2.5 text-sm font-medium transition-all outline-none placeholder:text-muted/50;
+  }
+
+  .input-field:focus {
+    @apply border-primary ring-4 ring-primary/10;
   }
 
   .status-badge {
-    @apply px-2 py-0.5 rounded-xs text-[9px] font-bold uppercase tracking-widest border inline-flex items-center;
+    @apply px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-widest border inline-flex items-center;
+  }
+
+  .italic-accent {
+    @apply font-heading italic text-primary;
   }
 
   .grid-bg {
-    background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
+    background-size: 32px 32px;
   }
 }
