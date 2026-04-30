@@ -236,7 +236,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const handleDownloadReport = useReactToPrint({
         contentRef: reportRef,
         documentTitle: selectedAiReasoning ? `CGAP_AI_Report_${selectedAiReasoning.name.replace(/\s+/g, '_')}` : 'AI_Report',
-        onBeforeGetContent: async () => {
+        onBeforePrint: async () => {
             setIsDownloading(true);
             // wait a tick for state
             await new Promise(r => setTimeout(r, 100));
