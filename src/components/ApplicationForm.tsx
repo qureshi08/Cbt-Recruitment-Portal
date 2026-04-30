@@ -157,7 +157,7 @@ export default function ApplicationForm() {
                 </div>
             </div>
 
-            <input type="hidden" name="position" value="CGAPCandidate" />
+            <input type="hidden" name="position" value="CGAP Candidate" />
 
             {error && (
                 <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-100 text-red-600 rounded-md text-[12px] font-medium">
