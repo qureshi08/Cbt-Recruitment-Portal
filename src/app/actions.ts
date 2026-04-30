@@ -1359,14 +1359,13 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
             analysis = JSON.parse((jsonMatch ? jsonMatch[0] : responseContent).replace(/```json/gi, "").replace(/```/g, "").trim());
         } else {
-            // Direct REST Implementation (Bypasses @google/generative-ai SDK truncation bugs)
-            // Try each model against BOTH v1 (stable) and v1beta (preview) endpoints
+            // Direct REST Implementation — AI Studio keys ONLY work with v1beta endpoint
             const modelsToTry: { model: string; apiVersion: string }[] = [
-                { model: "gemini-2.0-flash", apiVersion: "v1" },
-                { model: "gemini-2.0-flash-lite", apiVersion: "v1" },
                 { model: "gemini-2.0-flash", apiVersion: "v1beta" },
                 { model: "gemini-2.0-flash-lite", apiVersion: "v1beta" },
                 { model: "gemini-2.0-flash-exp", apiVersion: "v1beta" },
+                { model: "gemini-1.5-flash-latest", apiVersion: "v1beta" },
+                { model: "gemini-1.5-flash-8b-latest", apiVersion: "v1beta" },
             ];
             let lastErr = null;
 
