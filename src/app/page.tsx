@@ -14,9 +14,8 @@ export default function Home() {
                 <div className="container-main w-full grid lg:grid-cols-12 gap-8 xl:gap-14 items-center">
                     {/* Left: Editorial copy */}
                     <div className="lg:col-span-12 xl:col-span-5 space-y-4 md:space-y-6 text-center lg:text-left animate-in fade-in slide-in-from-left-4 duration-700">
-                        <div className="flex flex-col items-center lg:items-start gap-4">
-                            <span className="section-tag mx-auto lg:mx-0 !mb-0">Convergent · Graduate Programme</span>
-                            <div className="relative h-10 w-28 opacity-90 transition-opacity hover:opacity-100">
+                        <div className="flex flex-col md:flex-row items-center gap-4 lg:gap-5">
+                            <div className="relative h-11 w-32 shrink-0 opacity-95">
                                 <Image
                                     src="/cgap-logo.png"
                                     alt="CGAP Logo"
@@ -25,6 +24,8 @@ export default function Home() {
                                     priority
                                 />
                             </div>
+                            <div className="hidden md:block w-px h-6 bg-border/60" />
+                            <span className="section-tag !mb-0 whitespace-nowrap">Convergent · Graduate Programme</span>
                         </div>
 
                         <h1
