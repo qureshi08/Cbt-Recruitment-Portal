@@ -21,6 +21,7 @@ import {
     Sparkles,
     ClipboardList,
     Download,
+    ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -194,6 +195,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [selectedAiReasoning, setSelectedAiReasoning] = useState<Candidate | null>(null);
     const [selectedInterviewScores, setSelectedInterviewScores] = useState<Candidate | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [openActionId, setOpenActionId] = useState<string | null>(null);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -416,17 +418,17 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             </div>
 
             <div className="rounded-sm border border-border bg-white shadow-soft overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '680px' }}>
+                <div className="overflow-x-auto custom-scrollbar" onScroll={() => setOpenActionId(null)}>
+                    <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '1000px' }}>
                         <thead>
                             <tr className="bg-surface border-b border-border">
-                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-14">Batch</th>
-                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[22%]">Candidate</th>
+                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[8%]">Batch</th>
+                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[20%]">Candidate</th>
                                 <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[18%]">Profile Details</th>
                                 <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[20%]">AI Analysis</th>
-                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[12%]">Evaluation</th>
+                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[10%]">Evaluation</th>
                                 <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[14%]">Interviews</th>
-                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[14%]">Status</th>
+                                <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] w-[10%]">Status</th>
                                 <th className="px-4 py-3 text-[9px] font-bold text-muted uppercase tracking-[0.2em] text-right w-[10%]">Actions</th>
                             </tr>
                         </thead>
@@ -640,60 +642,87 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </div>
                                     </td>
                                     <td className="px-3 py-3 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            {candidate.status === 'Approved' && (isMaster || isHR) && (
-                                                <button
-                                                    onClick={() => copyBookingLink(candidate.id)}
-                                                    className="flex items-center gap-1.5 px-2 py-1 bg-surface text-primary text-[10px] font-bold rounded-sm hover:border-primary transition-all border border-border"
-                                                    title="Copy booking link for candidate"
-                                                >
-                                                    {copiedId === candidate.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                                    Link
-                                                </button>
+                                        <div className="flex justify-end relative">
+                                            <button
+                                                onClick={() => setOpenActionId(openActionId === candidate.id ? null : candidate.id)}
+                                                className="p-1 px-3 hover:bg-surface rounded-sm border border-border text-heading transition-colors"
+                                                title="View Actions"
+                                            >
+                                                <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", openActionId === candidate.id && "rotate-180")} />
+                                            </button>
+
+                                            {openActionId === candidate.id && (
+                                                <div className="absolute right-0 top-full mt-2 bg-white border border-border shadow-premium rounded-sm p-1.5 flex flex-col gap-1 z-50 animate-in fade-in zoom-in duration-200 min-w-[120px]">
+                                                    {candidate.status === 'Approved' && (isMaster || isHR) && (
+                                                        <button
+                                                            onClick={() => copyBookingLink(candidate.id)}
+                                                            className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-primary/5 text-primary text-[10px] font-bold rounded-sm transition-colors"
+                                                            title="Copy booking link for candidate"
+                                                        >
+                                                            <span>Copy Link</span>
+                                                            {copiedId === candidate.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                                        </button>
+                                                    )}
+
+                                                    {candidate.status === 'Applied' && canApprove && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleStatusUpdate(candidate.id, 'Approved');
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-green-50 text-green-600 text-[10px] font-bold rounded-sm transition-colors"
+                                                                title="Approve"
+                                                            >
+                                                                <span>Approve</span>
+                                                                <CheckCircle className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleStatusUpdate(candidate.id, 'Rejected');
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-red-50 text-red-600 text-[10px] font-bold rounded-sm transition-colors"
+                                                                title="Reject"
+                                                            >
+                                                                <span>Reject</span>
+                                                                <XCircle className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                    {(isMaster || isHR || isApprover) && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingCandidate(candidate);
+                                                                setOpenActionId(null);
+                                                            }}
+                                                            className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-blue-50 text-blue-600 text-[10px] font-bold rounded-sm transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <span>Edit Profile</span>
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+
+                                                    {canDelete && (
+                                                        <>
+                                                            <div className="h-px bg-border/40 w-full my-0.5"></div>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleDelete(candidate.id);
+                                                                    setOpenActionId(null);
+                                                                }}
+                                                                className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-red-50 text-red-600 text-[10px] font-bold rounded-sm transition-colors"
+                                                                title="Delete"
+                                                            >
+                                                                <span>Delete</span>
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             )}
-
-
-
-                                            {candidate.status === 'Applied' && canApprove && (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleStatusUpdate(candidate.id, 'Approved')}
-                                                        className="p-1.5 hover:bg-green-50 rounded text-green-600 transition-colors"
-                                                        title="Approve"
-                                                    >
-                                                        <CheckCircle className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleStatusUpdate(candidate.id, 'Rejected')}
-                                                        className="p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors"
-                                                        title="Reject"
-                                                    >
-                                                        <XCircle className="w-4 h-4" />
-                                                    </button>
-                                                </>
-                                            )}
-
-                                            {(isMaster || isHR || isApprover) && (
-                                                <button
-                                                    onClick={() => setEditingCandidate(candidate)}
-                                                    className="p-1.5 hover:bg-blue-50 rounded text-blue-600 transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-
-                                            {canDelete && (
-                                                <button
-                                                    onClick={() => handleDelete(candidate.id)}
-                                                    className="p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-
-
                                         </div>
                                     </td>
                                 </tr>
