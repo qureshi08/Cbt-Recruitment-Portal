@@ -15,8 +15,8 @@ export default function Home() {
                     <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
                         <div className="space-y-4">
                             <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-heading font-heading italic leading-[1.1]">
-                                Graduates today. <br />
-                                Consultants, <span className="text-primary underline decoration-primary/20 decoration-4 underline-offset-8">shipping.</span>
+                                Starts as a graduate. <br />
+                                Ends as a <span className="text-primary underline decoration-primary/20 decoration-4 underline-offset-8">consultant.</span>
                             </h1>
                             <p className="text-lg text-body max-w-lg leading-relaxed font-medium opacity-80">
                                 Nine months of structured learning, senior mentorship, and real stakes. Start your career journey today by filling out the form.
