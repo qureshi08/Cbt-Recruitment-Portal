@@ -1359,13 +1359,13 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
             analysis = JSON.parse((jsonMatch ? jsonMatch[0] : responseContent).replace(/```json/gi, "").replace(/```/g, "").trim());
         } else {
-            // Direct REST Implementation — AI Studio keys ONLY work with v1beta endpoint
+            // Direct REST Implementation — model IDs verified against v1beta/models endpoint
             const modelsToTry: { model: string; apiVersion: string }[] = [
-                { model: "gemini-2.0-flash", apiVersion: "v1beta" },
-                { model: "gemini-2.0-flash-lite", apiVersion: "v1beta" },
-                { model: "gemini-2.0-flash-exp", apiVersion: "v1beta" },
-                { model: "gemini-1.5-flash-latest", apiVersion: "v1beta" },
-                { model: "gemini-1.5-flash-8b-latest", apiVersion: "v1beta" },
+                { model: "gemini-2.0-flash", apiVersion: "v1beta" }, // confirmed available
+                { model: "gemini-2.0-flash-lite", apiVersion: "v1beta" }, // confirmed available
+                { model: "gemini-2.0-flash-001", apiVersion: "v1beta" }, // confirmed available
+                { model: "gemini-flash-latest", apiVersion: "v1beta" }, // confirmed available
+                { model: "gemini-2.5-flash", apiVersion: "v1beta" }, // confirmed available (thinking)
             ];
             let lastErr = null;
 
