@@ -11,35 +11,33 @@ interface LogoProps {
 
 export default function Logo({ className, withText = true }: LogoProps) {
     return (
-        <Link href="/" className={cn("flex items-center group shrink-0", className)}>
+        <Link href="/" className={cn("flex items-center gap-3 group shrink-0", className)}>
+            {withText && (
+                <div className="flex flex-col min-w-0 leading-none text-right">
+                    <span
+                        className="text-[10.5px] font-bold text-heading tracking-tight uppercase"
+                        style={{ fontFamily: "var(--font-heading)", fontStyle: "italic" }}
+                    >
+                        Recruitment
+                    </span>
+                    <span className="text-[9px] font-semibold text-primary tracking-[0.18em] uppercase mt-1">
+                        Portal
+                    </span>
+                </div>
+            )}
+
             {/* Logo image — compact 32px height */}
             <div className="relative group shrink-0">
                 <div className="relative h-8 w-24 transition-transform duration-300 group-hover:scale-[1.02]">
                     <Image
-                        src="/logo.png"
-                        alt="CBT Logo"
+                        src="/cgap-logo.png"
+                        alt="CGAP Logo"
                         fill
-                        className="object-contain object-left"
+                        className="object-contain object-right"
                         priority
                     />
                 </div>
             </div>
-
-            {withText && (
-                <div className="flex items-center gap-2">
-                    <div className="flex flex-col min-w-0 leading-none">
-                        <span
-                            className="text-[10.5px] font-bold text-heading tracking-tight uppercase"
-                            style={{ fontFamily: "var(--font-heading)", fontStyle: "italic" }}
-                        >
-                            Recruitment
-                        </span>
-                        <span className="text-[9px] font-semibold text-primary tracking-[0.18em] uppercase mt-1">
-                            Portal
-                        </span>
-                    </div>
-                </div>
-            )}
         </Link>
     );
 }
