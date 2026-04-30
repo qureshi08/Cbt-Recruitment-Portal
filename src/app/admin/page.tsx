@@ -28,7 +28,7 @@ export default async function AdminDashboard() {
                             lineHeight: 1.2,
                         }}
                     >
-                        Executive <span className="italic-accent">Dossier</span>
+                        Executive <span className="italic-accent">Overview</span>
                     </h1>
                     <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
                         System analytics & pipeline management.

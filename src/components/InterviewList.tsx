@@ -161,7 +161,7 @@ function ScorecardViewer({ interview }: { interview: Interview }) {
 
                         <div className="p-5 border-b border-border flex justify-between items-center shrink-0 bg-surface">
                             <div>
-                                <h3 className="font-bold text-lg text-heading italic">Evaluation Dossier</h3>
+                                <h3 className="font-bold text-lg text-heading italic">Evaluation Summary</h3>
                                 <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">{interview.candidates?.name} — {interview.candidates?.position}</p>
                             </div>
                             <button onClick={() => setOpen(false)} className="p-2 border border-transparent hover:border-border hover:bg-white rounded-sm text-muted hover:text-heading transition-all">
