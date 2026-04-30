@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus, InterviewFeedbackJson } from "@/types/database";
 import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi } from "@/app/actions";
 import {
@@ -230,69 +231,23 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
         }
     };
 
-    const handleDownloadReport = async (candidate: Candidate) => {
-        try {
+    const reportRef = useRef<HTMLDivElement>(null);
+
+    const handleDownloadReport = useReactToPrint({
+        contentRef: reportRef,
+        documentTitle: selectedAiReasoning ? `CGAP_AI_Report_${selectedAiReasoning.name.replace(/\s+/g, '_')}` : 'AI_Report',
+        onBeforeGetContent: async () => {
             setIsDownloading(true);
-            const html2canvas = (await import('html2canvas')).default;
-            const jspdfModule = await import('jspdf');
-            const jsPDF = (jspdfModule as any).jsPDF || jspdfModule.default;
-
-            const outerElement = document.getElementById('ai-report-outer');
-            const scrollElement = document.getElementById('ai-report-scrollable');
-            if (!outerElement || !scrollElement) {
-                throw new Error("Could not find report elements in DOM");
-            }
-
-            // Temporarily remove constraints for full render
-            const originalMaxHeight = outerElement.style.maxHeight;
-            const originalOverflow = scrollElement.style.overflowY;
-
-            // Apply unconstrained styles directly to get full height
-            outerElement.style.maxHeight = 'none';
-            scrollElement.style.overflowY = 'visible';
-
-            // Let the DOM update before capturing
-            await new Promise(res => setTimeout(res, 100));
-
-            const canvas = await html2canvas(outerElement, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                windowWidth: outerElement.scrollWidth,
-                windowHeight: outerElement.scrollHeight
-            });
-
-            // Revert constraints immediately
-            outerElement.style.maxHeight = originalMaxHeight || '';
-            scrollElement.style.overflowY = originalOverflow || '';
-
-            const imgData = canvas.toDataURL('image/png');
-            let pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            const pageHeight = pdf.internal.pageSize.getHeight();
-
-            let heightLeft = pdfHeight;
-            let position = 0;
-
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-            heightLeft -= pageHeight;
-
-            while (heightLeft > 0) {
-                position = heightLeft - pdfHeight; // Negative offset to shift image up
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-                heightLeft -= pageHeight;
-            }
-
-            pdf.save(`CGAP_AI_Report_${candidate.name.replace(/\s+/g, '_')}.pdf`);
-        } catch (error: any) {
-            console.error("Failed to generate PDF", error);
-            alert(`Failed to generate PDF: ${error?.message || "Unknown error"}`);
-        } finally {
+            // wait a tick for state
+            await new Promise(r => setTimeout(r, 100));
+        },
+        onAfterPrint: () => setIsDownloading(false),
+        onPrintError: (err) => {
+            console.error("Print error:", err);
+            alert("Failed to generate PDF. Please try again.");
             setIsDownloading(false);
         }
-    };
+    });
 
     const handleDelete = async (id: string) => {
         if (!canDelete) return;
@@ -800,7 +755,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             {selectedAiReasoning && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedAiReasoning(null)} />
-                    <div id="ai-report-outer" className="bg-white rounded-sm shadow-premium w-full max-w-xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[80vh]">
+                    <div ref={reportRef} id="ai-report-outer" className="bg-white rounded-sm shadow-premium w-full max-w-xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[80vh] print:max-h-none print:w-[100vw] print:max-w-none print:shadow-none print:overflow-visible">
 
                         {/* Header */}
                         <div className="p-4 border-b border-border flex justify-between items-start bg-surface shrink-0">
@@ -831,7 +786,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         </div>
 
                         {/* Scrollable Body */}
-                        <div id="ai-report-scrollable" className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                        <div id="ai-report-scrollable" className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-white print:overflow-visible">
                             <div className="space-y-4">
                                 <div className="p-4 rounded-sm bg-surface border border-border relative overflow-hidden">
                                     <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Target Criteria Alignment</h4>
@@ -944,7 +899,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             </button>
                             {selectedAiReasoning.ai_analysis_json && (
                                 <button
-                                    onClick={() => handleDownloadReport(selectedAiReasoning)}
+                                    onClick={() => handleDownloadReport()}
                                     disabled={isDownloading}
                                     className="flex-1 px-4 py-2.5 bg-white border border-border text-primary text-[11px] font-bold rounded-sm hover:bg-primary/5 hover:border-primary/30 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                                 >
