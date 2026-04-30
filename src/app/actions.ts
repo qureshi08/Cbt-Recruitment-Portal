@@ -395,6 +395,7 @@ export async function submitApplication(formData: FormData) {
                 resume_url: publicUrl,
                 position,
                 status: "Applied",
+                ai_status: "pending",
                 updated_at: new Date().toISOString()
             })
             .select()
@@ -1084,6 +1085,12 @@ export async function ensureBuckets() {
 
 export async function analyzeCandidateWithAi(candidateId: string) {
     try {
+        // Update status to processing
+        await supabaseAdmin
+            .from('candidates')
+            .update({ ai_status: 'processing' })
+            .eq('id', candidateId);
+
         // Prioritize direct Gemini API over OpenRouter for stability/free tier
         const apiKey = process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY;
         const isOpenRouter = !!process.env.OPENROUTER_API_KEY && !process.env.GEMINI_API_KEY;
@@ -1347,10 +1354,10 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
             for (const modelName of modelsToTry) {
                 try {
-                    // Force v1 API version to avoid v1beta 404s
+                    // Use v1beta for better compatibility with newer model features
                     const model = genAI.getGenerativeModel(
                         { model: modelName },
-                        { apiVersion: 'v1' }
+                        { apiVersion: 'v1beta' }
                     );
 
                     const visionImages = (candidate as any)._vision_images || [];
@@ -1409,7 +1416,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                 ai_score: analysis.score,
                 ai_reasoning: analysis.reasoning,
                 ai_analysis_json: analysis,
-                analysis_criteria: criteria
+                analysis_criteria: criteria,
+                ai_status: 'completed'
             })
             .eq('id', candidateId);
 
@@ -1438,6 +1446,19 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             userMessage = "Reading Error: The AI couldn't parse this specific resume format. Please try re-uploading the resume as a standard PDF.";
         } else if (errMsg.includes("empty resume")) {
             userMessage = "File Error: This resume appears to be empty or unscannable. Please check the file and try again.";
+        }
+
+        // Update status to failed in database
+        try {
+            await supabaseAdmin
+                .from('candidates')
+                .update({
+                    ai_status: 'failed' as any,
+                    ai_reasoning: userMessage
+                })
+                .eq('id', candidateId);
+        } catch (dbErr) {
+            console.error("Failed to update AI failure status in DB:", dbErr);
         }
 
         return { error: userMessage, rawError: error.message };

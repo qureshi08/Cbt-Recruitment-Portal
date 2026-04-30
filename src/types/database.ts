@@ -44,6 +44,7 @@ export interface Candidate {
     cnic?: string;
     batch_number?: string;
     assessment_score_url?: string;
+    ai_status?: 'pending' | 'processing' | 'completed' | 'failed';
     ai_score?: number;
     ai_reasoning?: string;
     analysis_criteria?: string;
