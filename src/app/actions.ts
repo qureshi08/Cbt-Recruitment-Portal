@@ -1358,14 +1358,17 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             analysis = JSON.parse((jsonMatch ? jsonMatch[0] : responseContent).replace(/```json/gi, "").replace(/```/g, "").trim());
         } else {
             // Direct REST Implementation (Bypasses @google/generative-ai SDK truncation bugs)
-            const modelsToTry = [
-                "gemini-2.0-flash-lite",   // Fast, cheap, highly available
-                "gemini-2.0-flash",         // Main model
-                "gemini-2.5-flash-preview-04-17", // Preview fallback
+            // Try each model against BOTH v1 (stable) and v1beta (preview) endpoints
+            const modelsToTry: { model: string; apiVersion: string }[] = [
+                { model: "gemini-2.0-flash", apiVersion: "v1" },
+                { model: "gemini-2.0-flash-lite", apiVersion: "v1" },
+                { model: "gemini-2.0-flash", apiVersion: "v1beta" },
+                { model: "gemini-2.0-flash-lite", apiVersion: "v1beta" },
+                { model: "gemini-2.0-flash-exp", apiVersion: "v1beta" },
             ];
             let lastErr = null;
 
-            for (const modelName of modelsToTry) {
+            for (const { model: modelName, apiVersion } of modelsToTry) {
                 try {
                     const visionImages = (candidate as any)._vision_images || [];
                     const parts: any[] = [{ text: `${prompt}\n\nSTRICT JSON ONLY.` }];
@@ -1376,7 +1379,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                         });
                     }
 
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                    const endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
+                    const response = await fetch(endpoint, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -1401,10 +1405,11 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
                     const cleanedResponse = jsonMatch ? jsonMatch[0] : responseText;
                     analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
+                    console.log(`[REST] Success with ${apiVersion}/${modelName}`);
 
                     if (analysis) break;
                 } catch (err: any) {
-                    console.warn(`[REST] Model ${modelName} failed: ${err.message}`);
+                    console.warn(`[REST] ${apiVersion}/${modelName} failed: ${err.message}`);
                     lastErr = err;
                 }
             }
