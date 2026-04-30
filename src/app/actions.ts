@@ -473,8 +473,18 @@ export async function updateCandidateStatus(candidateId: string, status: string)
                     }
                 } else if (status === "Recommended") {
                     await sendRecommendedEmail(candidate.email, candidate.name);
+                    // Notify recruitment team about the recommendation decision
+                    const recipients = await getRecipientsByRoles(['recruitment_team']);
+                    if (recipients.length > 0) {
+                        await notifyWorkflowStage('DECISION', recipients, { name: candidate.name, status: 'Recommended', interviewer: userName });
+                    }
                 } else if (status === "Not Recommended" || status === "Rejected") {
                     await sendNotRecommendedEmail(candidate.email, candidate.name);
+                    // Notify recruitment team that the candidate was rejected
+                    const recipients = await getRecipientsByRoles(['recruitment_team']);
+                    if (recipients.length > 0) {
+                        await notifyWorkflowStage('DECISION', recipients, { name: candidate.name, status: status, interviewer: userName });
+                    }
                 }
             } catch (emailError: any) {
                 console.error("Email delivery failed, but status was updated:", emailError.message);
