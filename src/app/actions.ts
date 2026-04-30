@@ -1105,6 +1105,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         const apiKey = process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY;
         const isOpenRouter = !!process.env.OPENROUTER_API_KEY && !process.env.GEMINI_API_KEY;
 
+        console.log(`[AI Analysis] API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}, isOpenRouter: ${isOpenRouter}`);
+
         if (!apiKey) throw new Error("API Key (OPENROUTER_API_KEY or GEMINI_API_KEY) is not configured in .env.local");
 
         // 1. Get candidate and resume URL
