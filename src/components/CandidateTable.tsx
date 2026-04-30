@@ -735,17 +735,18 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 selectedAiReasoning && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedAiReasoning(null)} />
-                        <div className="bg-white rounded-sm shadow-premium w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="bg-white rounded-sm shadow-premium w-full max-w-xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[80vh]">
                             {/* Header */}
-                            <div className="p-6 border-b border-border flex justify-between items-start bg-surface">
+                            <div className="p-4 border-b border-border flex justify-between items-start bg-surface shrink-0">
                                 <div className="flex items-center gap-4">
                                     <div className={cn(
-                                        "w-14 h-14 rounded-sm flex items-center justify-center text-xl font-bold shadow-soft border border-border",
+                                        "w-12 h-12 rounded-sm flex items-center justify-center text-lg font-bold shadow-soft border border-border shrink-0",
                                         (selectedAiReasoning.ai_score || 0) >= 80 ? "bg-primary text-white border-primary" :
                                             (selectedAiReasoning.ai_score || 0) >= 50 ? "bg-amber-500 text-white border-amber-600" :
-                                                "bg-red-600 text-white border-red-700"
+                                                (selectedAiReasoning.ai_score || 0) > 0 ? "bg-slate-700 text-white border-slate-800" :
+                                                    "bg-slate-100 text-slate-400 border-slate-200"
                                     )}>
-                                        {selectedAiReasoning.ai_score}
+                                        {selectedAiReasoning.ai_score || '—'}
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-lg text-heading tracking-tight italic">{selectedAiReasoning.name}</h3>
@@ -762,12 +763,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     </button>
                                 </div>
 
-                                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white">
-                                    <div className="space-y-6">
-                                        {/* Criteria Used */}
-                                        <div className="p-5 rounded-sm bg-surface border border-border relative overflow-hidden">
-                                            <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-2">Target Criteria Alignment</h4>
-                                            <p className="text-sm text-heading leading-relaxed font-bold italic">
+                                <div className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                                    <div className="space-y-4">
+                                        <div className="p-4 rounded-sm bg-surface border border-border relative overflow-hidden">
+                                            <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Target Criteria Alignment</h4>
+                                            <p className="text-[13px] text-heading leading-relaxed font-bold italic">
                                                 "{selectedAiReasoning.analysis_criteria || "Standard Technical Evaluation."}"
                                             </p>
                                         </div>
@@ -790,9 +790,9 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             </div>
                                         </div>
 
-                                        <div className="p-6 rounded-sm bg-heading text-white shadow-soft relative overflow-hidden">
-                                            <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Candidate Profile Record</h4>
-                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-4">
+                                        <div className="p-4 rounded-sm bg-heading text-white shadow-soft relative overflow-hidden">
+                                            <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3">Candidate Profile Record</h4>
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-4">
                                                 {selectedAiReasoning.ai_analysis_json?.extracted_info && Object.entries(selectedAiReasoning.ai_analysis_json.extracted_info).map(([k, v]: [string, any]) => (
                                                     <div key={k} className="flex flex-col gap-0.5">
                                                         <span className="text-[8px] font-bold text-muted uppercase tracking-widest opacity-60">{k.replace(/_/g, " ")}</span>
@@ -804,9 +804,9 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
 
                                         {/* Experience Narratives */}
                                         <div>
-                                            <label className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] px-1 mb-3 block">Professional Narrative</label>
-                                            <div className="bg-surface p-5 rounded-sm border border-border">
-                                                <p className="text-sm text-heading leading-relaxed font-bold italic">
+                                            <label className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] px-1 mb-2 block">Professional Narrative</label>
+                                            <div className="bg-surface p-4 rounded-sm border border-border">
+                                                <p className="text-[13px] text-heading leading-relaxed font-bold italic">
                                                     "{selectedAiReasoning.ai_analysis_json?.experience_summary || "Candidate experience overview is being processed."}"
                                                 </p>
                                             </div>
@@ -867,11 +867,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                 </div>
                             </div>
 
-                            {/* Footer Actions */}
-                            <div className="p-6 border-t border-border flex gap-3 bg-surface">
+                            <div className="p-4 border-t border-border flex gap-3 bg-surface shrink-0">
                                 <button
                                     onClick={() => setSelectedAiReasoning(null)}
-                                    className="flex-1 px-4 py-3 bg-white border border-border text-heading text-[11px] font-bold rounded-sm hover:bg-surface transition-all uppercase tracking-widest"
+                                    className="flex-1 px-4 py-2.5 bg-white border border-border text-heading text-[11px] font-bold rounded-sm hover:bg-surface transition-all uppercase tracking-widest"
                                 >
                                     Dismiss
                                 </button>
@@ -880,7 +879,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         handleAiAnalysis(selectedAiReasoning.id);
                                         setSelectedAiReasoning(null);
                                     }}
-                                    className="flex-[2] bg-primary text-white border border-primary-hover py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary-hover transition-all shadow-soft"
+                                    className="flex-[2] bg-primary text-white border border-primary-hover py-2.5 rounded-sm text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary-hover transition-all shadow-soft"
                                 >
                                     <Sparkles className="w-3 h-3" />
                                     Re-Analyze Candidate

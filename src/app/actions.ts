@@ -1349,16 +1349,18 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         } else {
             // Direct Google SDK Implementation with V1 API and Fallbacks
             const genAI = new GoogleGenerativeAI(apiKey);
-            const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+            const modelsToTry = [
+                "gemini-1.5-flash",
+                "gemini-1.5-flash-latest",
+                "gemini-1.5-pro",
+                "gemini-pro"
+            ];
             let lastErr = null;
 
             for (const modelName of modelsToTry) {
                 try {
-                    // Use v1beta for better compatibility with newer model features
-                    const model = genAI.getGenerativeModel(
-                        { model: modelName },
-                        { apiVersion: 'v1beta' }
-                    );
+                    // Remove explicit v1beta as the SDK handles it, which prevents 404s on newer default versions
+                    const model = genAI.getGenerativeModel({ model: modelName });
 
                     const visionImages = (candidate as any)._vision_images || [];
                     let result;
@@ -1378,7 +1380,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
                     if (analysis) break;
                 } catch (err: any) {
-                    console.warn(`[SDK v1] Model ${modelName} failed: ${err.message}`);
+                    console.warn(`[SDK] Model ${modelName} failed: ${err.message}`);
                     lastErr = err;
                 }
             }
@@ -1403,7 +1405,9 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     const orData = await orResponse.json();
                     const orContent = orData.choices?.[0]?.message?.content;
                     const orMatch = orContent.match(/\{[\s\S]*\}/);
-                    analysis = JSON.parse((orMatch ? orMatch[0] : orContent).replace(/```json/gi, "").replace(/```/g, "").trim());
+                    if (orMatch) {
+                        analysis = JSON.parse(orMatch[0].replace(/```json/gi, "").replace(/```/g, "").trim());
+                    }
                 }
             }
 
@@ -1437,7 +1441,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         const errMsg = error.message?.toLowerCase() || "";
 
         if (errMsg.includes("404") || errMsg.includes("not found")) {
-            userMessage = "AI Setup Error: The system is trying to use a model that isn't fully enabled on your account. Please ensure 'Gemini 1.5 Flash' is enabled in your Google AI Studio project.";
+            userMessage = `AI Setup Error: The system is trying to use a model that isn't fully enabled on your account. Raw error: ${errMsg.slice(0, 100)}`;
         } else if (errMsg.includes("apikey") || errMsg.includes("api key") || errMsg.includes("unauthorized")) {
             userMessage = "Security Key Error: The AI Key configured in Vercel is invalid or has expired. Please update your GEMINI_API_KEY.";
         } else if (errMsg.includes("quota") || errMsg.includes("limit") || errMsg.includes("429")) {
@@ -1446,6 +1450,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             userMessage = "Reading Error: The AI couldn't parse this specific resume format. Please try re-uploading the resume as a standard PDF.";
         } else if (errMsg.includes("empty resume")) {
             userMessage = "File Error: This resume appears to be empty or unscannable. Please check the file and try again.";
+        } else {
+            userMessage = `Analysis Failed: ${errMsg.slice(0, 80)}...`;
         }
 
         // Update status to failed in database
