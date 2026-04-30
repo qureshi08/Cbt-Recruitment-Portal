@@ -234,11 +234,14 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
         try {
             setIsDownloading(true);
             const html2canvas = (await import('html2canvas')).default;
-            const jsPDF = (await import('jspdf')).default;
+            const jspdfModule = await import('jspdf');
+            const jsPDF = (jspdfModule as any).jsPDF || jspdfModule.default;
 
             const outerElement = document.getElementById('ai-report-outer');
             const scrollElement = document.getElementById('ai-report-scrollable');
-            if (!outerElement || !scrollElement) return;
+            if (!outerElement || !scrollElement) {
+                throw new Error("Could not find report elements in DOM");
+            }
 
             // Temporarily remove constraints for full render
             const originalMaxHeight = outerElement.style.maxHeight;
@@ -283,9 +286,9 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             }
 
             pdf.save(`CGAP_AI_Report_${candidate.name.replace(/\s+/g, '_')}.pdf`);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to generate PDF", error);
-            alert("Failed to generate PDF. Please try again.");
+            alert(`Failed to generate PDF: ${error?.message || "Unknown error"}`);
         } finally {
             setIsDownloading(false);
         }
