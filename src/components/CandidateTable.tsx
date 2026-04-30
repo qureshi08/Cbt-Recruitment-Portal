@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, Fragment } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus, InterviewFeedbackJson } from "@/types/database";
 import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi } from "@/app/actions";
@@ -434,233 +434,238 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         </thead>
                         <tbody className="divide-y divide-border/60 bg-white">
                             {filteredCandidates.map((candidate) => (
-                                <tr key={candidate.id} className="hover:bg-primary/[0.02] transition-colors">
-                                    <td className="px-3 py-2.5">
-                                        <span className="text-[10px] font-bold text-muted bg-surface px-2 py-0.5 rounded-sm border border-border">
-                                            {candidate.batch_number || 'N/A'}
-                                        </span>
-                                    </td>
-                                    <td className="px-3 py-2.5 overflow-hidden">
-                                        <div className="flex flex-col gap-0.5 min-w-0">
-                                            <span className="text-sm font-bold text-heading leading-tight truncate" title={candidate.name}>{candidate.name}</span>
-                                            <span className="text-[11px] text-muted font-medium truncate" title={candidate.email}>{candidate.email}</span>
-                                            {candidate.phone && (
-                                                <span className="text-[10px] text-primary font-bold flex items-center gap-1.5 mt-0.5">
-                                                    <Phone className="w-2.5 h-2.5 shrink-0" />
-                                                    {candidate.phone}
-                                                </span>
-                                            )}
-                                            {candidate.cnic && (
-                                                <span className="text-[9px] text-muted tracking-tight font-bold mt-1 uppercase" title={`CNIC: ${candidate.cnic}`}>
-                                                    ID: {formatCNIC(candidate.cnic)}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-2.5 overflow-hidden">
-                                        <div className="flex flex-col gap-1 min-w-0">
-                                            {candidate.location && (
-                                                <span className="text-[10px] font-bold text-heading truncate flex items-center gap-2" title={candidate.location}>
-                                                    📍 {candidate.location}
-                                                </span>
-                                            )}
-                                            {candidate.degree_field && (
-                                                <span className="text-[10px] px-2 py-1 bg-surface text-primary rounded-sm font-bold border border-border truncate uppercase tracking-tight" title={candidate.degree_field}>
-                                                    {candidate.degree_field}
-                                                </span>
-                                            )}
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                {candidate.graduation_year && (
-                                                    <span className="text-[10px] text-muted font-bold bg-white px-1.5 py-0.5 rounded-sm border border-border">
-                                                        GRAD YEAR '{candidate.graduation_year.slice(-2)}
+                                <Fragment key={candidate.id}>
+                                    <tr className={cn("hover:bg-primary/[0.02] transition-colors", openActionId === candidate.id && "bg-primary/[0.02]")}>
+                                        <td className="px-3 py-2.5">
+                                            <span className="text-[10px] font-bold text-muted bg-surface px-2 py-0.5 rounded-sm border border-border">
+                                                {candidate.batch_number || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 py-2.5 overflow-hidden">
+                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                                <span className="text-sm font-bold text-heading leading-tight truncate" title={candidate.name}>{candidate.name}</span>
+                                                <span className="text-[11px] text-muted font-medium truncate" title={candidate.email}>{candidate.email}</span>
+                                                {candidate.phone && (
+                                                    <span className="text-[10px] text-primary font-bold flex items-center gap-1.5 mt-0.5">
+                                                        <Phone className="w-2.5 h-2.5 shrink-0" />
+                                                        {candidate.phone}
+                                                    </span>
+                                                )}
+                                                {candidate.cnic && (
+                                                    <span className="text-[9px] text-muted tracking-tight font-bold mt-1 uppercase" title={`CNIC: ${candidate.cnic}`}>
+                                                        ID: {formatCNIC(candidate.cnic)}
                                                     </span>
                                                 )}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-3">
-                                        <div className="flex flex-col gap-2 items-start">
-                                            {/* AI Status Indicators */}
-                                            {candidate.ai_status === 'processing' || analyzingId === candidate.id ? (
-                                                <div className="flex items-center gap-2 px-3 py-1 bg-primary/5 text-primary border border-primary/20 rounded-sm w-full animate-pulse">
-                                                    <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider">Analyzing...</span>
+                                        </td>
+                                        <td className="px-3 py-2.5 overflow-hidden">
+                                            <div className="flex flex-col gap-1 min-w-0">
+                                                {candidate.location && (
+                                                    <span className="text-[10px] font-bold text-heading truncate flex items-center gap-2" title={candidate.location}>
+                                                        📍 {candidate.location}
+                                                    </span>
+                                                )}
+                                                {candidate.degree_field && (
+                                                    <span className="text-[10px] px-2 py-1 bg-surface text-primary rounded-sm font-bold border border-border truncate uppercase tracking-tight" title={candidate.degree_field}>
+                                                        {candidate.degree_field}
+                                                    </span>
+                                                )}
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {candidate.graduation_year && (
+                                                        <span className="text-[10px] text-muted font-bold bg-white px-1.5 py-0.5 rounded-sm border border-border">
+                                                            GRAD YEAR '{candidate.graduation_year.slice(-2)}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            ) : candidate.ai_status === 'completed' || (candidate.ai_score !== null && candidate.ai_score !== undefined) ? (
-                                                <div
-                                                    className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity w-full"
-                                                    onClick={() => setSelectedAiReasoning(candidate)}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={cn(
-                                                            "w-10 h-10 rounded-sm flex items-center justify-center text-xs font-bold shadow-soft border shrink-0",
-                                                            (candidate.ai_score ?? -1) >= 80 ? "bg-[#009245] text-white border-[#009245]" :
-                                                                (candidate.ai_score ?? -1) >= 60 ? "bg-[#22c55e] text-white border-[#22c55e]" :
-                                                                    (candidate.ai_score ?? -1) >= 40 ? "bg-[#f59e0b] text-white border-[#f59e0b]" :
-                                                                        (candidate.ai_score ?? -1) >= 0 ? "bg-[#ef4444] text-white border-[#ef4444]" :
-                                                                            "bg-slate-100 text-muted border-border"
-                                                        )}>
-                                                            {candidate.ai_score ?? '—'}
-                                                        </div>
-                                                        <div className="flex flex-col min-w-0">
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-[10px] font-bold text-gray-700 truncate">
-                                                                    {candidate.ai_analysis_json?.verdict || 'Processed'}
-                                                                </span>
-                                                                <Sparkles className="w-2.5 h-2.5 text-primary" />
+                                            </div>
+                                        </td>
+                                        <td className="px-3 py-3">
+                                            <div className="flex flex-col gap-2 items-start">
+                                                {/* AI Status Indicators */}
+                                                {candidate.ai_status === 'processing' || analyzingId === candidate.id ? (
+                                                    <div className="flex items-center gap-2 px-3 py-1 bg-primary/5 text-primary border border-primary/20 rounded-sm w-full animate-pulse">
+                                                        <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider">Analyzing...</span>
+                                                    </div>
+                                                ) : candidate.ai_status === 'completed' || (candidate.ai_score !== null && candidate.ai_score !== undefined) ? (
+                                                    <div
+                                                        className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity w-full"
+                                                        onClick={() => setSelectedAiReasoning(candidate)}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={cn(
+                                                                "w-10 h-10 rounded-sm flex items-center justify-center text-xs font-bold shadow-soft border shrink-0",
+                                                                (candidate.ai_score ?? -1) >= 80 ? "bg-[#009245] text-white border-[#009245]" :
+                                                                    (candidate.ai_score ?? -1) >= 60 ? "bg-[#22c55e] text-white border-[#22c55e]" :
+                                                                        (candidate.ai_score ?? -1) >= 40 ? "bg-[#f59e0b] text-white border-[#f59e0b]" :
+                                                                            (candidate.ai_score ?? -1) >= 0 ? "bg-[#ef4444] text-white border-[#ef4444]" :
+                                                                                "bg-slate-100 text-muted border-border"
+                                                            )}>
+                                                                {candidate.ai_score ?? '—'}
                                                             </div>
-                                                            <p className="text-[9px] text-gray-400 truncate max-w-[120px]">
-                                                                {candidate.ai_reasoning}
-                                                            </p>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-[10px] font-bold text-gray-700 truncate">
+                                                                        {candidate.ai_analysis_json?.verdict || 'Processed'}
+                                                                    </span>
+                                                                    <Sparkles className="w-2.5 h-2.5 text-primary" />
+                                                                </div>
+                                                                <p className="text-[9px] text-gray-400 truncate max-w-[120px]">
+                                                                    {candidate.ai_reasoning}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ) : candidate.ai_status === 'failed' ? (
-                                                <div className="flex flex-col gap-1 w-full">
+                                                ) : candidate.ai_status === 'failed' ? (
+                                                    <div className="flex flex-col gap-1 w-full">
+                                                        <button
+                                                            onClick={() => handleAiAnalysis(candidate.id)}
+                                                            className="flex items-center justify-center gap-2 px-3 py-1 text-[10px] font-bold rounded-sm border bg-red-50 text-red-600 border-red-200 hover:bg-red-100 transition-colors w-full"
+                                                        >
+                                                            <XCircle className="w-3.5 h-3.5" />
+                                                            SCREENING FAILED
+                                                        </button>
+                                                        <p className="text-[8px] text-red-500 font-medium leading-tight px-1 italic truncate max-w-[180px]" title={candidate.ai_reasoning}>
+                                                            Error: {candidate.ai_reasoning}
+                                                        </p>
+                                                    </div>
+                                                ) : (canApprove && candidate.resume_url) ? (
                                                     <button
                                                         onClick={() => handleAiAnalysis(candidate.id)}
-                                                        className="flex items-center justify-center gap-2 px-3 py-1 text-[10px] font-bold rounded-sm border bg-red-50 text-red-600 border-red-200 hover:bg-red-100 transition-colors w-full"
+                                                        className="flex items-center justify-center gap-2 px-3 py-1 text-[10px] font-bold rounded-sm border bg-surface text-heading border-border hover:border-primary hover:text-primary transition-colors w-full group"
                                                     >
-                                                        <XCircle className="w-3.5 h-3.5" />
-                                                        SCREENING FAILED
+                                                        <Sparkles className="w-3.5 h-3.5 group-hover:animate-pulse" />
+                                                        {candidate.ai_status === 'pending' ? 'READY TO SCREEN' : 'RUN AI SCREENING'}
                                                     </button>
-                                                    <p className="text-[8px] text-red-500 font-medium leading-tight px-1 italic truncate max-w-[180px]" title={candidate.ai_reasoning}>
-                                                        Error: {candidate.ai_reasoning}
-                                                    </p>
-                                                </div>
-                                            ) : (canApprove && candidate.resume_url) ? (
-                                                <button
-                                                    onClick={() => handleAiAnalysis(candidate.id)}
-                                                    className="flex items-center justify-center gap-2 px-3 py-1 text-[10px] font-bold rounded-sm border bg-surface text-heading border-border hover:border-primary hover:text-primary transition-colors w-full group"
-                                                >
-                                                    <Sparkles className="w-3.5 h-3.5 group-hover:animate-pulse" />
-                                                    {candidate.ai_status === 'pending' ? 'READY TO SCREEN' : 'RUN AI SCREENING'}
-                                                </button>
-                                            ) : (
-                                                <span className="text-[10px] text-gray-400 italic px-1">
-                                                    {!candidate.resume_url ? 'No resume' : 'Waiting...'}
-                                                </span>
-                                            )}
+                                                ) : (
+                                                    <span className="text-[10px] text-gray-400 italic px-1">
+                                                        {!candidate.resume_url ? 'No resume' : 'Waiting...'}
+                                                    </span>
+                                                )}
 
-                                            {/* Resume Link - Always show if available */}
-                                            {candidate.resume_url && (
+                                                {/* Resume Link - Always show if available */}
+                                                {candidate.resume_url && (
+                                                    <a
+                                                        href={candidate.resume_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[9px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                    >
+                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                        View Resume
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-3 py-2.5">
+                                            {candidate.assessment_score_url ? (
                                                 <a
-                                                    href={candidate.resume_url}
+                                                    href={candidate.assessment_score_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[9px] font-bold rounded-md hover:bg-primary/10 hover:text-primary transition-all border border-gray-200/50"
+                                                    className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
                                                 >
-                                                    <ExternalLink className="w-2.5 h-2.5" />
-                                                    View Resume
+                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                    View Score Sheet
                                                 </a>
+                                            ) : (isMaster || isHR) ? (
+                                                <div className="flex items-center gap-2">
+                                                    <label className="cursor-pointer bg-surface border border-border hover:border-primary px-3 py-1 rounded-sm text-[11px] font-bold text-heading flex items-center gap-2 transition-all">
+                                                        {uploadingScore === candidate.id ? (
+                                                            <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                        ) : <Upload className="w-3 h-3" />}
+                                                        Upload
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) handleScoreUpload(candidate.id, file);
+                                                            }}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-400 italic">No score uploaded</span>
                                             )}
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-2.5">
-                                        {candidate.assessment_score_url ? (
-                                            <a
-                                                href={candidate.assessment_score_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
-                                            >
-                                                <ExternalLink className="w-3.5 h-3.5" />
-                                                View Score Sheet
-                                            </a>
-                                        ) : (isMaster || isHR) ? (
-                                            <div className="flex items-center gap-2">
-                                                <label className="cursor-pointer bg-surface border border-border hover:border-primary px-3 py-1 rounded-sm text-[11px] font-bold text-heading flex items-center gap-2 transition-all">
-                                                    {uploadingScore === candidate.id ? (
-                                                        <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                                    ) : <Upload className="w-3 h-3" />}
-                                                    Upload
-                                                    <input
-                                                        type="file"
-                                                        className="hidden"
-                                                        accept="image/*"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) handleScoreUpload(candidate.id, file);
-                                                        }}
-                                                    />
-                                                </label>
+                                        </td>
+                                        {/* Interview Scores */}
+                                        <td className="px-3 py-2.5">
+                                            {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
+                                                <div className="flex flex-col gap-1.5">
+                                                    {candidate.interview_scores.l1_feedback_json && (
+                                                        <div className="flex flex-col gap-0.5 mb-1 last:mb-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[9px] font-black text-blue-500 uppercase">L1</span>
+                                                                <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l1_feedback_json))} />
+                                                                <span className="text-[10px] font-black text-blue-700">{calcAvg(candidate.interview_scores.l1_feedback_json).toFixed(1)}</span>
+                                                            </div>
+                                                            {candidate.interview_scores.l1_interviewer_name && (
+                                                                <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l1_interviewer_name}</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {candidate.interview_scores.l2_feedback_json && (
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[9px] font-black text-purple-500 uppercase">L2</span>
+                                                                <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l2_feedback_json))} />
+                                                                <span className="text-[10px] font-black text-purple-700">{calcAvg(candidate.interview_scores.l2_feedback_json).toFixed(1)}</span>
+                                                            </div>
+                                                            {candidate.interview_scores.l2_interviewer_name && (
+                                                                <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l2_interviewer_name}</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={() => setSelectedInterviewScores(candidate)}
+                                                        className="flex items-center gap-1 text-[9px] font-bold text-gray-500 hover:text-primary transition-colors mt-0.5"
+                                                    >
+                                                        <ClipboardList className="w-2.5 h-2.5" />
+                                                        View Report
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span className="text-[10px] text-gray-300 italic">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-3 py-2.5">
+                                            <div className="flex flex-col items-start gap-1">
+                                                <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
+                                                    {candidate.status}
+                                                </span>
+                                                {candidate.last_action_by && candidate.status !== 'Applied' && (
+                                                    <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
+                                                        Updated by: {candidate.last_action_by}
+                                                    </span>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <span className="text-xs text-gray-400 italic">No score uploaded</span>
-                                        )}
-                                    </td>
-                                    {/* Interview Scores */}
-                                    <td className="px-3 py-2.5">
-                                        {candidate.interview_scores?.l1_feedback_json || candidate.interview_scores?.l2_feedback_json ? (
-                                            <div className="flex flex-col gap-1.5">
-                                                {candidate.interview_scores.l1_feedback_json && (
-                                                    <div className="flex flex-col gap-0.5 mb-1 last:mb-0">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[9px] font-black text-blue-500 uppercase">L1</span>
-                                                            <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l1_feedback_json))} />
-                                                            <span className="text-[10px] font-black text-blue-700">{calcAvg(candidate.interview_scores.l1_feedback_json).toFixed(1)}</span>
-                                                        </div>
-                                                        {candidate.interview_scores.l1_interviewer_name && (
-                                                            <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l1_interviewer_name}</span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {candidate.interview_scores.l2_feedback_json && (
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[9px] font-black text-purple-500 uppercase">L2</span>
-                                                            <ScoreBar score={Math.round(calcAvg(candidate.interview_scores.l2_feedback_json))} />
-                                                            <span className="text-[10px] font-black text-purple-700">{calcAvg(candidate.interview_scores.l2_feedback_json).toFixed(1)}</span>
-                                                        </div>
-                                                        {candidate.interview_scores.l2_interviewer_name && (
-                                                            <span className="text-[8px] text-gray-400 font-bold ml-5 italic">— {candidate.interview_scores.l2_interviewer_name}</span>
-                                                        )}
-                                                    </div>
-                                                )}
+                                        </td>
+                                        <td className="px-3 py-3 text-right">
+                                            <div className="flex justify-end">
                                                 <button
-                                                    onClick={() => setSelectedInterviewScores(candidate)}
-                                                    className="flex items-center gap-1 text-[9px] font-bold text-gray-500 hover:text-primary transition-colors mt-0.5"
+                                                    onClick={() => setOpenActionId(openActionId === candidate.id ? null : candidate.id)}
+                                                    className={cn("p-1.5 px-3 rounded-sm border transition-colors", openActionId === candidate.id ? "bg-white border-primary/30 text-primary shadow-sm" : "border-border text-heading hover:bg-surface")}
+                                                    title="View Actions"
                                                 >
-                                                    <ClipboardList className="w-2.5 h-2.5" />
-                                                    View Report
+                                                    <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", openActionId === candidate.id && "rotate-180")} />
                                                 </button>
                                             </div>
-                                        ) : (
-                                            <span className="text-[10px] text-gray-300 italic">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-2.5">
-                                        <div className="flex flex-col items-start gap-1">
-                                            <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
-                                                {candidate.status}
-                                            </span>
-                                            {candidate.last_action_by && candidate.status !== 'Applied' && (
-                                                <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                                                    Updated by: {candidate.last_action_by}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-3 text-right">
-                                        <div className="flex justify-end relative">
-                                            <button
-                                                onClick={() => setOpenActionId(openActionId === candidate.id ? null : candidate.id)}
-                                                className="p-1 px-3 hover:bg-surface rounded-sm border border-border text-heading transition-colors"
-                                                title="View Actions"
-                                            >
-                                                <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", openActionId === candidate.id && "rotate-180")} />
-                                            </button>
-
-                                            {openActionId === candidate.id && (
-                                                <div className="absolute right-0 top-full mt-2 bg-white border border-border shadow-premium rounded-sm p-1.5 flex flex-col gap-1 z-50 animate-in fade-in zoom-in duration-200 min-w-[120px]">
+                                        </td>
+                                    </tr>
+                                    {openActionId === candidate.id && (
+                                        <tr className="bg-gradient-to-r from-primary/[0.03] to-transparent">
+                                            <td colSpan={8} className="px-4 py-3">
+                                                <div className="flex flex-wrap items-center justify-end gap-3 fade-in slide-in-from-top-1 animate-in duration-200">
                                                     {candidate.status === 'Approved' && (isMaster || isHR) && (
                                                         <button
                                                             onClick={() => copyBookingLink(candidate.id)}
-                                                            className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-primary/5 text-primary text-[10px] font-bold rounded-sm transition-colors"
+                                                            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-border text-primary text-[11px] font-bold rounded-sm shadow-soft hover:border-primary/40 transition-colors"
                                                             title="Copy booking link for candidate"
                                                         >
-                                                            <span>Copy Link</span>
                                                             {copiedId === candidate.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                                            <span>Copy Link</span>
                                                         </button>
                                                     )}
 
@@ -671,22 +676,22 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                                     handleStatusUpdate(candidate.id, 'Approved');
                                                                     setOpenActionId(null);
                                                                 }}
-                                                                className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-green-50 text-green-600 text-[10px] font-bold rounded-sm transition-colors"
+                                                                className="flex items-center gap-1.5 px-4 py-2 bg-green-50 border border-green-200 text-green-700 text-[11px] font-bold rounded-sm shadow-soft hover:border-green-300 transition-colors"
                                                                 title="Approve"
                                                             >
-                                                                <span>Approve</span>
                                                                 <CheckCircle className="w-3.5 h-3.5" />
+                                                                <span>Approve</span>
                                                             </button>
                                                             <button
                                                                 onClick={() => {
                                                                     handleStatusUpdate(candidate.id, 'Rejected');
                                                                     setOpenActionId(null);
                                                                 }}
-                                                                className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-red-50 text-red-600 text-[10px] font-bold rounded-sm transition-colors"
+                                                                className="flex items-center gap-1.5 px-4 py-2 bg-red-50 border border-red-200 text-red-700 text-[11px] font-bold rounded-sm shadow-soft hover:border-red-300 transition-colors"
                                                                 title="Reject"
                                                             >
-                                                                <span>Reject</span>
                                                                 <XCircle className="w-3.5 h-3.5" />
+                                                                <span>Reject</span>
                                                             </button>
                                                         </>
                                                     )}
@@ -697,35 +702,32 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                                 setEditingCandidate(candidate);
                                                                 setOpenActionId(null);
                                                             }}
-                                                            className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-blue-50 text-blue-600 text-[10px] font-bold rounded-sm transition-colors"
+                                                            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-border text-blue-600 text-[11px] font-bold rounded-sm shadow-soft hover:border-blue-300 transition-colors"
                                                             title="Edit"
                                                         >
-                                                            <span>Edit Profile</span>
                                                             <Edit2 className="w-3.5 h-3.5" />
+                                                            <span>Edit Profile</span>
                                                         </button>
                                                     )}
 
                                                     {canDelete && (
-                                                        <>
-                                                            <div className="h-px bg-border/40 w-full my-0.5"></div>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleDelete(candidate.id);
-                                                                    setOpenActionId(null);
-                                                                }}
-                                                                className="flex items-center justify-between w-full gap-2 px-2 py-1.5 hover:bg-red-50 text-red-600 text-[10px] font-bold rounded-sm transition-colors"
-                                                                title="Delete"
-                                                            >
-                                                                <span>Delete</span>
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleDelete(candidate.id);
+                                                                setOpenActionId(null);
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-border text-red-600 text-[11px] font-bold rounded-sm shadow-soft hover:border-red-300 transition-colors"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            <span>Delete</span>
+                                                        </button>
                                                     )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </Fragment>
                             ))}
                             {filteredCandidates.length === 0 && (
                                 <tr>
