@@ -1347,47 +1347,62 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
             analysis = JSON.parse((jsonMatch ? jsonMatch[0] : responseContent).replace(/```json/gi, "").replace(/```/g, "").trim());
         } else {
-            // Direct Google SDK Implementation with V1 API and Fallbacks
-            const genAI = new GoogleGenerativeAI(apiKey);
+            // Direct REST Implementation (Bypasses @google/generative-ai SDK truncation bugs)
             const modelsToTry = [
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
                 "gemini-1.5-flash",
-                "gemini-1.5-flash-latest",
-                "gemini-1.5-pro",
-                "gemini-pro"
+                "gemini-1.5-pro"
             ];
             let lastErr = null;
 
             for (const modelName of modelsToTry) {
                 try {
-                    // Remove explicit v1beta as the SDK handles it, which prevents 404s on newer default versions
-                    const model = genAI.getGenerativeModel({ model: modelName });
-
                     const visionImages = (candidate as any)._vision_images || [];
-                    let result;
+                    const parts: any[] = [{ text: `${prompt}\n\nSTRICT JSON ONLY.` }];
+
                     if (visionImages.length > 0) {
-                        const promptPart = { text: `${prompt}\n\nSTRICT JSON ONLY.` };
-                        const imageParts = visionImages.map((b64: string) => ({
-                            inlineData: { data: b64, mimeType: "image/jpeg" }
-                        }));
-                        result = await model.generateContent([promptPart, ...imageParts]);
-                    } else {
-                        result = await model.generateContent(prompt);
+                        visionImages.forEach((b64: string) => {
+                            parts.push({ inline_data: { data: b64, mime_type: "image/jpeg" } });
+                        });
                     }
 
-                    const responseText = result.response.text();
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts }],
+                            generationConfig: {
+                                temperature: 0.1
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errText}`);
+                    }
+
+                    const data = await response.json();
+                    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        throw new Error("Empty response from AI");
+                    }
+
+                    const responseText = data.candidates[0].content.parts[0].text;
                     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
                     const cleanedResponse = jsonMatch ? jsonMatch[0] : responseText;
                     analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
+
                     if (analysis) break;
                 } catch (err: any) {
-                    console.warn(`[SDK] Model ${modelName} failed: ${err.message}`);
+                    console.warn(`[REST] Model ${modelName} failed: ${err.message}`);
                     lastErr = err;
                 }
             }
 
-            // FINAL FALLBACK: If Direct SDK fails even with v1, try OpenRouter as a last resort
+            // FINAL FALLBACK: OpenRouter
             if (!analysis && process.env.OPENROUTER_API_KEY) {
-                console.log("Direct SDK failed completely. Attempting OpenRouter fallback...");
+                console.log("Direct REST failed. Attempting OpenRouter fallback...");
                 const orResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: {
@@ -1397,21 +1412,21 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     body: JSON.stringify({
                         "model": "google/gemini-2.0-flash-001",
                         "messages": [{ "role": "user", "content": prompt }],
-                        "max_tokens": 1200,
+                        "max_tokens": 2000,
                         "response_format": { "type": "json_object" }
                     })
                 });
                 if (orResponse.ok) {
                     const orData = await orResponse.json();
                     const orContent = orData.choices?.[0]?.message?.content;
-                    const orMatch = orContent.match(/\{[\s\S]*\}/);
+                    const orMatch = orContent?.match(/\{[\s\S]*\}/);
                     if (orMatch) {
                         analysis = JSON.parse(orMatch[0].replace(/```json/gi, "").replace(/```/g, "").trim());
                     }
                 }
             }
 
-            if (!analysis) throw lastErr || new Error("AI analysis failed on all available pathways.");
+            if (!analysis) throw lastErr || new Error("AI analysis failed on all models.");
         }
 
         const { error: updateError } = await supabaseAdmin
