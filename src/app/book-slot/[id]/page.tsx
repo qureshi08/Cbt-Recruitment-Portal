@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import Logo from "@/components/Logo";
+import Image from "next/image";
 import SlotBookingClient from "@/components/SlotBookingClient";
 import RescheduleButton from "@/components/RescheduleButton";
 import { notFound } from "next/navigation";
@@ -107,6 +108,15 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
         <div className="min-h-screen bg-white">
             <header className="bg-white border-b border-border px-5 md:px-8 flex justify-between items-center h-14">
                 <Logo />
+                <div className="relative h-7 w-24 opacity-90">
+                    <Image
+                        src="/cgap-logo.png"
+                        alt="CGAP Logo"
+                        fill
+                        className="object-contain object-right"
+                        priority
+                    />
+                </div>
             </header>
 
             <main className="max-w-3xl mx-auto py-8 px-5 md:px-8">

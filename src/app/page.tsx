@@ -7,8 +7,18 @@ export default function Home() {
         <div className="min-h-screen md:h-screen bg-white selection:bg-primary/10 flex flex-col md:overflow-hidden overflow-y-auto">
             {/* Compact Header — 56px */}
             <nav className="h-12 flex items-center border-b border-border/40 bg-white/95 backdrop-blur-sm shrink-0">
-                <div className="container-main w-full">
+                <div className="container-main w-full flex justify-between items-center">
                     <Logo />
+                    {/* CGAP Logo in top right */}
+                    <div className="relative h-7 w-24 opacity-90">
+                        <Image
+                            src="/cgap-logo.png"
+                            alt="CGAP Logo"
+                            fill
+                            className="object-contain object-right"
+                            priority
+                        />
+                    </div>
                 </div>
             </nav>
 
@@ -16,16 +26,7 @@ export default function Home() {
                 <div className="container-main w-full grid lg:grid-cols-12 gap-8 xl:gap-14 items-center">
                     {/* Left: Editorial copy */}
                     <div className="lg:col-span-12 xl:col-span-5 space-y-4 md:space-y-6 text-center lg:text-left animate-in fade-in slide-in-from-left-4 duration-700">
-                        <div className="flex flex-col md:flex-row items-center gap-4 lg:gap-5">
-                            <div className="relative h-11 w-32 shrink-0 opacity-95">
-                                <Image
-                                    src="/cgap-logo.png"
-                                    alt="CGAP Logo"
-                                    fill
-                                    className="object-contain object-center lg:object-left"
-                                    priority
-                                />
-                            </div>
+                        <div className="flex justify-center lg:justify-start">
                             <span className="section-tag !mb-0 whitespace-nowrap">Convergent Graduate Academy Program</span>
                         </div>
 
