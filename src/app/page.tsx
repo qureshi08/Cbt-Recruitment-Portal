@@ -24,8 +24,7 @@ export default function Home() {
                                     priority
                                 />
                             </div>
-                            <div className="hidden md:block w-px h-6 bg-border/60" />
-                            <span className="section-tag !mb-0 whitespace-nowrap">Convergent · Graduate Programme</span>
+                            <span className="section-tag !mb-0 whitespace-nowrap">Convergent Graduate Academy Program</span>
                         </div>
 
                         <h1
