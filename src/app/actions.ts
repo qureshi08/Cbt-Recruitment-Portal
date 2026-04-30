@@ -1359,10 +1359,9 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         } else {
             // Direct REST Implementation (Bypasses @google/generative-ai SDK truncation bugs)
             const modelsToTry = [
-                "gemini-2.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash",
-                "gemini-1.5-pro"
+                "gemini-2.0-flash-lite",   // Fast, cheap, highly available
+                "gemini-2.0-flash",         // Main model
+                "gemini-2.5-flash-preview-04-17", // Preview fallback
             ];
             let lastErr = null;
 
