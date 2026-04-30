@@ -32,25 +32,33 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
                 .single();
 
             return (
-                <div className="min-h-screen flex items-center justify-center p-6 bg-white">
-                    <div className="bg-white border border-border rounded-sm shadow-premium max-w-lg w-full text-center space-y-6 p-10">
-                        <div className="w-16 h-16 bg-primary text-white rounded-sm flex items-center justify-center mx-auto shadow-premium">
-                            <CheckCircle2 className="w-8 h-8" />
+                <div className="min-h-screen flex items-center justify-center p-5 bg-surface grid-bg">
+                    <div className="bg-white border border-border rounded-[12px] max-w-md w-full text-center space-y-5 p-8" style={{ boxShadow: "var(--shadow-premium)" }}>
+                        <div className="w-12 h-12 bg-primary text-white rounded-[10px] flex items-center justify-center mx-auto">
+                            <CheckCircle2 className="w-6 h-6" strokeWidth={1.5} />
                         </div>
                         <div className="space-y-1">
-                            <h2 className="text-xl font-bold text-heading italic">Slot Confirmed</h2>
-                            <p className="text-muted font-bold text-[10px] uppercase tracking-widest">
-                                Assessment Successfully Scheduled
+                            <h2
+                                className="text-heading font-bold"
+                                style={{ fontFamily: "var(--font-heading)", fontSize: "1.4rem", letterSpacing: "-0.02em" }}
+                            >
+                                Slot <span className="italic-accent">Confirmed</span>
+                            </h2>
+                            <p className="text-muted text-[10px] font-semibold uppercase tracking-[0.14em]">
+                                Assessment successfully scheduled
                             </p>
                         </div>
 
                         {currentSlot && (
-                            <div className="bg-surface-alt border border-border p-5 rounded-sm space-y-2">
-                                <p className="text-[9px] font-bold text-muted uppercase tracking-[0.2em]">Scheduled Registry Entry</p>
-                                <p className="text-base font-bold text-heading italic">
+                            <div className="bg-surface border border-border p-4 rounded-md space-y-1.5">
+                                <p className="text-[9.5px] font-semibold text-muted uppercase tracking-[0.16em]">Scheduled Entry</p>
+                                <p
+                                    className="text-heading font-bold"
+                                    style={{ fontFamily: "var(--font-heading)", fontSize: "0.95rem", fontStyle: "italic" }}
+                                >
                                     {new Date(currentSlot.start_time).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                                 </p>
-                                <p className="text-sm font-bold text-primary font-mono tracking-tighter">
+                                <p className="text-[13px] font-semibold text-primary font-mono">
                                     {new Date(currentSlot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     {" — "}
                                     {new Date(currentSlot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -58,7 +66,7 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
                             </div>
                         )}
 
-                        <div className="pt-4 border-t border-border">
+                        <div className="pt-3 border-t border-border">
                             <RescheduleButton candidateId={id} />
                         </div>
                     </div>
@@ -67,15 +75,20 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
         }
 
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-                <div className="card max-w-md w-full text-center space-y-4">
-                    <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto">
-                        <Logo withText={false} className="w-8 h-8" />
+            <div className="min-h-screen flex items-center justify-center p-5 bg-surface">
+                <div className="card max-w-md w-full text-center space-y-3">
+                    <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto">
+                        <Logo withText={false} className="w-6 h-6" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-800">Invalid Status</h2>
-                    <p className="text-gray-600">
+                    <h2
+                        className="text-heading font-bold"
+                        style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem", letterSpacing: "-0.02em" }}
+                    >
+                        Invalid Status
+                    </h2>
+                    <p className="text-body text-[13px] leading-relaxed">
                         This booking link is only valid for approved candidates.
-                        Current status: <span className="font-bold">{candidate.status}</span>
+                        Current status: <span className="font-semibold text-heading">{candidate.status}</span>
                     </p>
                 </div>
             </div>
@@ -92,11 +105,11 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
 
     return (
         <div className="min-h-screen bg-white">
-            <header className="bg-white border-b border-border py-3 px-6 flex justify-between items-center h-14">
+            <header className="bg-white border-b border-border px-5 md:px-8 flex justify-between items-center h-14">
                 <Logo />
             </header>
 
-            <main className="max-w-4xl mx-auto py-10 px-6">
+            <main className="max-w-3xl mx-auto py-8 px-5 md:px-8">
                 <SlotBookingClient candidateId={id} candidateName={candidate.name} initialSlots={slots || []} />
             </main>
         </div>

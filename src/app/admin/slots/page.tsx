@@ -19,12 +19,23 @@ export default async function SlotsPage() {
     }
 
     return (
-        <div className="space-y-5">
-            <div className="admin-page-header">
-                <div>
-                    <h1 className="admin-page-title">Assessment Slots</h1>
-                    <p className="admin-page-subtitle">Manage time slots for candidate assessments.</p>
-                </div>
+        <div className="space-y-5 animate-in fade-in duration-500">
+            <div>
+                <span className="section-tag">Scheduling</span>
+                <h1
+                    className="text-heading font-bold tracking-tight"
+                    style={{
+                        fontFamily: "var(--font-heading)",
+                        fontSize: "clamp(1.4rem, 2.2vw, 1.75rem)",
+                        letterSpacing: "-0.02em",
+                        lineHeight: 1.2,
+                    }}
+                >
+                    Assessment <span className="italic-accent">Slots</span>
+                </h1>
+                <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
+                    Manage time slots for candidate assessments.
+                </p>
             </div>
 
             <div className="card">

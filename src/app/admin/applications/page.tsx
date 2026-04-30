@@ -36,15 +36,28 @@ export default async function ApplicationsPage() {
     }));
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-end justify-between mb-2">
+        <div className="space-y-5 animate-in fade-in duration-500">
+            <div className="flex items-end justify-between">
                 <div>
-                    <h1 className="text-xl font-bold text-heading italic tracking-tight">Talent Registry</h1>
-                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1 opacity-60">Candidate Pipeline & Historical Records</p>
+                    <span className="section-tag">Pipeline</span>
+                    <h1
+                        className="text-heading font-bold tracking-tight"
+                        style={{
+                            fontFamily: "var(--font-heading)",
+                            fontSize: "clamp(1.4rem, 2.2vw, 1.75rem)",
+                            letterSpacing: "-0.02em",
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        Talent <span className="italic-accent">Registry</span>
+                    </h1>
+                    <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
+                        Candidate pipeline & historical records.
+                    </p>
                 </div>
             </div>
 
-            <div className="bg-white border border-border rounded-sm shadow-soft overflow-hidden">
+            <div className="bg-white border border-border rounded-[12px] shadow-soft overflow-hidden">
                 <CandidateTable initialCandidates={enrichedCandidates} userRoles={roles} />
             </div>
         </div>

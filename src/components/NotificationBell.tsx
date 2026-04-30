@@ -57,10 +57,10 @@ function NotificationItem({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={cn(
-                "relative border-b border-border transition-colors duration-200 overflow-hidden",
+                "relative border-b border-border/60 transition-colors duration-200 overflow-hidden",
                 !notification.is_read
-                    ? "bg-primary/5 hover:bg-primary/10 cursor-default"
-                    : "bg-white hover:bg-gray-50/60 cursor-default"
+                    ? "bg-primary-muted/40 hover:bg-primary-muted/70 cursor-default"
+                    : "bg-white hover:bg-surface cursor-default"
             )}
         >
             {/* Hover progress bar */}
@@ -71,28 +71,27 @@ function NotificationItem({
                 />
             )}
 
-            <div className="px-4 py-3.5">
+            <div className="px-3.5 py-3">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                         <p className={cn(
-                            "text-[13px] leading-snug",
-                            !notification.is_read ? "font-bold text-gray-900" : "font-medium text-gray-700"
+                            "text-[12.5px] leading-snug",
+                            !notification.is_read ? "font-semibold text-heading" : "font-medium text-body"
                         )}>
                             {notification.title}
                         </p>
-                        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{notification.message}</p>
-                        <p className="text-[10px] text-gray-400 mt-1.5">
+                        <p className="text-[11.5px] text-muted mt-0.5 leading-relaxed">{notification.message}</p>
+                        <p className="text-[10px] text-muted/70 mt-1">
                             {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
                     {!notification.is_read && (
-                        <span className="mt-1 flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+                        <span className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
                     )}
                 </div>
 
-                {/* Hint text while hovering */}
                 {hovering && !notification.is_read && (
-                    <p className="text-[10px] text-primary/70 mt-1.5 font-medium animate-in fade-in duration-200">
+                    <p className="text-[9.5px] text-primary/70 mt-1 font-medium animate-in fade-in duration-200">
                         Keep hovering to mark as read…
                     </p>
                 )}
@@ -159,11 +158,11 @@ export default function NotificationBell() {
             {/* Bell icon */}
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative cursor-pointer group p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="relative cursor-pointer group p-1.5 hover:bg-primary-muted rounded-md transition-colors"
             >
-                <Bell className="w-5 h-5 text-gray-500 group-hover:text-primary transition-colors" />
+                <Bell className="w-4 h-4 text-muted group-hover:text-primary transition-colors" strokeWidth={1.5} />
                 {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white animate-in zoom-in duration-200">
+                    <span className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white animate-in zoom-in duration-200">
                         {unreadCount}
                     </span>
                 )}
@@ -172,13 +171,16 @@ export default function NotificationBell() {
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-                    <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 bg-white rounded-xl shadow-xl border border-border z-50 overflow-hidden animate-in fade-in zoom-in duration-200 sm:origin-top-right">
+                    <div
+                        className="fixed inset-x-3 top-14 sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 bg-white rounded-[12px] border border-border z-50 overflow-hidden animate-in fade-in zoom-in duration-200 sm:origin-top-right"
+                        style={{ boxShadow: "var(--shadow-dropdown)" }}
+                    >
                         {/* Header */}
-                        <div className="px-4 py-3 border-b border-border flex justify-between items-center bg-gray-50/80">
+                        <div className="px-3.5 py-2.5 border-b border-border flex justify-between items-center bg-surface">
                             <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-[13px] text-gray-800">Notifications</h3>
+                                <h3 className="font-semibold text-[12.5px] text-heading">Notifications</h3>
                                 {unreadCount > 0 && (
-                                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-md">
+                                    <span className="px-1.5 py-0.5 bg-primary-muted text-primary-dark text-[9.5px] font-semibold rounded-full">
                                         {unreadCount} unread
                                     </span>
                                 )}
@@ -187,28 +189,26 @@ export default function NotificationBell() {
                                 {unreadCount > 0 && (
                                     <button
                                         onClick={markAllAsRead}
-                                        className="flex items-center gap-1 text-[11px] text-primary font-semibold hover:underline"
+                                        className="flex items-center gap-1 text-[10.5px] text-primary font-semibold hover:underline"
                                         title="Mark all as read"
                                     >
-                                        <CheckCheck className="w-3.5 h-3.5" />
+                                        <CheckCheck className="w-3 h-3" strokeWidth={1.5} />
                                         All read
                                     </button>
                                 )}
-                                <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 p-0.5">
-                                    <X className="w-4 h-4" />
+                                <button onClick={() => setIsOpen(false)} className="text-muted hover:text-heading p-0.5">
+                                    <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Hint */}
                         {unreadCount > 0 && (
-                            <p className="px-4 py-2 text-[10px] text-text-muted/60 bg-gray-50/50 border-b border-border/50 italic">
+                            <p className="px-3.5 py-1.5 text-[9.5px] text-muted bg-surface/60 border-b border-border italic">
                                 Hover over a notification for 3 seconds to mark it as read
                             </p>
                         )}
 
-                        {/* Notification list */}
-                        <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto divide-y divide-border/50">
+                        <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto divide-y divide-border/60 custom-scrollbar">
                             {notifications.length > 0 ? (
                                 notifications.map((n) => (
                                     <NotificationItem
@@ -218,8 +218,8 @@ export default function NotificationBell() {
                                     />
                                 ))
                             ) : (
-                                <div className="p-10 text-center text-gray-400 text-sm">
-                                    <Bell className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                                <div className="p-8 text-center text-muted text-[12.5px]">
+                                    <Bell className="w-6 h-6 mx-auto mb-2 opacity-30" strokeWidth={1.5} />
                                     No notifications yet.
                                 </div>
                             )}

@@ -38,47 +38,54 @@ export default function LoginPage() {
                 setCooldown(30);
                 setAttempts(0);
             } else {
-                setError(`Authentication Failure. ${3 - nextAttempts} attempts remaining.`);
+                setError(`Authentication failure. ${3 - nextAttempts} attempts remaining.`);
             }
             setIsLoading(false);
         }
     }
 
     return (
-        <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 grid-bg">
-            <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-5 grid-bg">
+            <div className="w-full max-w-[380px] animate-in fade-in slide-in-from-bottom-4 duration-700">
 
                 {/* Branding Block */}
-                <div className="flex flex-col items-center mb-10 translate-x-[-4px]">
+                <div className="flex flex-col items-center mb-8">
                     <Logo withText={true} />
                 </div>
 
                 {/* Login Card */}
-                <div className="bg-white border border-border rounded-sm shadow-premium overflow-hidden">
-                    <div className="h-0.5 w-full bg-primary" />
-                    <div className="p-10">
-                        <div className="mb-8">
-                            <h2 className="text-xl font-bold text-heading tracking-tight italic">Admin Registry</h2>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">Authorized Entry Sequence Only</p>
+                <div className="bg-white border border-border rounded-[12px] overflow-hidden" style={{ boxShadow: "var(--shadow-premium)" }}>
+                    <div className="h-[3px] w-full bg-primary" />
+                    <div className="p-7">
+                        <div className="mb-6">
+                            <h2
+                                className="text-[20px] font-bold text-heading"
+                                style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em" }}
+                            >
+                                Admin <span className="italic-accent">Registry</span>
+                            </h2>
+                            <p className="text-[10.5px] font-semibold text-muted uppercase tracking-[0.12em] mt-1">
+                                Authorized entry sequence only
+                            </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             {error && (
-                                <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-[11px] font-bold uppercase tracking-tight rounded-sm flex items-start gap-2">
-                                    <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                <div className="p-2.5 bg-red-50 border border-red-100 text-red-600 text-[11.5px] font-medium rounded-md flex items-start gap-2">
+                                    <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={1.5} />
                                     <span>{error}</span>
                                 </div>
                             )}
 
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] ml-0.5">Identification</label>
+                                <label className="text-[10px] font-semibold text-muted uppercase tracking-[0.14em]">Identification</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted/50" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
                                     <input
                                         name="email"
                                         type="email"
                                         required
-                                        className="input-field pl-10"
+                                        className="input-field pl-9"
                                         placeholder="recruiter@convergentbt.com"
                                         disabled={cooldown > 0}
                                     />
@@ -86,14 +93,14 @@ export default function LoginPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-bold text-muted uppercase tracking-[0.2em] ml-0.5">Authorization Code</label>
+                                <label className="text-[10px] font-semibold text-muted uppercase tracking-[0.14em]">Authorization Code</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted/50" />
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
                                     <input
                                         name="password"
                                         type="password"
                                         required
-                                        className="input-field pl-10"
+                                        className="input-field pl-9"
                                         placeholder="••••••••"
                                         disabled={cooldown > 0}
                                     />
@@ -103,14 +110,14 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isLoading || cooldown > 0}
-                                className="btn-primary w-full h-11 border-b-2 border-primary/20 hover:border-transparent mt-2"
+                                className="btn-primary w-full !py-2.5 !text-[12.5px] mt-2 disabled:opacity-50"
                             >
                                 {isLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                                 ) : (
                                     <>
                                         <span>Establish Session</span>
-                                        <ArrowRight className="w-3.5 h-3.5" />
+                                        <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
                                     </>
                                 )}
                             </button>
@@ -118,8 +125,8 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <div className="mt-8 text-center">
-                    <Link href="/" className="text-[10px] font-bold text-muted hover:text-primary transition-colors uppercase tracking-[0.3em]">
+                <div className="mt-6 text-center">
+                    <Link href="/" className="text-[10px] font-semibold text-muted hover:text-primary transition-colors uppercase tracking-[0.18em]">
                         ← Public Navigation
                     </Link>
                 </div>
