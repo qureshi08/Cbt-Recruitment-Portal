@@ -7,7 +7,7 @@ export default function Home() {
         <div className="min-h-screen md:h-screen bg-white selection:bg-primary/10 flex flex-col md:overflow-hidden overflow-y-auto">
             {/* Compact Header — 56px */}
             <nav className="h-12 flex items-center border-b border-border/40 bg-white/95 backdrop-blur-sm shrink-0">
-                <div className="container-main w-full">
+                <div className="container-main w-full flex justify-center md:justify-start">
                     <Logo />
                 </div>
             </nav>
@@ -16,8 +16,8 @@ export default function Home() {
                 <div className="container-main w-full grid lg:grid-cols-12 gap-8 xl:gap-14 items-center">
                     {/* Left: Editorial copy */}
                     <div className="lg:col-span-12 xl:col-span-5 space-y-4 md:space-y-6 text-center lg:text-left animate-in fade-in slide-in-from-left-4 duration-700">
-                        <div className="flex flex-col md:flex-row items-center gap-4 lg:gap-5">
-                            <div className="relative h-11 w-32 shrink-0 opacity-95">
+                        <div className="flex flex-row items-center justify-center lg:justify-start gap-3 md:gap-5">
+                            <div className="relative h-7 w-20 md:h-11 md:w-32 shrink-0 opacity-95">
                                 <Image
                                     src="/cgap-logo.png"
                                     alt="CGAP Logo"
@@ -26,7 +26,8 @@ export default function Home() {
                                     priority
                                 />
                             </div>
-                            <span className="section-tag !mb-0 whitespace-nowrap">Convergent Graduate Academy Program</span>
+                            <div className="hidden md:block w-px h-6 bg-border/60" />
+                            <span className="section-tag !mb-0 text-[10px] md:text-[11px] whitespace-nowrap">Convergent Graduate Academy Program</span>
                         </div>
 
                         <h1
