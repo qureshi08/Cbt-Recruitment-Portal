@@ -36,20 +36,30 @@ export default function Home() {
                                 Consultants, <span className="italic-accent underline decoration-primary/30 underline-offset-8">shipping.</span>
                             </h1>
 
-                            <p className="text-base text-body max-w-lg leading-relaxed font-medium opacity-80">
-                                The <span className="text-heading font-bold italic">Convergent Graduate Academy Program</span> is CBT’s elite 9-month learning pathway — turning top-tier graduates into high-impact AI & data professionals.
+                            <p className="text-lg text-body max-w-xl leading-relaxed font-medium">
+                                Nine months of structured learning, senior mentorship, and real stakes. Start your career journey today by filling out the form below.
                             </p>
+
 
                             <div className="flex items-center gap-6 pt-4">
                                 <Link href="#apply" className="btn-primary py-4 px-10 shadow-premium">
                                     Apply to CGAP <ArrowRight className="w-4 h-4 ml-1" />
                                 </Link>
-                                <Link href="https://www.convergentbt.com/cgap" className="btn-ghost !text-xs">
+                                <Link href="https://www.convergentbt.com/cgap" className="btn-ghost !text-xs font-bold uppercase tracking-widest italic">
                                     Explore Ecosystem
                                 </Link>
                             </div>
 
-                            <div className="flex gap-10 pt-10 border-t border-border/50">
+                            <div className="flex items-center gap-6 pt-8 border-t border-border/40">
+                                <span className="text-[9px] font-black text-muted uppercase tracking-widest">Trusted by alumni at:</span>
+                                <div className="flex gap-4">
+                                    {["Microsoft", "Coca-Cola", "PepsiCo", "UNICEF", "Spark"].map(id => (
+                                        <span key={id} className="text-[10px] font-black italic text-heading/40 tracking-tight">{id}</span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-10 pt-10">
                                 {[
                                     { n: "09", t: "MONTHS" },
                                     { n: "04", t: "PHASES" },
@@ -78,17 +88,31 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* Editorial Break */}
-                <section className="bg-surface py-24 px-6 border-y border-border">
-                    <div className="max-w-4xl mx-auto space-y-6 text-center">
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-[0.5em]">The 9-Month Journey</span>
-                        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-heading leading-tight font-heading italic">
-                            Starts as a graduate. <br />
-                            Ends as a <span className="text-primary underline decoration-primary/20 decoration-4 underline-offset-12">consultant.</span>
-                        </h2>
-                        <p className="text-lg text-body max-w-2xl mx-auto leading-relaxed pt-2 font-medium opacity-80">
-                            Month-by-month, with real stakes. No bootcamp graveyard; no disconnected theory. By month two you’re on a real engagement under a senior lead.
-                        </p>
+                {/* Editorial Break — Realigned Content */}
+                <section className="bg-surface py-28 px-6 border-y border-border">
+                    <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
+                        <div className="space-y-6">
+                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">Institutional Foundation</span>
+                            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-heading leading-tight font-heading italic">
+                                Built for <span className="text-primary underline decoration-primary/20 decoration-4 underline-offset-12">Production.</span>
+                            </h2>
+                            <p className="text-lg text-body max-w-2xl leading-relaxed pt-2 font-medium">
+                                Step out of the lab and into real-world consultancy. CGAP is where theoretical data science meets commercial implementation. Month-by-month, you transition from associate to specialist.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                { label: "STIPEND", val: "From Day 1" },
+                                { label: "PHASES", val: "4 Core" },
+                                { label: "ENGAGEMENT", val: "Real Stakes" },
+                                { label: "DURATION", val: "9 Months" },
+                            ].map((item, i) => (
+                                <div key={i} className="p-8 bg-white rounded-md border border-border mt-4 first:mt-0 lg:mt-0 shadow-soft">
+                                    <div className="text-2xl font-bold text-heading font-heading italic">{item.val}</div>
+                                    <div className="text-[10px] font-black text-muted tracking-widest uppercase mt-1">{item.label}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </section>
 
