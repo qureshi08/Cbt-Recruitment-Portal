@@ -492,10 +492,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                     <div className="flex items-center gap-2">
                                                         <div className={cn(
                                                             "w-10 h-10 rounded-sm flex items-center justify-center text-xs font-bold shadow-soft border shrink-0",
-                                                            (candidate.ai_score ?? 0) >= 80 ? "bg-primary text-white border-primary" :
-                                                                (candidate.ai_score ?? 0) >= 50 ? "bg-amber-500 text-white border-amber-600" :
-                                                                    (candidate.ai_score ?? 0) > 0 ? "bg-heading text-white border-heading" :
-                                                                        "bg-slate-100 text-muted border-border"
+                                                            (candidate.ai_score ?? -1) >= 80 ? "bg-[#009245] text-white border-[#009245]" :
+                                                                (candidate.ai_score ?? -1) >= 60 ? "bg-[#22c55e] text-white border-[#22c55e]" :
+                                                                    (candidate.ai_score ?? -1) >= 40 ? "bg-[#f59e0b] text-white border-[#f59e0b]" :
+                                                                        (candidate.ai_score ?? -1) >= 0 ? "bg-[#ef4444] text-white border-[#ef4444]" :
+                                                                            "bg-slate-100 text-muted border-border"
                                                         )}>
                                                             {candidate.ai_score ?? '—'}
                                                         </div>
@@ -762,10 +763,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             <div className="flex items-center gap-4">
                                 <div className={cn(
                                     "w-12 h-12 rounded-sm flex items-center justify-center text-lg font-bold shadow-soft border border-border shrink-0",
-                                    (selectedAiReasoning.ai_score || 0) >= 80 ? "bg-primary text-white border-primary" :
-                                        (selectedAiReasoning.ai_score || 0) >= 50 ? "bg-amber-500 text-white border-amber-600" :
-                                            (selectedAiReasoning.ai_score || 0) > 0 ? "bg-slate-700 text-white border-slate-800" :
-                                                "bg-slate-100 text-slate-400 border-slate-200"
+                                    (selectedAiReasoning.ai_score ?? -1) >= 80 ? "bg-[#009245] text-white border-[#009245]" :
+                                        (selectedAiReasoning.ai_score ?? -1) >= 60 ? "bg-[#22c55e] text-white border-[#22c55e]" :
+                                            (selectedAiReasoning.ai_score ?? -1) >= 40 ? "bg-[#f59e0b] text-white border-[#f59e0b]" :
+                                                (selectedAiReasoning.ai_score ?? -1) >= 0 ? "bg-[#ef4444] text-white border-[#ef4444]" :
+                                                    "bg-slate-100 text-slate-400 border-slate-200"
                                 )}>
                                     {selectedAiReasoning.ai_score || '—'}
                                 </div>
