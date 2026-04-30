@@ -5,7 +5,7 @@ export default function Home() {
     return (
         <div className="h-screen bg-white selection:bg-primary/10 flex flex-col overflow-hidden">
             {/* Compact Header — 56px */}
-            <nav className="h-14 flex items-center px-5 md:px-8 shrink-0 border-b border-border/60 bg-white/95 backdrop-blur-sm">
+            <nav className="h-12 flex items-center px-5 md:px-8 shrink-0 border-b border-border/40 bg-white/95 backdrop-blur-sm">
                 <Logo withText={true} />
             </nav>
 
@@ -31,30 +31,12 @@ export default function Home() {
                             Nine months of structured learning, senior mentorship, and real stakes. Apply below to begin.
                         </p>
 
-                        <div className="flex gap-6 pt-5 border-t border-border/60">
-                            {[
-                                { n: "09", t: "Months" },
-                                { n: "04", t: "Phases" },
-                                { n: "M2+", t: "Real Stakes" },
-                            ].map((s, i) => (
-                                <div key={i} className="space-y-1">
-                                    <div
-                                        className="text-heading font-bold italic"
-                                        style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem" }}
-                                    >
-                                        {s.n}
-                                    </div>
-                                    <div className="text-[10px] font-semibold text-muted uppercase tracking-[0.14em]">
-                                        {s.t}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+
                     </div>
 
                     {/* Right: Form card */}
-                    <div className="lg:col-span-7 h-full max-h-[82vh] flex flex-col py-3">
-                        <div className="bg-white p-5 md:p-7 border border-border rounded-[12px] shadow-soft overflow-y-auto custom-scrollbar scroll-smooth">
+                    <div className="lg:col-span-7 flex flex-col justify-center py-1">
+                        <div className="bg-white p-5 md:p-6 border border-border rounded-[10px] shadow-soft overflow-hidden">
                             <ApplicationForm />
                         </div>
                     </div>
@@ -62,10 +44,10 @@ export default function Home() {
             </main>
 
             {/* Compact Footer */}
-            <footer className="h-11 flex items-center px-5 md:px-8 border-t border-border shrink-0">
+            <footer className="h-10 flex items-center px-5 md:px-8 border-t border-border/40 shrink-0 bg-surface/50">
                 <div className="container-main w-full flex justify-between items-center">
-                    <Logo withText={false} className="opacity-30 scale-[0.65] origin-left" />
-                    <p className="text-[9px] font-semibold text-muted uppercase tracking-[0.18em]">
+                    <Logo withText={false} className="opacity-100 scale-[0.6] origin-left brightness-[0.9]" />
+                    <p className="text-[9px] font-semibold text-muted uppercase tracking-[0.15em]">
                         © 2026 Convergent · All Rights Reserved
                     </p>
                 </div>
