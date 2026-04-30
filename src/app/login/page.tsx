@@ -62,7 +62,7 @@ export default function LoginPage() {
                                 className="text-[20px] font-bold text-heading"
                                 style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em" }}
                             >
-                                Admin <span className="italic-accent">Registry</span>
+                                Admin <span className="italic-accent">Portal</span>
                             </h2>
                             <p className="text-[10.5px] font-semibold text-muted uppercase tracking-[0.12em] mt-1">
                                 Authorized entry sequence only

@@ -49,7 +49,7 @@ export default async function ApplicationsPage() {
                             lineHeight: 1.2,
                         }}
                     >
-                        Talent <span className="italic-accent">Registry</span>
+                        Talent <span className="italic-accent">Pool</span>
                     </h1>
                     <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
                         Candidate pipeline & historical records.

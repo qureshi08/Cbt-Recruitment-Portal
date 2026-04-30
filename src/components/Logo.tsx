@@ -27,7 +27,6 @@ export default function Logo({ className, withText = true }: LogoProps) {
 
             {withText && (
                 <div className="flex items-center gap-2">
-                    <div className="w-px h-5 bg-border group-hover:bg-primary/30 transition-colors" />
                     <div className="flex flex-col min-w-0 leading-none">
                         <span
                             className="text-[10.5px] font-bold text-heading tracking-tight uppercase"

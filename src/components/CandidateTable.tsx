@@ -721,7 +721,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEditingCandidate(null)} />
                         <div className="bg-white rounded-sm shadow-premium w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-200">
                             <div className="p-5 border-b border-border flex justify-between items-center bg-surface">
-                                <h3 className="font-bold text-heading text-sm uppercase tracking-tight italic">Modify Registry: {editingCandidate.name}</h3>
+                                <h3 className="font-bold text-heading text-sm uppercase tracking-tight italic">Edit Candidate Account: {editingCandidate.name}</h3>
                                 <button onClick={() => setEditingCandidate(null)} className="text-muted hover:text-heading transition-colors">
                                     <X className="w-4 h-4" />
                                 </button>

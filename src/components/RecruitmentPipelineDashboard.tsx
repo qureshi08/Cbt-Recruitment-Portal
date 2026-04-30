@@ -155,7 +155,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                             className="bg-transparent text-[11.5px] font-semibold text-heading outline-none cursor-pointer"
                         >
                             {batches.map(b => (
-                                <option key={b} value={b}>{b === 'All' ? 'Full Registry' : `Batch ${b}`}</option>
+                                <option key={b} value={b}>{b === 'All' ? 'Global Talent' : `Batch ${b}`}</option>
                             ))}
                         </select>
                     </div>
@@ -197,7 +197,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     />
 
                     <div className="flex items-center justify-between mb-3 relative z-10">
-                        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.16em]">Registry Conversion</span>
+                        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.16em]">Pipeline Conversion</span>
                         <div className="px-2 py-0.5 bg-white/10 rounded-full text-white text-[10px] font-semibold border border-white/10">
                             {efficiency.recNumerator} / {efficiency.recDenominator}
                         </div>

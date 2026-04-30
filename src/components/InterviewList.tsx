@@ -318,7 +318,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                         ) : (
                                             <div className="flex items-center gap-2 text-muted bg-surface px-3 py-1.5 rounded-sm w-fit border border-border">
                                                 <Activity className="w-3 h-3 animate-pulse text-primary" />
-                                                <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Registry Response</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Interview Response</span>
                                             </div>
                                         )}
                                     </td>
@@ -337,7 +337,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                         )}
                                         {(!interview.decision && !canAct) && (
                                             <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-muted uppercase tracking-[0.2em] italic">
-                                                Registry Lock
+                                                Evaluation Finalized
                                             </span>
                                         )}
                                     </td>

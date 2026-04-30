@@ -47,7 +47,7 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                     <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <div className="space-y-2">
-                    <h2 className="text-2xl font-bold text-heading font-heading italic leading-tight">Registry Entry Successful</h2>
+                    <h2 className="text-2xl font-bold text-heading font-heading italic leading-tight">Assessment Scheduled</h2>
                     <p className="text-muted font-bold text-[11px] uppercase tracking-widest leading-relaxed opacity-80">
                         Your assessment has been officially scheduled. Please monitor your secure channel for further instructions.
                     </p>
@@ -58,7 +58,7 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                     }}
                     className="btn-primary w-full py-4 text-xs tracking-[0.2em]"
                 >
-                    View Registry Details
+                    View Booking Details
                 </button>
             </div>
         );
@@ -68,7 +68,7 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="text-center space-y-3">
                 <span className="text-[10px] font-bold text-primary uppercase tracking-[0.5em]">Official Sequence</span>
-                <h1 className="text-3xl font-bold text-heading tracking-tight font-heading italic">Registry Scheduling</h1>
+                <h1 className="text-3xl font-bold text-heading tracking-tight font-heading italic">Assessment Scheduling</h1>
                 <p className="text-muted font-bold text-[11px] uppercase tracking-[0.2em] opacity-60">
                     Welcome, <span className="text-heading">{candidateName}</span> — Identify your 120-minute evaluation window
                 </p>
@@ -125,7 +125,7 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                         {isSubmitting ? (
                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
-                            "Confirm Registry Entry"
+                            "Confirm Booking"
                         )}
                     </button>
                 </div>

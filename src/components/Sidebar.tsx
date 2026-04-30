@@ -27,8 +27,8 @@ const menuItems = [
     { name: "Executive Dashboard", href: "/admin", icon: LayoutDashboard, roles: ["Master", "Approver", "HR"] },
     { name: "Candidate Pipeline", href: "/admin/applications", icon: Users, roles: ["Master", "Approver", "HR"] },
     { name: "Assessment Slots", href: "/admin/slots", icon: Calendar, roles: ["Master", "HR"] },
-    { name: "Evaluation Center", href: "/admin/interviews", icon: ClipboardList, roles: ["Master", "HR", "L1_Interviewer", "L2_Interviewer"] },
-    { name: "Portal Controls", href: "/admin/settings", icon: Settings, roles: ["Master"] },
+    { name: "Interviews", href: "/admin/interviews", icon: ClipboardList, roles: ["Master", "HR", "L1_Interviewer", "L2_Interviewer"] },
+    { name: "Portal Settings", href: "/admin/settings", icon: Settings, roles: ["Master"] },
 ];
 
 export default function Sidebar({ userRoles }: SidebarProps) {
@@ -75,7 +75,7 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                     {/* Navigation */}
                     <div className="px-3 mb-3">
                         <p className="px-2.5 text-[9.5px] font-semibold text-muted uppercase tracking-[0.18em] mb-3">
-                            Registry Navigation
+                            Portal Navigation
                         </p>
                         <nav className="space-y-0.5">
                             {allowedItems.map((item) => {
@@ -126,7 +126,7 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                                 className="flex items-center gap-2.5 px-2.5 py-2 w-full text-muted hover:text-red-600 hover:bg-red-50/50 rounded-md transition-all text-[11px] font-semibold uppercase tracking-[0.12em]"
                             >
                                 <LogOut className="w-3.5 h-3.5 shrink-0 rotate-180" strokeWidth={1.5} />
-                                <span>Registry Exit</span>
+                                <span>Secure Logout</span>
                             </button>
                         </form>
                     </div>
