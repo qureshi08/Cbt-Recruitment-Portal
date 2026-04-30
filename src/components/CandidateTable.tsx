@@ -470,7 +470,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                 {candidate.graduation_year && (
                                                     <span className="text-[10px] text-muted font-bold bg-white px-1.5 py-0.5 rounded-sm border border-border">
-                                                        BATCH '{candidate.graduation_year.slice(-2)}
+                                                        CLASS OF '{candidate.graduation_year.slice(-2)}
                                                     </span>
                                                 )}
                                             </div>
