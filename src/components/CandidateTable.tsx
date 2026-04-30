@@ -19,6 +19,7 @@ import {
     MoreHorizontal,
     Sparkles,
     ClipboardList,
+    Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -191,6 +192,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [analysisStatus, setAnalysisStatus] = useState<{ id: string, status: 'success' | 'error', message?: string } | null>(null);
     const [selectedAiReasoning, setSelectedAiReasoning] = useState<Candidate | null>(null);
     const [selectedInterviewScores, setSelectedInterviewScores] = useState<Candidate | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -225,6 +227,67 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             setAnalysisStatus({ id: candidateId, status: 'error', message: "Technical Error: " + err.message });
         } finally {
             setAnalyzingId(null);
+        }
+    };
+
+    const handleDownloadReport = async (candidate: Candidate) => {
+        try {
+            setIsDownloading(true);
+            const html2canvas = (await import('html2canvas')).default;
+            const jsPDF = (await import('jspdf')).default;
+
+            const outerElement = document.getElementById('ai-report-outer');
+            const scrollElement = document.getElementById('ai-report-scrollable');
+            if (!outerElement || !scrollElement) return;
+
+            // Temporarily remove constraints for full render
+            const originalMaxHeight = outerElement.style.maxHeight;
+            const originalOverflow = scrollElement.style.overflowY;
+
+            // Apply unconstrained styles directly to get full height
+            outerElement.style.maxHeight = 'none';
+            scrollElement.style.overflowY = 'visible';
+
+            // Let the DOM update before capturing
+            await new Promise(res => setTimeout(res, 100));
+
+            const canvas = await html2canvas(outerElement, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                windowWidth: outerElement.scrollWidth,
+                windowHeight: outerElement.scrollHeight
+            });
+
+            // Revert constraints immediately
+            outerElement.style.maxHeight = originalMaxHeight || '';
+            scrollElement.style.overflowY = originalOverflow || '';
+
+            const imgData = canvas.toDataURL('image/png');
+            let pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            let heightLeft = pdfHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - pdfHeight; // Negative offset to shift image up
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save(`CGAP_AI_Report_${candidate.name.replace(/\s+/g, '_')}.pdf`);
+        } catch (error) {
+            console.error("Failed to generate PDF", error);
+            alert("Failed to generate PDF. Please try again.");
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -734,7 +797,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             {selectedAiReasoning && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setSelectedAiReasoning(null)} />
-                    <div className="bg-white rounded-sm shadow-premium w-full max-w-xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[80vh]">
+                    <div id="ai-report-outer" className="bg-white rounded-sm shadow-premium w-full max-w-xl relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[80vh]">
 
                         {/* Header */}
                         <div className="p-4 border-b border-border flex justify-between items-start bg-surface shrink-0">
@@ -765,7 +828,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         </div>
 
                         {/* Scrollable Body */}
-                        <div className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                        <div id="ai-report-scrollable" className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-white">
                             <div className="space-y-4">
                                 <div className="p-4 rounded-sm bg-surface border border-border relative overflow-hidden">
                                     <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Target Criteria Alignment</h4>
@@ -869,13 +932,23 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                         </div>
 
                         {/* Footer Actions */}
-                        <div className="p-4 border-t border-border flex gap-3 bg-surface shrink-0">
+                        <div className="p-4 border-t border-border flex gap-3 bg-surface shrink-0" data-html2canvas-ignore="true">
                             <button
                                 onClick={() => setSelectedAiReasoning(null)}
                                 className="flex-1 px-4 py-2.5 bg-white border border-border text-heading text-[11px] font-bold rounded-sm hover:bg-surface transition-all uppercase tracking-widest"
                             >
                                 Dismiss
                             </button>
+                            {selectedAiReasoning.ai_analysis_json && (
+                                <button
+                                    onClick={() => handleDownloadReport(selectedAiReasoning)}
+                                    disabled={isDownloading}
+                                    className="flex-1 px-4 py-2.5 bg-white border border-border text-primary text-[11px] font-bold rounded-sm hover:bg-primary/5 hover:border-primary/30 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    {isDownloading ? <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                    Download PDF
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     handleAiAnalysis(selectedAiReasoning.id);
