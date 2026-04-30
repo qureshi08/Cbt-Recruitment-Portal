@@ -463,7 +463,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                     <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                                                     <span className="text-[10px] font-bold uppercase tracking-wider">Analyzing...</span>
                                                 </div>
-                                            ) : (candidate.ai_score !== undefined && candidate.ai_status === 'completed') || candidate.ai_score !== undefined ? (
+                                            ) : candidate.ai_status === 'completed' || (candidate.ai_score !== null && candidate.ai_score !== undefined) ? (
                                                 <div
                                                     className="flex flex-col gap-1 cursor-pointer hover:opacity-80 transition-opacity w-full"
                                                     onClick={() => setSelectedAiReasoning(candidate)}
