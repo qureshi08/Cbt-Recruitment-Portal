@@ -381,6 +381,15 @@ export async function submitApplication(formData: FormData) {
             .from("resumes")
             .getPublicUrl(fileName);
 
+        // Fetch current batch number from settings
+        const { data: batchSetting } = await supabaseAdmin
+            .from('portal_settings')
+            .select('value')
+            .eq('key', 'current_batch_number')
+            .single();
+
+        const currentBatch = batchSetting?.value || '31'; // Default fallback
+
         const { data: candidate, error: candidateError } = await supabase
             .from("candidates")
             .insert({
@@ -397,6 +406,7 @@ export async function submitApplication(formData: FormData) {
                 position,
                 status: "Applied",
                 ai_status: "pending",
+                batch_number: currentBatch, // <--- Assigned automatically
                 updated_at: new Date().toISOString()
             })
             .select()
@@ -1821,6 +1831,36 @@ export async function sendTestInvite() {
         return { success: true };
     } catch (error: any) {
         console.error("Test invite failed:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function getCurrentBatchNumber() {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('portal_settings')
+            .select('value')
+            .eq('key', 'current_batch_number')
+            .single();
+
+        if (error) return { success: false, value: "31" };
+        return { success: true, value: data?.value || "31" };
+    } catch (err) {
+        return { success: false, value: "31" };
+    }
+}
+
+export async function updateCurrentBatchNumber(batch: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('portal_settings')
+            .upsert({ key: 'current_batch_number', value: batch }, { onConflict: 'key' });
+
+        if (error) throw error;
+        revalidatePath('/admin/settings');
+        revalidatePath('/admin/applications');
+        return { success: true };
+    } catch (error: any) {
         return { success: false, error: error.message };
     }
 }

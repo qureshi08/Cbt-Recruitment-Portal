@@ -4,6 +4,7 @@ import UserManager from "@/components/UserManager";
 import AiCriteriaManager from "@/components/AiCriteriaManager";
 import TeamEmailManager from "@/components/TeamEmailManager";
 import MicrosoftTeamsManager from "@/components/MicrosoftTeamsManager";
+import BatchManager from "@/components/BatchManager";
 import { ShieldAlert } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -60,6 +61,8 @@ export default async function SettingsPage() {
             </div>
 
             <AiCriteriaManager initialCriteria={aiCriteria} />
+
+            <BatchManager />
 
             <MicrosoftTeamsManager />
 
