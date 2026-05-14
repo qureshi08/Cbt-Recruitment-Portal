@@ -18,6 +18,7 @@ function AvailabilityForm() {
     const [preferredDateTime, setPreferredDateTime] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isLegacyLink, setIsLegacyLink] = useState(false);
 
@@ -70,8 +71,13 @@ function AvailabilityForm() {
             interviewerName || "Interviewer"
         );
 
-        if (result.success) setStatus('success');
-        else setStatus('error');
+        if (result.success) {
+            setStatus('success');
+        } else {
+            console.error("Submission error details:", result.error);
+            alert("SERVER ERROR: " + (result.error || "Unknown failure"));
+            setStatus('error');
+        }
         setIsSubmitting(false);
     };
 

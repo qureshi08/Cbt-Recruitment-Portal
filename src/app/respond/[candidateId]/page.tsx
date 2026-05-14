@@ -67,8 +67,13 @@ function AvailabilityForm() {
             interviewerName || "Interviewer"
         );
 
-        if (result.success) setStatus('success');
-        else setStatus('error');
+        if (result.success) {
+            setStatus('success');
+        } else {
+            console.error("Submission error details:", result.error);
+            alert("SERVER ERROR: " + (result.error || "Unknown failure"));
+            setStatus('error');
+        }
         setIsSubmitting(false);
     };
 
