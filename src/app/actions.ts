@@ -1133,8 +1133,13 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
 
         // 6. Notify everyone
         try {
+            // Explicitly handle candidate data (Supabase join can returned as object or array)
+            const candidateData = Array.isArray(interview.candidates)
+                ? interview.candidates[0]
+                : interview.candidates;
+
             const recipients = [
-                interview.candidates?.email, // Candidate
+                candidateData?.email, // Candidate
                 process.env.EMAIL_USER, // muhammad.anas.quershi@convergentbt.com
                 avail.interviewer_email // The Interviewer
             ];
@@ -1143,21 +1148,21 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
 
             if (allEmails.length > 0) {
                 await notifyWorkflowStage('INTERVIEW_CONFIRMED', allEmails, {
-                    candidateName: interview.candidates?.name,
+                    candidateName: candidateData?.name || 'Candidate',
                     scheduledAt: new Date(startTime).toLocaleString('en-US', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
+                        hour: '2-digit',
+                        minute: '2-digit'
                     }),
-                    meetingLink: meetingLink
+                    meetingLink: meetingLink,
+                    startTime: startTime
                 });
             }
         } catch (notifyErr) {
-            console.error("Auto interview confirmation email failed:", notifyErr);
+            console.error("Failed to send scheduled interview notification:", notifyErr);
         }
 
         revalidatePath('/admin/interviews');
