@@ -456,20 +456,15 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         // Trigger Email Notifications
         if (candidate) {
             try {
-                // Use production URL as reliable fallback for emails
-                const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
-
                 // --- Log Action ---
                 await logAction('STATUS_UPDATE', candidateId, 'candidate', { new_status: status });
 
                 if (status === "Approved") {
-                    const bookingLink = `${origin}/book-slot/${candidateId}`;
-                    await sendAssessmentEmail(candidate.email, candidate.name, bookingLink);
-
-                    // Notify recruitment team about approval
+                    // Step 1: Notify ONLY the recruitment team — do NOT email the candidate yet.
+                    // HR will first create slots, then manually send the booking invite.
                     const recipients = await getRecipientsByRoles(['recruitment_team']);
                     if (recipients.length > 0) {
-                        await notifyWorkflowStage('APPROVED', recipients, { name: candidate.name });
+                        await notifyWorkflowStage('APPROVED_PENDING_SLOTS', recipients, { name: candidate.name });
                     }
                 } else if (status === "Recommended") {
                     await sendRecommendedEmail(candidate.email, candidate.name);
@@ -500,6 +495,56 @@ export async function updateCandidateStatus(candidateId: string, status: string)
         revalidatePath("/admin");
         return { success: true, last_action_by: userName };
     } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+/**
+ * Step 2 of the approval flow (HR action):
+ * Sends the assessment booking link email to the candidate.
+ * This is called AFTER the recruitment team has made slots available.
+ */
+export async function sendAssessmentInvite(candidateId: string) {
+    try {
+        const actingUser = await getCurrentUser();
+        const userName = actingUser?.full_name || 'System User';
+
+        // Fetch candidate details
+        const { data: candidate, error } = await supabaseAdmin
+            .from('candidates')
+            .select('name, email, status')
+            .eq('id', candidateId)
+            .single();
+
+        if (error || !candidate) throw new Error('Candidate not found.');
+        if (candidate.status !== 'Approved') {
+            throw new Error(`Cannot send invite: candidate status is "${candidate.status}", expected "Approved".`);
+        }
+
+        const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
+        const bookingLink = `${origin}/book-slot/${candidateId}`;
+
+        // Send the booking email to the candidate
+        await sendAssessmentEmail(candidate.email, candidate.name, bookingLink);
+
+        // Log the action
+        await logAction('ASSESSMENT_INVITE_SENT', candidateId, 'candidate', { sent_by: userName });
+
+        // Also notify the recruitment team that the invite has been dispatched
+        try {
+            const recipients = await getRecipientsByRoles(['recruitment_team']);
+            if (recipients.length > 0) {
+                await notifyWorkflowStage('INVITE_SENT', recipients, { name: candidate.name, sentBy: userName });
+            }
+        } catch (notifyErr) {
+            console.error('Invite dispatch notification failed:', notifyErr);
+        }
+
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error: any) {
+        console.error('sendAssessmentInvite error:', error);
         return { error: error.message };
     }
 }

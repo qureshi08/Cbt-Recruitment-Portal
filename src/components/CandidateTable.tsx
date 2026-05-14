@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, Fragment } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus, InterviewFeedbackJson } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite } from "@/app/actions";
 import {
     ExternalLink,
     CheckCircle,
@@ -22,6 +22,7 @@ import {
     ClipboardList,
     Download,
     ChevronDown,
+    Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -196,6 +197,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [selectedInterviewScores, setSelectedInterviewScores] = useState<Candidate | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [openActionId, setOpenActionId] = useState<string | null>(null);
+    const [sendingInviteId, setSendingInviteId] = useState<string | null>(null);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -267,13 +269,19 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
         if (!canApprove && candidateStatusIsInitial(newStatus)) return;
 
         // Confirmation for actions that trigger emails
-        const emailTriggerStatuses = ['Approved', 'Rejected', 'Recommended', 'Not Recommended'];
+        const emailTriggerStatuses = ['Rejected', 'Recommended', 'Not Recommended'];
         if (emailTriggerStatuses.includes(newStatus)) {
-            const confirmMsg = newStatus === 'Approved'
-                ? "Are you sure you want to APPROVE this candidate? This will send an automated email with an assessment booking link."
-                : `Are you sure you want to mark this candidate as ${newStatus.toUpperCase()}? This will send an automated rejection email.`;
-
+            const confirmMsg = `Are you sure you want to mark this candidate as ${newStatus.toUpperCase()}? This will send an automated email to the candidate.`;
             if (!window.confirm(confirmMsg)) return;
+        }
+
+        // Approve no longer emails the candidate — only notifies HR team
+        if (newStatus === 'Approved') {
+            if (!window.confirm(
+                "Are you sure you want to APPROVE this candidate?\n\n" +
+                "The recruitment team will be notified to prepare slots. " +
+                "No email will be sent to the candidate yet — HR will send the booking invite separately after slots are available."
+            )) return;
         }
 
         const result: any = await updateCandidateStatus(id, newStatus);
@@ -659,14 +667,46 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                             <td colSpan={8} className="px-4 py-3">
                                                 <div className="flex flex-wrap items-center justify-end gap-3 fade-in slide-in-from-top-1 animate-in duration-200">
                                                     {candidate.status === 'Approved' && (isMaster || isHR) && (
-                                                        <button
-                                                            onClick={() => copyBookingLink(candidate.id)}
-                                                            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-border text-primary text-[11px] font-bold rounded-sm shadow-soft hover:border-primary/40 transition-colors"
-                                                            title="Copy booking link for candidate"
-                                                        >
-                                                            {copiedId === candidate.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                                            <span>Copy Link</span>
-                                                        </button>
+                                                        <>
+                                                            {/* Send Assessment Invite — primary HR action */}
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (!window.confirm(
+                                                                        `Send the assessment booking invite to ${candidate.name}?\n\n` +
+                                                                        'Make sure assessment slots are already available before proceeding.'
+                                                                    )) return;
+                                                                    setSendingInviteId(candidate.id);
+                                                                    setOpenActionId(null);
+                                                                    const result = await sendAssessmentInvite(candidate.id);
+                                                                    setSendingInviteId(null);
+                                                                    if (result.success) {
+                                                                        alert(`Booking invite sent to ${candidate.name} successfully!`);
+                                                                    } else {
+                                                                        alert('Failed to send invite: ' + result.error);
+                                                                    }
+                                                                }}
+                                                                disabled={sendingInviteId === candidate.id}
+                                                                className="flex items-center gap-1.5 px-4 py-2 bg-primary border border-primary text-white text-[11px] font-bold rounded-sm shadow-soft hover:bg-primary/90 transition-colors disabled:opacity-60"
+                                                                title="Send assessment booking link to candidate"
+                                                            >
+                                                                {sendingInviteId === candidate.id ? (
+                                                                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                ) : (
+                                                                    <Send className="w-3.5 h-3.5" />
+                                                                )}
+                                                                <span>Send Invite</span>
+                                                            </button>
+
+                                                            {/* Copy Link — secondary convenience action */}
+                                                            <button
+                                                                onClick={() => copyBookingLink(candidate.id)}
+                                                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-border text-primary text-[11px] font-bold rounded-sm shadow-soft hover:border-primary/40 transition-colors"
+                                                                title="Copy booking link for manual sharing"
+                                                            >
+                                                                {copiedId === candidate.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                                                <span>Copy Link</span>
+                                                            </button>
+                                                        </>
                                                     )}
 
                                                     {candidate.status === 'Applied' && canApprove && (

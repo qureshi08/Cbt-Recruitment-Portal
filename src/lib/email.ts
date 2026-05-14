@@ -140,12 +140,28 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       `;
       break;
 
-    case 'APPROVED':
-      subject = `[Approved] ${data.name}`;
-      title = 'Candidate Approved';
+    case 'APPROVED_PENDING_SLOTS':
+      subject = `[Action Required] ${data.name} Approved — Slots Needed`;
+      title = 'Candidate Approved: Slots Required';
       body = `
-        <p><strong>${data.name}</strong> has been approved by the panel.</p>
-        <p>A scheduling link has been sent to the candidate. They are now in the <strong>Approved</strong> stage.</p>
+        <p><strong>${data.name}</strong> has been approved by the panel and is awaiting an assessment slot.</p>
+        <p>Please log in to the dashboard, create the required assessment slots, and then send the booking invite to the candidate.</p>
+        <div style="margin: 25px 0;">
+          <a href="${origin}/admin/slots" style="background-color: #009245; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Manage Slots</a>
+        </div>
+        <p style="font-size: 12px; color: #888;">No email has been sent to the candidate yet. You control when they are notified.</p>
+      `;
+      break;
+
+    case 'INVITE_SENT':
+      subject = `[Invite Dispatched] ${data.name}`;
+      title = 'Assessment Invite Sent to Candidate';
+      body = `
+        <p>The assessment booking invite has been sent to <strong>${data.name}</strong> by <strong>${data.sentBy}</strong>.</p>
+        <p>The candidate can now select an available assessment slot using their personal booking link.</p>
+        <div style="margin: 20px 0;">
+          <a href="${origin}/admin/applications" style="color: #009245; font-weight: bold;">View Application Pipeline</a>
+        </div>
       `;
       break;
 

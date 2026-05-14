@@ -1,0 +1,143 @@
+# 🔄 CBT Recruitment Pipeline — Full Walkthrough
+
+> **Project:** Convergent Graduate Academy Program (CGAP) Recruitment Portal
+> **Last Updated:** 2026-04-30
+
+---
+
+## Step 1 — Application Submission
+
+**Who does it:** The **Candidate** *(public, no login required)*
+
+The candidate fills the application form on the public landing page, uploads their resume (PDF/DOCX), and submits.
+
+**What happens automatically:**
+- Candidate record saved to DB with status → `Applied`
+- AI screening (Gemini) fires immediately and calculates an `ai_score` and `ai_reasoning`
+- 📧 **Email sent to:** Recruitment Team + Approvers → *"[New Application] Candidate Name"*
+
+---
+
+## Step 2 — Application Review & Approval
+
+**Who does it:** `Master` or `Approver`
+
+Opens the **Candidate Pipeline**, reviews the AI score, AI reasoning, and uploaded resume, then takes an action.
+
+| Decision | New Status | Emails Triggered |
+|---|---|---|
+| **Approve** | `Approved` | 📧 Candidate gets assessment booking link<br>📧 Recruitment Team gets `[Approved]` notice |
+| **Reject** | `Rejected` | 📧 Candidate gets professional declination email<br>📧 Recruitment Team gets `[Final Decision: Rejected]` notice |
+
+---
+
+## Step 3 — Assessment Slot Booking
+
+**Who does it:** The **Candidate** *(via their unique booking link)*
+
+The candidate clicks the link from their approval email and self-selects an available time slot for their technical assessment.
+
+**What happens automatically:**
+- Slot is atomically locked to that candidate (concurrent booking protected)
+- Status updated → `Assessment Scheduled`
+- 📧 **Email sent to:** Recruitment Team → *"[Slot Booked] Candidate — Time"*
+
+---
+
+## Step 4 — Assessment Score Upload
+
+**Who does it:** `Master` or `HR`
+
+After the technical assessment is completed, the admin uploads the candidate's score directly from the **Candidate Pipeline** table using the **Upload** button.
+
+- Status moves → `Assessment Completed`
+- No email is triggered at this step
+
+---
+
+## Step 5 — L1 Interview Request
+
+**Who does it:** `Master` or `HR`
+
+Admin navigates to the **Interviews** section and triggers an L1 interview broadcast for the candidate.
+
+**What happens automatically:**
+- Status moves → `To Be Interviewed`
+- 📧 **Email sent to:** All **L1 Interviewers** → Email with ✅ *Available* / ❌ *Not Available* one-click buttons
+
+When an L1 Interviewer responds:
+- Their availability is recorded in the database
+- 📧 **Email sent to:** Recruitment Team → *"[Response] Candidate — Available/Unavailable + suggested time"*
+
+---
+
+## Step 6 — L1 Interview & Feedback
+
+**Who does it:** `L1_Interviewer`
+
+The interviewer conducts the session and submits structured scores and written feedback through the **Interviews** admin page.
+
+- Status moves → `Interview In Progress`
+- The L1 interviewer can optionally **flag the candidate for an L2 interview** at this point
+
+---
+
+## Step 7 *(Optional)* — L2 Interview Request
+
+**Who does it:** `L1_Interviewer` *(requests it)* → `Master` or `HR` *(confirms & broadcasts)*
+
+If the L1 interviewer escalates the candidate:
+
+- 📧 **Email sent to:** All **L2 Interviewers** → Same availability email flow as L1
+- L2 Interviewers respond with availability; Recruitment Team is notified of each response
+
+---
+
+## Step 8 — Final Decision
+
+**Who does it:** Interviewers submit feedback → `Master` or `HR` sets the final status
+
+| Decision | Final Status | Emails Triggered |
+|---|---|---|
+| **Recommend** | [Recommended](file:///d:/Anas/Cbt%20Recruitment%20Portal/src/lib/email.ts#35-54) | 📧 Candidate gets congratulations email<br>📧 Recruitment Team gets `[Final Decision: Recommended]` |
+| **Not Recommend** | `Not Recommended` | 📧 Candidate gets declination email<br>📧 Recruitment Team gets `[Final Decision: Not Recommended]` |
+
+---
+
+## 📊 Role vs. Access Matrix
+
+| Action | Master | Approver | HR | L1 Interviewer | L2 Interviewer |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **View candidates** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Approve / Reject application** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Edit candidate profile** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Upload assessment score** | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Manage assessment slots** | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Trigger L1 / L2 interview** | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Submit L1 interview feedback** | ✅ | ❌ | ❌ | ✅ | ❌ |
+| **Submit L2 interview feedback** | ✅ | ❌ | ❌ | ❌ | ✅ |
+| **Set final status (Recommended/Not)** | ✅ | ❌ | ✅ | ✅ | ✅ |
+| **Delete candidates** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Manage users & roles** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Configure team notifications** | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+---
+
+## 📧 Email Notification Summary
+
+| Trigger | Recipient |
+|---|---|
+| New application submitted | Recruitment Team + Approvers |
+| Candidate approved | Candidate (booking link) + Recruitment Team |
+| Candidate rejected (initial) | Candidate (declination) + Recruitment Team |
+| Assessment slot booked | Recruitment Team |
+| L1 interview triggered | All L1 Interviewers |
+| L2 interview triggered | All L2 Interviewers |
+| Interviewer responds to availability | Recruitment Team |
+| Final decision: Recommended | Candidate (congrats) + Recruitment Team |
+| Final decision: Not Recommended | Candidate (declination) + Recruitment Team |
+
+---
+
+> [!NOTE]
+> The `recruitment_team`, `approver`, `l1_interviewers`, and `l2_interviewers` notification email lists are configurable from **Portal Settings → Team Notifications**.
