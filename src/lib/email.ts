@@ -19,6 +19,37 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function generateICS(title: string, start: Date, end: Date, location: string, description: string) {
+  const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  // Escape special characters for ICS
+  const escape = (str: string) => (str || "").replace(/[\\,;]/g, (match) => `\\${match}`).replace(/\n/g, '\\n');
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//CBT Recruitment//Portal//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    `UID:${Date.now()}@cbt-portal.vercel.app`,
+    `DTSTAMP:${formatDate(new Date())}`,
+    `DTSTART:${formatDate(start)}`,
+    `DTEND:${formatDate(end)}`,
+    `SUMMARY:${escape(title)}`,
+    `LOCATION:${escape(location)}`,
+    `DESCRIPTION:${escape(description)}`,
+    "STATUS:CONFIRMED",
+    "SEQUENCE:0",
+    "BEGIN:VALARM",
+    "TRIGGER:-PT15M",
+    "ACTION:DISPLAY",
+    "DESCRIPTION:Reminder",
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+}
+
 export const sendAssessmentEmail = async (candidateEmail: string, candidateName: string, bookingLink: string) => {
   const mailOptions = {
     from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
@@ -101,16 +132,15 @@ export const sendTeamNotification = async (recipients: string[], subject: string
   return transporter.sendMail(mailOptions);
 };
 
-export const notifyRole = async (emails: string[], subject: string, title: string, body: string) => {
+export const notifyRole = async (emails: string[], subject: string, title: string, body: string, attachments?: any[]) => {
   if (!emails || emails.length === 0) return null;
 
   const results = [];
 
-  // Send individual emails to allow for personalization and better tracking
   for (const email of emails) {
     const personalizedBody = body.replace(/\[INTERVIEWER_EMAIL\]/g, encodeURIComponent(email));
 
-    const mailOptions = {
+    const mailOptions: any = {
       from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: subject,
@@ -124,6 +154,7 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
           <p style="font-size: 11px; color: #888;">Automated System Notification from CBT Recruitment Portal</p>
         </div>
       `,
+      attachments: attachments || []
     };
 
     results.push(transporter.sendMail(mailOptions));
@@ -133,11 +164,11 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
 };
 
 export const notifyWorkflowStage = async (stage: string, emails: string[], data: any) => {
-  // Use the memory-defined production URL as the primary fallback to avoid localhost issues in emails
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
   let subject = '';
   let title = '';
   let body = '';
+  let attachments: any[] = [];
 
   switch (stage) {
     case 'NEW_APPLICATION':
@@ -251,9 +282,29 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
         </div>
         <p><strong>Participants:</strong> Candidate, Interviewer, and Recruitment Team.</p>
         <p style="font-size: 13px; color: #64748b;">Please ensure you have a stable internet connection and your camera/microphone are working correctly.</p>
+        <p style="font-size: 12px; color: #009245; font-weight: bold;">Note: An invite file is attached to this email. Open it to add this interview to your calendar instantly.</p>
       `;
+
+      try {
+        const start = new Date(data.startTime || data.scheduledAt);
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        const icsContent = generateICS(
+          `CBT Interview: ${data.candidateName}`,
+          start,
+          end,
+          data.meetingLink,
+          `Interview scheduled via CBT Recruitment Portal.\nMeeting Link: ${data.meetingLink}`
+        );
+        attachments.push({
+          filename: 'invite.ics',
+          content: icsContent,
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
+        });
+      } catch (e) {
+        console.error("Failed to generate ICS attachment:", e);
+      }
       break;
   }
 
-  return notifyRole(emails, subject, title, body);
+  return notifyRole(emails, subject, title, body, attachments);
 };
