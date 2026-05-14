@@ -826,12 +826,22 @@ export async function submitInterviewerAvailability(candidateId: string, email: 
 
         const recipients = await getRecipientsByRoles(['recruitment_team']);
         if (recipients.length > 0) {
+            const formattedTime = preferredTime ? new Date(preferredTime).toLocaleString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Asia/Karachi'
+            }) : null;
+
             await notifyWorkflowStage('AVAILABILITY_RESPONSE', recipients, {
                 candidateName: candidate?.name || 'A candidate',
                 interviewerEmail: email,
                 interviewerName: interviewerName || email,
                 isAvailable,
-                preferredTime
+                preferredTime: formattedTime
             });
         }
 
@@ -1155,7 +1165,8 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
                         month: 'long',
                         day: 'numeric',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        timeZone: 'Asia/Karachi'
                     }),
                     meetingLink: meetingLink,
                     startTime: startTime
