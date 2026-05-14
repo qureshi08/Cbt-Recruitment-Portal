@@ -1,17 +1,27 @@
 import nodemailer from 'nodemailer';
 
+/**
+ * Microsoft 365 SMTP transporter.
+ * Requires the following environment variables:
+ *   EMAIL_USER  – e.g. muhammad.anas.quershi@convergentbt.com
+ *   EMAIL_PASS  – Microsoft account password (or app password if MFA is enabled)
+ */
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.office365.com',
+  port: 587,
+  secure: false,          // STARTTLS – Office 365 upgrades the connection after EHLO
   auth: {
-    user: 'muhammadanasq@gmail.com',
-    // Force the new working password to bypass stale Vercel env variables
-    pass: 'rshr fqyi nszd vzus',
+    user: process.env.EMAIL_USER!,
+    pass: process.env.EMAIL_PASS!,
+  },
+  tls: {
+    ciphers: 'SSLv3',     // Required by Office 365 in some environments
   },
 });
 
 export const sendAssessmentEmail = async (candidateEmail: string, candidateName: string, bookingLink: string) => {
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
     subject: 'Action Required: Schedule Your CBT Assessment',
     html: `
@@ -34,7 +44,7 @@ export const sendAssessmentEmail = async (candidateEmail: string, candidateName:
 
 export const sendRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
     subject: 'Great News from CBT Recruitment',
     html: `
@@ -54,7 +64,7 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
 
 export const sendNotRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
     subject: 'Update Regarding Your Application - CBT',
     html: `
@@ -76,7 +86,7 @@ export const sendTeamNotification = async (recipients: string[], subject: string
   if (!recipients || recipients.length === 0) return null;
 
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: recipients.join(','),
     subject: subject,
     html: `
@@ -101,7 +111,7 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
     const personalizedBody = body.replace(/\[INTERVIEWER_EMAIL\]/g, encodeURIComponent(email));
 
     const mailOptions = {
-      from: `"CBT Recruitment" <${process.env.EMAIL_USER || 'muhammadanasq@gmail.com'}>`,
+      from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: subject,
       html: `
