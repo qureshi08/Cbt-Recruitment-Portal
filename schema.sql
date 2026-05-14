@@ -180,3 +180,39 @@ create policy "Master can insert team_notifications" on public.team_notification
 
 create policy "Master can delete team_notifications" on public.team_notifications
   for delete using (true);
+
+-- AUDIT LOGS TABLE
+create table public.audit_logs (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references public.users(id),
+  user_name text,
+  action text not null,
+  entity_id text,
+  entity_type text,
+  details jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- INTERVIEWER AVAILABILITY TABLE
+create table public.interviewer_availability (
+  id uuid primary key default uuid_generate_v4(),
+  candidate_id uuid references public.candidates(id),
+  interviewer_email text not null,
+  interviewer_name text,
+  is_available boolean not null,
+  preferred_time timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- RLS POLICIES
+alter table public.audit_logs enable row level security;
+alter table public.interviewer_availability enable row level security;
+
+create policy "Admins can view audit_logs" on public.audit_logs
+  for select using (true);
+
+create policy "Admins can view availability" on public.interviewer_availability
+  for select using (true);
+
+create policy "Allow public to insert availability" on public.interviewer_availability
+  for insert with check (true);

@@ -16,8 +16,8 @@ import {
 import { getCurrentUser } from "@/lib/auth-utils";
 import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
 import sharp from 'sharp';
-// @ts-ignore
 import pdf from 'pdf-parse/lib/pdf-parse.js';
+import { createTeamsMeeting } from "@/lib/microsoft";
 
 export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer';
 
@@ -800,6 +800,17 @@ export async function submitInterviewerAvailability(candidateId: string, email: 
             .eq('id', candidateId)
             .single();
 
+        // Save to dedicated availability table
+        await supabaseAdmin
+            .from('interviewer_availability')
+            .insert({
+                candidate_id: candidateId,
+                interviewer_email: email,
+                interviewer_name: interviewerName || email,
+                is_available: isAvailable,
+                preferred_time: preferredTime
+            });
+
         await logAction('INTERVIEWER_AVAILABILITY', candidateId, 'candidate', {
             interviewer_email: email,
             interviewer_name: interviewerName || email,
@@ -821,6 +832,22 @@ export async function submitInterviewerAvailability(candidateId: string, email: 
         return { success: true };
     } catch (error: any) {
         console.error("submitInterviewerAvailability error:", error);
+        return { error: error.message };
+    }
+}
+
+export async function getInterviewerAvailability(candidateId: string) {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('interviewer_availability')
+            .select('*')
+            .eq('candidate_id', candidateId)
+            .eq('is_available', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return { success: true, data };
+    } catch (error: any) {
         return { error: error.message };
     }
 }
@@ -1036,6 +1063,104 @@ export async function lockInterviewMeeting(interviewId: string, candidateId: str
         return { success: true };
     } catch (error: any) {
         console.error("lockInterviewMeeting error:", error);
+        return { error: error.message };
+    }
+}
+
+/**
+ * Automatically generates a Teams meeting link and locks the interview.
+ * Uses the interviewer's responded availability.
+ */
+export async function generateAndLockInterview(interviewId: string, candidateId: string, availabilityId: string) {
+    try {
+        const user = await getCurrentUser();
+        const userName = user?.full_name || 'System User';
+
+        // 1. Get the availability details
+        const { data: avail, error: availError } = await supabaseAdmin
+            .from('interviewer_availability')
+            .select('*')
+            .eq('id', availabilityId)
+            .single();
+
+        if (availError || !avail) throw new Error("Selected availability record not found.");
+
+        const startTime = avail.preferred_time;
+        // Default duration 1 hour
+        const endTime = new Date(new Date(startTime).getTime() + (60 * 60 * 1000)).toISOString();
+
+        // 2. Create the Teams meeting
+        const meetingResult = await createTeamsMeeting(
+            `CBT Interview: ${avail.interviewer_name} vs Candidate`,
+            startTime,
+            endTime
+        );
+
+        if (meetingResult.error) throw new Error(meetingResult.error);
+        const meetingLink = meetingResult.joinUrl!;
+
+        // 3. Update the interview record
+        const { data: interview, error: updateError } = await supabaseAdmin
+            .from('interviews')
+            .update({
+                meeting_link: meetingLink,
+                is_locked: true,
+                locked_by: userName,
+                scheduled_at: startTime
+            } as any)
+            .eq('id', interviewId)
+            .select('*, candidates(name, email)')
+            .single();
+
+        if (updateError) throw updateError;
+
+        // 4. Log the action
+        await logAction('INTERVIEW_MEETING_LOCKED_AUTO', candidateId, 'candidate', {
+            meeting_link: meetingLink,
+            scheduled_at: startTime,
+            locked_by: userName,
+            interviewer: avail.interviewer_name
+        });
+
+        // 5. Update candidate status
+        await updateCandidateStatus(candidateId, "Interview Scheduled");
+
+        // 6. Notify everyone
+        try {
+            const recipients = [
+                interview.candidates?.email, // Candidate
+                process.env.EMAIL_USER, // muhammad.anas.quershi@convergentbt.com
+                avail.interviewer_email // The Interviewer
+            ];
+
+            const allEmails = Array.from(new Set(recipients)).filter(Boolean) as string[];
+
+            if (allEmails.length > 0) {
+                await notifyWorkflowStage('INTERVIEW_CONFIRMED', allEmails, {
+                    candidateName: interview.candidates?.name,
+                    scheduledAt: new Date(startTime).toLocaleString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    }),
+                    meetingLink: meetingLink
+                });
+            }
+        } catch (notifyErr) {
+            console.error("Auto interview confirmation email failed:", notifyErr);
+        }
+
+        revalidatePath('/admin/interviews');
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin');
+
+        return { success: true, meetingLink, isSimulated: meetingResult.isSimulated };
+    } catch (error: any) {
+        console.error("generateAndLockInterview error:", error);
         return { error: error.message };
     }
 }

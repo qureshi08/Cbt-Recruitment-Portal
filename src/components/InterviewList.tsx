@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting } from "@/app/actions";
+import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting, generateAndLockInterview, getInterviewerAvailability } from "@/app/actions";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -185,14 +185,36 @@ function ScorecardViewer({ interview }: { interview: Interview }) {
     );
 }
 
-function MeetingScheduler({ interview, onConfirm, onCancel, isSubmitting }: {
+function MeetingScheduler({ interview, onConfirm, onCancel, isSubmitting, candidateId }: {
     interview: Interview;
-    onConfirm: (link: string, time: string) => void;
+    onConfirm: (availabilityId: string) => void;
     onCancel: () => void;
     isSubmitting: boolean;
+    candidateId: string;
 }) {
-    const [link, setLink] = useState(interview.meeting_link || "");
-    const [time, setTime] = useState(interview.scheduled_at ? new Date(interview.scheduled_at).toISOString().slice(0, 16) : "");
+    const [availabilities, setAvailabilities] = useState<any[]>([]);
+    const [selectedAvail, setSelectedAvail] = useState<string>("");
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchAvail() {
+            setLoading(true);
+            try {
+                const res = await getInterviewerAvailability(candidateId);
+                if (res.success) {
+                    setAvailabilities(res.data || []);
+                    if (res.data && res.data.length > 0) {
+                        setSelectedAvail(res.data[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error("Fetch availability error:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchAvail();
+    }, [candidateId]);
 
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -200,43 +222,53 @@ function MeetingScheduler({ interview, onConfirm, onCancel, isSubmitting }: {
             <div className="bg-white rounded-sm shadow-premium w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-300">
                 <div className="p-6 border-b border-border bg-surface flex justify-between items-center">
                     <div>
-                        <h3 className="font-bold text-lg text-heading italic">Lock Interview Link</h3>
+                        <h3 className="font-bold text-lg text-heading italic">Automated Slot Booking</h3>
                         <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">For {interview.candidates?.name}</p>
                     </div>
                     <button onClick={onCancel} className="p-2 text-muted hover:text-heading"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="p-6 space-y-4">
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest">Confirmed Time</label>
-                        <input
-                            type="datetime-local"
-                            className="w-full bg-white border border-border rounded-sm p-3 text-sm focus:border-primary outline-none"
-                            value={time}
-                            onChange={(e) => setTime(e.target.value)}
-                        />
+                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest">Select Interviewer Availability</label>
+                        {loading ? (
+                            <div className="flex items-center gap-2 text-xs text-muted py-2"><Activity className="w-3 h-3 animate-spin" /> Loading availability...</div>
+                        ) : availabilities.length > 0 ? (
+                            <div className="space-y-3">
+                                <select
+                                    value={selectedAvail}
+                                    onChange={(e) => setSelectedAvail(e.target.value)}
+                                    className="w-full bg-white border border-border rounded-sm p-3 text-sm font-medium focus:border-primary outline-none appearance-none"
+                                >
+                                    {availabilities.map(a => (
+                                        <option key={a.id} value={a.id}>
+                                            {a.interviewer_name} — {new Date(a.preferred_time).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-primary font-bold uppercase tracking-tight">
+                                    {availabilities.length} positive responses found
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="p-4 bg-amber-50 border border-amber-100 rounded-sm text-[11px] text-amber-700 leading-relaxed">
+                                <p className="font-bold mb-1">No availability found.</p>
+                                Currently, there are no "Yes" responses recorded for this candidate. Please ensure interviewers have submitted their availability first.
+                            </div>
+                        )}
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest">Teams Meeting Link</label>
-                        <textarea
-                            rows={3}
-                            className="w-full bg-white border border-border rounded-sm p-3 text-sm font-medium focus:border-primary outline-none resize-none"
-                            placeholder="Paste the Teams link here..."
-                            value={link}
-                            onChange={(e) => setLink(e.target.value)}
-                        />
-                    </div>
-                    <p className="text-[10px] text-muted italic font-medium">
-                        * High-importance: Locking this will notify the candidate, interviewer, and Muhammad Anas Qureshi via email.
+
+                    <p className="text-[10px] text-muted italic font-medium leading-relaxed">
+                        * Clicking 'Generate & Send' will automatically create a Teams meeting invitation on your behalf and notify all participants via email.
                     </p>
                 </div>
                 <div className="p-4 border-t bg-surface flex justify-end gap-3">
                     <button onClick={onCancel} className="px-4 py-2 text-[10px] font-bold text-muted uppercase tracking-widest">Cancel</button>
                     <button
-                        onClick={() => onConfirm(link, time)}
-                        disabled={isSubmitting || !link || !time}
+                        onClick={() => onConfirm(selectedAvail)}
+                        disabled={isSubmitting || !selectedAvail}
                         className="bg-[var(--primary)] text-white px-6 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest hover:bg-primary-hover disabled:opacity-50 transition-all shadow-sm"
                     >
-                        {isSubmitting ? "Locking..." : "Lock & Notify"}
+                        {isSubmitting ? "Generating..." : "Generate & Send"}
                     </button>
                 </div>
             </div>
@@ -297,13 +329,14 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
         }
     };
 
-    const handleMeetingLock = async (link: string, time: string) => {
+    const handleMeetingLock = async (availabilityId: string) => {
         if (!meetingModalInterview) return;
         setIsSubmitting(true);
         try {
-            const result = await lockInterviewMeeting(meetingModalInterview.id, meetingModalInterview.candidate_id, link, time);
+            const result = await generateAndLockInterview(meetingModalInterview.id, meetingModalInterview.candidate_id, availabilityId);
             if (result.error) throw new Error(result.error);
-            setInterviews(prev => prev.map(i => i.id === meetingModalInterview.id ? { ...i, meeting_link: link, scheduled_at: time, is_locked: true } : i));
+            alert("Meeting generated successfully!");
+            window.location.reload();
             setMeetingModalInterview(null);
         } catch (err: any) {
             alert(err.message);
@@ -575,6 +608,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             {meetingModalInterview && (
                 <MeetingScheduler
                     interview={meetingModalInterview}
+                    candidateId={meetingModalInterview.candidate_id}
                     onCancel={() => setMeetingModalInterview(null)}
                     onConfirm={handleMeetingLock}
                     isSubmitting={isSubmitting}

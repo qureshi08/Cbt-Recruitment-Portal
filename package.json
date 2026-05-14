@@ -10,7 +10,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@azure/msal-node": "^5.2.1",
     "@google/generative-ai": "^0.24.1",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@tailwindcss/postcss": "^4.1.18",
