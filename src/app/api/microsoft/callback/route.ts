@@ -19,7 +19,8 @@ export async function GET(request: Request) {
     }
 
     try {
-        const redirect_uri = `${process.env.NEXT_PUBLIC_APP_URL}/api/microsoft/callback`;
+        const { origin } = new URL(request.url);
+        const redirect_uri = `${origin}/api/microsoft/callback`;
 
         // Exchange code for token
         const tokenResponse = await fetch(`https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token`, {
@@ -66,9 +67,10 @@ export async function GET(request: Request) {
             }, { onConflict: 'user_email' });
 
         // Redirect back to dashboard with success
-        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?microsoft=success`);
+        return NextResponse.redirect(`${origin}/admin/settings?microsoft=success`);
     } catch (err: any) {
         console.error("Microsoft Auth Error:", err);
-        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?microsoft=error&msg=${encodeURIComponent(err.message)}`);
+        const errorOrigin = new URL(request.url).origin;
+        return NextResponse.redirect(`${errorOrigin}/admin/settings?microsoft=error&msg=${encodeURIComponent(err.message)}`);
     }
 }
