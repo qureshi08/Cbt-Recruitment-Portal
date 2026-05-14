@@ -3,6 +3,7 @@ import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipient
 import UserManager from "@/components/UserManager";
 import AiCriteriaManager from "@/components/AiCriteriaManager";
 import TeamEmailManager from "@/components/TeamEmailManager";
+import MicrosoftTeamsManager from "@/components/MicrosoftTeamsManager";
 import { ShieldAlert } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -59,6 +60,8 @@ export default async function SettingsPage() {
             </div>
 
             <AiCriteriaManager initialCriteria={aiCriteria} />
+
+            <MicrosoftTeamsManager />
 
             {isMaster && (
                 <section className="border-t border-border pt-6">
