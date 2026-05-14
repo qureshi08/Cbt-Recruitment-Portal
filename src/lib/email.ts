@@ -278,6 +278,9 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       const gEnd = end.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
       const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`CBT Interview: ${data.candidateName}`)}&dates=${gStart}/${gEnd}&details=${encodeURIComponent(`Meeting Link: ${data.meetingLink}`)}&location=${encodeURIComponent(data.meetingLink)}`;
 
+      // Generate an Outlook Web Link as a fallback
+      const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${encodeURIComponent(`CBT Interview: ${data.candidateName}`)}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${encodeURIComponent(`Meeting Link: ${data.meetingLink}`)}&location=${encodeURIComponent(data.meetingLink)}`;
+
       subject = `[Confirmed] Interview Scheduled: ${data.candidateName}`;
       title = 'Interview Invitation & Meeting Link';
       body = `
@@ -288,14 +291,17 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
           <div style="text-align: center; margin-bottom: 15px;">
             <a href="${data.meetingLink}" style="background-color: #009245; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Join Teams Meeting</a>
           </div>
-          <div style="text-align: center; border-top: 1px solid #eee; pt-3 mt-3">
-             <p style="font-size: 11px; color: #64748b; margin-bottom: 8px;">Add to calendar:</p>
-             <a href="${googleUrl}" target="_blank" style="color: #009245; font-size: 11px; font-weight: bold; text-decoration: none; border: 1px solid #009245; padding: 4px 8px; border-radius: 4px;">+ Google Calendar</a>
+          <div style="text-align: center; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+             <p style="font-size: 11px; color: #64748b; margin-bottom: 10px;">Add to calendar:</p>
+             <div style="display: flex; justify-content: center; gap: 10px;">
+                <a href="${outlookUrl}" target="_blank" style="color: #0078d4; font-size: 11px; font-weight: bold; text-decoration: none; border: 1px solid #0078d4; padding: 6px 12px; border-radius: 4px; display: inline-block;">+ Outlook / Teams</a>
+                <a href="${googleUrl}" target="_blank" style="color: #009245; font-size: 11px; font-weight: bold; text-decoration: none; border: 1px solid #009245; padding: 6px 12px; border-radius: 4px; display: inline-block;">+ Google Calendar</a>
+             </div>
           </div>
         </div>
         <p><strong>Participants:</strong> Candidate, Interviewer, and Recruitment Team.</p>
         <p style="font-size: 13px; color: #64748b;">Please ensure you have a stable internet connection and your camera/microphone are working correctly.</p>
-        <p style="font-size: 11px; color: #009245; font-weight: bold;">Note: A calendar invite file (.ics) is also attached to this email for Outlook/Teams users.</p>
+        <p style="font-size: 11px; color: #009245; font-weight: bold;">Note: A calendar invite file (.ics) is also attached to this email for Desktop users.</p>
       `;
 
       try {
