@@ -71,6 +71,9 @@ create table public.interviews (
   candidate_id uuid references public.candidates(id),
   scheduled_at timestamp with time zone not null,
   interviewer_id uuid references public.users(id),
+  meeting_link text,
+  is_locked boolean default false,
+  locked_by text,
   feedback text,
   decision text, -- 'Recommended', 'Not Recommended'
   created_at timestamp with time zone default timezone('utc'::text, now()) not null

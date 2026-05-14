@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UserRole, requestL2Interview, submitFinalInterviewFeedback } from "@/app/actions";
+import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting } from "@/app/actions";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,6 +27,8 @@ interface Interview {
     scheduled_at: string;
     decision?: string | null;
     feedback?: string | null;
+    meeting_link?: string | null;
+    is_locked?: boolean | null;
     l1_feedback_json?: StructuredFeedback | null;
     l2_feedback_json?: StructuredFeedback | null;
     candidates?: {
@@ -136,7 +138,6 @@ function FeedbackSection({ label, fb, type }: { label: string; fb: StructuredFee
         </div>
     );
 }
-
 function ScorecardViewer({ interview }: { interview: Interview }) {
     const [open, setOpen] = useState(false);
     const hasL1 = !!interview.l1_feedback_json;
@@ -184,11 +185,71 @@ function ScorecardViewer({ interview }: { interview: Interview }) {
     );
 }
 
+function MeetingScheduler({ interview, onConfirm, onCancel, isSubmitting }: {
+    interview: Interview;
+    onConfirm: (link: string, time: string) => void;
+    onCancel: () => void;
+    isSubmitting: boolean;
+}) {
+    const [link, setLink] = useState(interview.meeting_link || "");
+    const [time, setTime] = useState(interview.scheduled_at ? new Date(interview.scheduled_at).toISOString().slice(0, 16) : "");
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-heading/60 backdrop-blur-sm" onClick={onCancel} />
+            <div className="bg-white rounded-sm shadow-premium w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-300">
+                <div className="p-6 border-b border-border bg-surface flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-lg text-heading italic">Lock Interview Link</h3>
+                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">For {interview.candidates?.name}</p>
+                    </div>
+                    <button onClick={onCancel} className="p-2 text-muted hover:text-heading"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest">Confirmed Time</label>
+                        <input
+                            type="datetime-local"
+                            className="w-full bg-white border border-border rounded-sm p-3 text-sm focus:border-primary outline-none"
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest">Teams Meeting Link</label>
+                        <textarea
+                            rows={3}
+                            className="w-full bg-white border border-border rounded-sm p-3 text-sm font-medium focus:border-primary outline-none resize-none"
+                            placeholder="Paste the Teams link here..."
+                            value={link}
+                            onChange={(e) => setLink(e.target.value)}
+                        />
+                    </div>
+                    <p className="text-[10px] text-muted italic font-medium">
+                        * High-importance: Locking this will notify the candidate, interviewer, and Muhammad Anas Qureshi via email.
+                    </p>
+                </div>
+                <div className="p-4 border-t bg-surface flex justify-end gap-3">
+                    <button onClick={onCancel} className="px-4 py-2 text-[10px] font-bold text-muted uppercase tracking-widest">Cancel</button>
+                    <button
+                        onClick={() => onConfirm(link, time)}
+                        disabled={isSubmitting || !link || !time}
+                        className="bg-[var(--primary)] text-white px-6 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest hover:bg-primary-hover disabled:opacity-50 transition-all shadow-sm"
+                    >
+                        {isSubmitting ? "Locking..." : "Lock & Notify"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function InterviewList({ initialInterviews, userRoles }: InterviewListProps) {
     const [interviews, setInterviews] = useState(initialInterviews);
     const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
+    const [meetingModalInterview, setMeetingModalInterview] = useState<Interview | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<StructuredFeedback>(emptyFeedback());
 
@@ -236,6 +297,21 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
         }
     };
 
+    const handleMeetingLock = async (link: string, time: string) => {
+        if (!meetingModalInterview) return;
+        setIsSubmitting(true);
+        try {
+            const result = await lockInterviewMeeting(meetingModalInterview.id, meetingModalInterview.candidate_id, link, time);
+            if (result.error) throw new Error(result.error);
+            setInterviews(prev => prev.map(i => i.id === meetingModalInterview.id ? { ...i, meeting_link: link, scheduled_at: time, is_locked: true } : i));
+            setMeetingModalInterview(null);
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const updateScore = (key: keyof Omit<StructuredFeedback, 'overall_notes'>, val: number) => {
         setFeedback(prev => ({
             ...prev,
@@ -256,10 +332,11 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                 <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '900px' }}>
                     <thead>
                         <tr className="bg-surface border-b border-border">
-                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[22%]">Scheduled</th>
-                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[28%]">Candidate</th>
-                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[30%]">Interview Status</th>
-                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] text-right w-[20%]">Actions</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[18%]">Scheduled</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[22%]">Candidate</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[20%]">Interview Status</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] w-[25%]">Meeting</th>
+                            <th className="px-6 py-3 text-[9px] font-black text-muted uppercase tracking-[0.2em] text-right w-[15%]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border)]/50">
@@ -319,6 +396,35 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                             <div className="flex items-center gap-2 text-muted bg-surface px-3 py-1.5 rounded-sm w-fit border border-border">
                                                 <Activity className="w-3 h-3 animate-pulse text-primary" />
                                                 <span className="text-[10px] font-bold uppercase tracking-widest">Awaiting Interview Response</span>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-5 align-top">
+                                        {interview.is_locked ? (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest">
+                                                    <Shield className="w-3 h-3" />
+                                                    Locked By HR
+                                                </div>
+                                                <a href={interview.meeting_link || '#'} target="_blank" rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 text-[10px] font-bold text-white bg-indigo-600 px-3 py-1.5 rounded-sm hover:bg-indigo-700 transition-all w-fit">
+                                                    <MessageSquare className="w-3 h-3" />
+                                                    Join Meeting
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-2 text-amber-600 font-bold text-[10px] uppercase tracking-widest">
+                                                    <Activity className="w-3 h-3" />
+                                                    Link Pending
+                                                </div>
+                                                {(userRoles.includes('HR') || userRoles.includes('Master')) && (
+                                                    <button onClick={() => setMeetingModalInterview(interview)}
+                                                        className="inline-flex items-center gap-2 text-[10px] font-bold text-primary border border-primary px-3 py-1.5 rounded-sm hover:bg-primary/5 transition-all w-fit uppercase">
+                                                        <Calendar className="w-3 h-3" />
+                                                        Lock Meeting Link
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </td>
@@ -463,6 +569,16 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Meeting Scheduler Modal */}
+            {meetingModalInterview && (
+                <MeetingScheduler
+                    interview={meetingModalInterview}
+                    onCancel={() => setMeetingModalInterview(null)}
+                    onConfirm={handleMeetingLock}
+                    isSubmitting={isSubmitting}
+                />
             )}
         </div>
     );

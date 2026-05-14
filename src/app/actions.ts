@@ -959,6 +959,87 @@ export async function submitFinalInterviewFeedback(
     }
 }
 
+/**
+ * Locks a Teams meeting link for an interview.
+ * Sends confirmation email to Candidate, Interviewer, and the Master Email.
+ */
+export async function lockInterviewMeeting(interviewId: string, candidateId: string, meetingLink: string, scheduledAt: string) {
+    try {
+        const user = await getCurrentUser();
+        const userName = user?.full_name || 'System User';
+
+        // 1. Update the interview record
+        // Note: Using dynamic keys to allow for missing columns if schema hasn't been updated yet
+        const { data: interview, error: updateError } = await supabaseAdmin
+            .from('interviews')
+            .update({
+                meeting_link: meetingLink,
+                is_locked: true,
+                locked_by: userName,
+                scheduled_at: scheduledAt
+            } as any)
+            .eq('id', interviewId)
+            .select('*, candidates(name, email)')
+            .single();
+
+        if (updateError) throw updateError;
+
+        // 2. Log the action
+        await logAction('INTERVIEW_MEETING_LOCKED', candidateId, 'candidate', {
+            meeting_link: meetingLink,
+            scheduled_at: scheduledAt,
+            locked_by: userName
+        });
+
+        // 3. Update candidate status to "Interview Scheduled"
+        await updateCandidateStatus(candidateId, "Interview Scheduled");
+
+        // 4. Notify everyone
+        try {
+            // Priority Emails
+            const recipients = [
+                interview.candidates?.email, // Candidate
+                process.env.EMAIL_USER // muhammad.anas.quershi@convergentbt.com
+            ];
+
+            // Determine if it was an L1 or L2 based on current candidate status/flow
+            // Fetch roles to notify appropriate interviewers
+            const { data: cData } = await supabaseAdmin.from('candidates').select('status').eq('id', candidateId).single();
+            const targetRoles = cData?.status === 'L2 Interview Required' ? ['l2_interviewer'] : ['l1_interviewer', 'recruitment_team'];
+
+            const interviewerEmails = await getRecipientsByRoles(targetRoles);
+            const allEmails = Array.from(new Set([...recipients, ...interviewerEmails])).filter(Boolean) as string[];
+
+            if (allEmails.length > 0) {
+                await notifyWorkflowStage('INTERVIEW_CONFIRMED', allEmails, {
+                    candidateName: interview.candidates?.name,
+                    scheduledAt: new Date(scheduledAt).toLocaleString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    }),
+                    meetingLink: meetingLink
+                });
+            }
+        } catch (notifyErr) {
+            console.error("Interview confirmation email failed:", notifyErr);
+        }
+
+        revalidatePath('/admin/interviews');
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin');
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("lockInterviewMeeting error:", error);
+        return { error: error.message };
+    }
+}
+
 export async function deleteCandidate(candidateId: string) {
     try {
         // 1. Delete dependent records

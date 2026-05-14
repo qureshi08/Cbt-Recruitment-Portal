@@ -43,7 +43,7 @@ export default function Home() {
                         </h1>
 
                         <p className="text-[13.5px] md:text-[14px] text-body max-w-md mx-auto lg:mx-0 leading-relaxed font-medium">
-                            Nine months of structured learning, senior mentorship, and real stakes. Apply below to begin.
+                            Six months of structured learning, senior mentorship, and real stakes. Apply below to begin.
                         </p>
                     </div>
 

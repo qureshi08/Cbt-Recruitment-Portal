@@ -94,3 +94,20 @@ export interface Application {
     applied_at: string;
     status: CandidateStatus;
 }
+
+export interface Interview {
+    id: string;
+    candidate_id: string;
+    scheduled_at: string;
+    interviewer_id?: string;
+    feedback?: string;
+    decision?: string;
+    meeting_link?: string;
+    is_locked: boolean;
+    locked_by?: string;
+    created_at: string;
+    l1_feedback_json?: InterviewFeedbackJson;
+    l2_feedback_json?: InterviewFeedbackJson;
+    l1_interviewer_name?: string;
+    l2_interviewer_name?: string;
+}
