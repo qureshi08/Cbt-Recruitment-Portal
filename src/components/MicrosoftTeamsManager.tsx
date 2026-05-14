@@ -77,6 +77,18 @@ export default function MicrosoftTeamsManager() {
                         {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                         Save Link
                     </button>
+                    <button
+                        onClick={async () => {
+                            const { sendTestInvite } = await import("@/app/actions");
+                            const res = await sendTestInvite();
+                            if (res.success) alert("Test Email Sent to your account!");
+                            else alert("Error: " + res.error);
+                        }}
+                        className="btn-secondary !py-2 shrink-0"
+                    >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Send Test Invite
+                    </button>
                 </div>
             </div>
         </section>

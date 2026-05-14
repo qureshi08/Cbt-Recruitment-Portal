@@ -1786,3 +1786,25 @@ export async function updateMasterMeetingLink(link: string) {
         return { success: false, error: error.message };
     }
 }
+
+export async function sendTestInvite() {
+    try {
+        const user = await getCurrentUser();
+        const email = user?.email || process.env.EMAIL_USER;
+        if (!email) throw new Error("No user email found to send test to.");
+
+        const { notifyWorkflowStage } = await import("@/lib/email");
+
+        await notifyWorkflowStage('INTERVIEW_CONFIRMED', [email], {
+            candidateName: "Test Candidate",
+            scheduledAt: new Date().toLocaleString(),
+            meetingLink: "https://teams.microsoft.com/test-link",
+            startTime: new Date().toISOString()
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Test invite failed:", error);
+        return { success: false, error: error.message };
+    }
+}
