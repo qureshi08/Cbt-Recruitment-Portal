@@ -16,6 +16,7 @@ import {
 import { getCurrentUser } from "@/lib/auth-utils";
 import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
 import sharp from 'sharp';
+// @ts-ignore
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import { createTeamsMeeting } from "@/lib/microsoft";
 
