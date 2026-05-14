@@ -71,7 +71,6 @@ function AvailabilityForm() {
             setStatus('success');
         } else {
             console.error("Submission error details:", result.error);
-            alert("SERVER ERROR: " + (result.error || "Unknown failure"));
             setStatus('error');
         }
         setIsSubmitting(false);

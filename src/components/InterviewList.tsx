@@ -264,9 +264,15 @@ function MeetingScheduler({ interview, onConfirm, onCancel, isSubmitting, candid
                 <div className="p-4 border-t bg-surface flex justify-end gap-3">
                     <button onClick={onCancel} className="px-4 py-2 text-[10px] font-bold text-muted uppercase tracking-widest">Cancel</button>
                     <button
-                        onClick={() => onConfirm(selectedAvail)}
-                        disabled={isSubmitting || !selectedAvail}
-                        className="bg-[var(--primary)] text-white px-6 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest hover:bg-primary-hover disabled:opacity-50 transition-all shadow-sm"
+                        onClick={() => {
+                            if (!selectedAvail && availabilities.length > 0) {
+                                onConfirm(availabilities[0].id);
+                            } else {
+                                onConfirm(selectedAvail);
+                            }
+                        }}
+                        disabled={isSubmitting || (availabilities.length === 0)}
+                        className="bg-primary text-white px-6 py-2 rounded-[6px] text-[10px] font-bold uppercase tracking-widest hover:bg-primary-dark disabled:opacity-30 transition-all shadow-sm"
                     >
                         {isSubmitting ? "Generating..." : "Generate & Send"}
                     </button>
