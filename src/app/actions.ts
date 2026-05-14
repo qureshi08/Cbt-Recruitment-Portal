@@ -802,7 +802,7 @@ export async function submitInterviewerAvailability(candidateId: string, email: 
             .single();
 
         // Save to dedicated availability table
-        await supabaseAdmin
+        const { error: availError } = await supabaseAdmin
             .from('interviewer_availability')
             .insert({
                 candidate_id: candidateId,
@@ -811,6 +811,11 @@ export async function submitInterviewerAvailability(candidateId: string, email: 
                 is_available: isAvailable,
                 preferred_time: preferredTime
             });
+
+        if (availError) {
+            console.error("Failed to save to interviewer_availability:", availError);
+            throw availError;
+        }
 
         await logAction('INTERVIEWER_AVAILABILITY', candidateId, 'candidate', {
             interviewer_email: email,

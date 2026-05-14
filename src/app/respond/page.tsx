@@ -62,13 +62,14 @@ function AvailabilityForm() {
         if (isAvailable === null || (!email && !isLegacyLink) || !candidateId) return;
 
         setIsSubmitting(true);
-        let formattedTime = "";
-        if (preferredDateTime) {
-            const dt = new Date(preferredDateTime);
-            formattedTime = dt.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-        }
+        const result = await submitInterviewerAvailability(
+            candidateId,
+            email || "unknown",
+            isAvailable,
+            preferredDateTime ? new Date(preferredDateTime).toISOString() : undefined,
+            interviewerName || "Interviewer"
+        );
 
-        const result = await submitInterviewerAvailability(candidateId, email || "unknown", isAvailable, formattedTime, interviewerName || "Interviewer");
         if (result.success) setStatus('success');
         else setStatus('error');
         setIsSubmitting(false);
