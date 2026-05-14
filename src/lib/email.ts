@@ -3,8 +3,8 @@ import nodemailer from 'nodemailer';
 /**
  * Microsoft 365 SMTP transporter.
  * Requires the following environment variables:
- *   EMAIL_USER  – e.g. muhammad.anas.quershi@convergentbt.com
- *   EMAIL_PASS  – Microsoft account password (or app password if MFA is enabled)
+ *   EMAIL_USER     – e.g. muhammad.anas.quershi@convergentbt.com
+ *   EMAIL_PASSWORD – Microsoft account password (or app password if MFA is enabled)
  */
 const transporter = nodemailer.createTransport({
   host: 'smtp.office365.com',
@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
   secure: false,          // STARTTLS – Office 365 upgrades the connection after EHLO
   auth: {
     user: process.env.EMAIL_USER!,
-    pass: process.env.EMAIL_PASS!,
+    pass: process.env.EMAIL_PASSWORD!,
   },
   tls: {
     ciphers: 'SSLv3',     // Required by Office 365 in some environments
