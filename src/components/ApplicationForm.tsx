@@ -159,8 +159,13 @@ export default function ApplicationForm() {
 
             <input type="hidden" name="position" value="CGAP Candidate" />
 
+            <div className="flex items-center gap-2 p-2.5 bg-blue-50 border border-blue-100 text-blue-700 rounded-md text-[11px] font-medium leading-relaxed">
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-blue-500" strokeWidth={1.5} />
+                <span>Note: Assessment and final interview will take place on site in Gulberg Islamabad.</span>
+            </div>
+
             {error && (
-                <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-100 text-red-600 rounded-md text-[12px] font-medium">
+                <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-100 text-red-600 rounded-md text-[11px] font-medium leading-relaxed">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
                     <span>{error}</span>
                 </div>
