@@ -269,6 +269,15 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       break;
 
     case 'INTERVIEW_CONFIRMED':
+      const startTime = data.startTime || data.scheduledAt;
+      const start = new Date(startTime);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+      // Generate a Google Calendar Link as a fallback
+      const gStart = start.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const gEnd = end.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`CBT Interview: ${data.candidateName}`)}&dates=${gStart}/${gEnd}&details=${encodeURIComponent(`Meeting Link: ${data.meetingLink}`)}&location=${encodeURIComponent(data.meetingLink)}`;
+
       subject = `[Confirmed] Interview Scheduled: ${data.candidateName}`;
       title = 'Interview Invitation & Meeting Link';
       body = `
@@ -276,18 +285,20 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 0 0 10px 0;"><strong>Scheduled Time:</strong> ${data.scheduledAt}</p>
           <p style="margin: 0 0 15px 0;"><strong>Location:</strong> Microsoft Teams Meeting</p>
-          <div style="text-align: center;">
+          <div style="text-align: center; margin-bottom: 15px;">
             <a href="${data.meetingLink}" style="background-color: #009245; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Join Teams Meeting</a>
+          </div>
+          <div style="text-align: center; border-top: 1px solid #eee; pt-3 mt-3">
+             <p style="font-size: 11px; color: #64748b; margin-bottom: 8px;">Add to calendar:</p>
+             <a href="${googleUrl}" target="_blank" style="color: #009245; font-size: 11px; font-weight: bold; text-decoration: none; border: 1px solid #009245; padding: 4px 8px; border-radius: 4px;">+ Google Calendar</a>
           </div>
         </div>
         <p><strong>Participants:</strong> Candidate, Interviewer, and Recruitment Team.</p>
         <p style="font-size: 13px; color: #64748b;">Please ensure you have a stable internet connection and your camera/microphone are working correctly.</p>
-        <p style="font-size: 12px; color: #009245; font-weight: bold;">Note: An invite file is attached to this email. Open it to add this interview to your calendar instantly.</p>
+        <p style="font-size: 11px; color: #009245; font-weight: bold;">Note: A calendar invite file (.ics) is also attached to this email for Outlook/Teams users.</p>
       `;
 
       try {
-        const start = new Date(data.startTime || data.scheduledAt);
-        const end = new Date(start.getTime() + 60 * 60 * 1000);
         const icsContent = generateICS(
           `CBT Interview: ${data.candidateName}`,
           start,
@@ -298,7 +309,8 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
         attachments.push({
           filename: 'invite.ics',
           content: icsContent,
-          contentType: 'text/calendar; charset=utf-8; method=REQUEST'
+          contentType: 'application/ics',
+          method: 'REQUEST'
         });
       } catch (e) {
         console.error("Failed to generate ICS attachment:", e);
