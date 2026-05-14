@@ -1,3 +1,5 @@
+"use client";
+
 import { Video, Check, ShieldCheck, AlertCircle, Loader2, Link as LinkIcon, Save } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
