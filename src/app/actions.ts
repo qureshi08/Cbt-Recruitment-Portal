@@ -1757,3 +1757,32 @@ export async function analyzeCandidateWithAi(candidateId: string) {
         return { error: userMessage, rawError: error.message };
     }
 }
+
+export async function getMasterMeetingLink() {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('portal_settings')
+            .select('value')
+            .eq('key', 'master_meeting_link')
+            .single();
+
+        if (error) return { success: false, value: "" };
+        return { success: true, value: data?.value || "" };
+    } catch (err) {
+        return { success: false, value: "" };
+    }
+}
+
+export async function updateMasterMeetingLink(link: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('portal_settings')
+            .upsert({ key: 'master_meeting_link', value: link }, { onConflict: 'key' });
+
+        if (error) throw error;
+        revalidatePath('/admin/settings');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}

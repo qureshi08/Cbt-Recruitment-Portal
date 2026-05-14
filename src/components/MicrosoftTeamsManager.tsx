@@ -1,13 +1,14 @@
-"use client";
-
-import { Video, Check, ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
+import { Video, Check, ShieldCheck, AlertCircle, Loader2, Link as LinkIcon, Save } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getMasterMeetingLink, updateMasterMeetingLink } from "@/app/actions";
 
 export default function MicrosoftTeamsManager() {
     const searchParams = useSearchParams();
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [msg, setMsg] = useState("");
+    const [masterLink, setMasterLink] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const microsoft = searchParams.get('microsoft');
@@ -16,14 +17,23 @@ export default function MicrosoftTeamsManager() {
             setStatus('error');
             setMsg(searchParams.get('msg') || "Failed to connect");
         }
+
+        async function loadSettings() {
+            const res = await getMasterMeetingLink();
+            if (res.success) setMasterLink(res.value);
+        }
+        loadSettings();
     }, [searchParams]);
 
-    const handleConnect = () => {
-        window.location.href = "/api/microsoft/auth";
+    const handleSaveLink = async () => {
+        setIsSaving(true);
+        await updateMasterMeetingLink(masterLink);
+        setIsSaving(false);
+        alert("Master Meeting Link Saved!");
     };
 
     return (
-        <section className="border-t border-border pt-6 animate-in slide-in-from-bottom-2 duration-500">
+        <section className="border-t border-border pt-6 animate-in slide-in-from-bottom-2 duration-500 space-y-6">
             <div className="flex items-center gap-2 mb-4">
                 <Video className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 <h3
@@ -34,35 +44,39 @@ export default function MicrosoftTeamsManager() {
                 </h3>
             </div>
 
-            <div className="bg-surface border border-border rounded-md p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-1">
-                    <p className="text-[13px] font-bold text-heading">Enable Automated Meeting Generation</p>
-                    <p className="text-[11px] text-muted leading-relaxed max-w-md">
-                        Connect your work account to allow the portal to create real Microsoft Teams meetings
-                        automatically. No IT policy or PowerShell required!
-                    </p>
-                </div>
-
-                {status === 'success' ? (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-md text-[11px] font-bold uppercase tracking-widest">
-                        <ShieldCheck className="w-4 h-4" /> Connected
+            {/* Option 2: Manual Master Link (No Permissions Needed) */}
+            <div className="bg-surface border border-border rounded-md p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-primary/10 rounded-full mt-1">
+                        <LinkIcon className="w-4 h-4 text-primary" />
                     </div>
-                ) : (
-                    <button
-                        onClick={handleConnect}
-                        className="btn-primary-v2 whitespace-nowrap !py-2.5"
-                    >
-                        <Video className="w-3.5 h-3.5" />
-                        Connect Microsoft Teams
-                    </button>
-                )}
-            </div>
-
-            {status === 'error' && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-md flex items-center gap-2 text-[11px] text-red-600 font-medium">
-                    <AlertCircle className="w-4 h-4" /> {msg}
+                    <div className="space-y-1">
+                        <p className="text-[13px] font-bold text-heading">Fallback: Master Meeting Link</p>
+                        <p className="text-[11px] text-muted leading-relaxed">
+                            If the automated button above is blocked by your IT, simply paste a
+                            permanent Teams meeting link here. The portal will use this link for all interviews.
+                        </p>
+                    </div>
                 </div>
-            )}
+
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={masterLink}
+                        onChange={(e) => setMasterLink(e.target.value)}
+                        placeholder="https://teams.microsoft.com/l/meetup-join/..."
+                        className="flex-1 bg-white border border-border rounded-sm px-4 py-2 text-xs outline-none focus:border-primary transition-all"
+                    />
+                    <button
+                        onClick={handleSaveLink}
+                        disabled={isSaving}
+                        className="btn-primary-v2 !py-2 shrink-0"
+                    >
+                        {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                        Save Link
+                    </button>
+                </div>
+            </div>
         </section>
     );
 }

@@ -16,6 +16,22 @@ export async function createTeamsMeeting(subject: string, startTime: string, end
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // 1. Check for Master Meeting Link (Manual Fallback)
+    const { data: masterSettings } = await supabase
+        .from('portal_settings')
+        .select('value')
+        .eq('key', 'master_meeting_link')
+        .single();
+
+    if (masterSettings?.value) {
+        console.log("Using Master Meeting Link for interview");
+        return {
+            success: true,
+            joinUrl: masterSettings.value,
+            isSimulated: false
+        };
+    }
+
     const { data: tokenData, error: dbError } = await supabase
         .from('microsoft_tokens')
         .select('*')
