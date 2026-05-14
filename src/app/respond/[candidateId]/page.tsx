@@ -122,7 +122,7 @@ function AvailabilityForm() {
                 <div className="bg-dark p-6 text-white text-center relative overflow-hidden">
                     <span className="text-[10px] font-semibold text-white/50 uppercase tracking-[0.16em] block mb-1.5">Interviewer Response</span>
                     <h1
-                        className="font-bold tracking-tight"
+                        className="font-bold tracking-tight text-white"
                         style={{ fontFamily: "var(--font-heading)", fontSize: "1.4rem", letterSpacing: "-0.02em" }}
                     >
                         Confirm <span className="italic-accent">Availability</span>
@@ -198,7 +198,7 @@ function AvailabilityForm() {
                         >
                             {isSubmitting
                                 ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
-                                : <><Send className="w-3.5 h-3.5" strokeWidth={1.5} /> Share Status</>}
+                                : <><Send className="w-3.5 h-3.5" strokeWidth={1.5} /> Send Status</>}
                         </button>
                     </form>
                 </div>
