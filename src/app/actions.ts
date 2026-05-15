@@ -652,16 +652,29 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             throw new Error(statusResult.error || "Failed to update candidate status.");
         }
 
-        // Notify recruitment team about booking
+        // Notify recruitment team & candidate about booking
         try {
-            const recipients = await getRecipientsByRoles(['recruitment_team']);
-            if (recipients.length > 0) {
-                const { data: cData } = await supabaseAdmin.from('candidates').select('name').eq('id', candidateId).single();
-                const { data: sData } = await supabaseAdmin.from('assessment_slots').select('start_time').eq('id', slotId).single();
+            const recruitmentEmails = await getRecipientsByRoles(['recruitment_team']);
+            const { data: cData } = await supabaseAdmin.from('candidates').select('name, email').eq('id', candidateId).single();
+            const { data: sData } = await supabaseAdmin.from('assessment_slots').select('start_time').eq('id', slotId).single();
 
-                await notifyWorkflowStage('SLOT_BOOKED', recipients, {
+            const allRecipients = Array.from(new Set([
+                ...(cData?.email ? [cData.email] : []),
+                ...recruitmentEmails
+            ])).filter(Boolean) as string[];
+
+            if (allRecipients.length > 0) {
+                await notifyWorkflowStage('SLOT_BOOKED', allRecipients, {
                     name: cData?.name || 'A candidate',
-                    slotTime: sData ? new Date(sData.start_time).toLocaleString() : 'N/A'
+                    slotTime: sData ? new Date(sData.start_time).toLocaleString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    }) : 'N/A'
                 });
             }
         } catch (notifyErr) {

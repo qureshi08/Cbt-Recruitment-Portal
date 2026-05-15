@@ -207,11 +207,52 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       break;
 
     case 'SLOT_BOOKED':
-      subject = `[Slot Booked] ${data.name}`;
-      title = 'Assessment Scheduled';
+      subject = `[Confirmed] Assessment Scheduled: ${data.name}`;
+      title = 'Assessment Details & Instructions';
       body = `
-        <p>A candidate has selected a slot for their technical assessment.</p>
-        <p><strong>Candidate:</strong> ${data.name}<br><strong>Time:</strong> ${data.slotTime}</p>
+        <p>Hello!</p>
+        <p>I am writing to you as a follow-up to your application to the <strong>Convergent Graduate Academy Program</strong>.</p>
+        <p>It is to inform you that you have been short-listed for the initial assessment.</p>
+        <div style="background-color: #f8fafc; border: 1px solid #009245; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0;"><strong>Assessment Date/Time:</strong> ${data.slotTime}</p>
+          <p style="margin: 10px 0 0 0; font-size: 13px; color: #64748b;">(Followed by an interview after 1:00 PM if the threshold score is achieved)</p>
+        </div>
+        
+        <p>The Assessment Test will be computer-based and consist of multiple-choice questions covering the following topics:</p>
+        <ul>
+          <li>Reading Comprehension</li>
+          <li>Analytical Thinking</li>
+          <li>Data Structures</li>
+          <li>SQL</li>
+          <li>Python Programming</li>
+        </ul>
+
+        <h4 style="color: #009245; margin-top: 25px;">Please take note of the following instructions:</h4>
+        <ul style="line-height: 1.6;">
+          <li>Please make sure to bring your <strong>CNIC</strong></li>
+          <li>During the assessment, make sure to <strong>turn off your mobile device</strong>. Using any such device during the assessment will result in immediate disqualification</li>
+          <li>Revise the core concepts thoroughly prior to the assessment</li>
+          <li>Read through all instructions before attempting the test</li>
+          <li>Focus on addressing each question individually</li>
+        </ul>
+
+        <p>Please confirm your availability for the scheduled slot mentioned above by responding to this email at your earliest convenience.</p>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+          <p><strong>Address:</strong><br>
+          Convergent Business Technologies<br>
+          Fourth floor, Plot. No. 64, Civic Center, Executive Block<br>
+          Gulberg Greens, Islamabad</p>
+          <a href="https://goo.gl/maps/MxcbdEmMPqopr6UVA" style="color: #009245; font-weight: bold; text-decoration: none;">View on Google Maps &rarr;</a>
+        </div>
+
+        <p style="font-size: 12px; color: #64748b; margin-top: 20px;">
+          Note: When you reach the premises, please feel free to inform the guard of your arrival, or you can contact us on one of the following numbers:<br>
+          <strong>Office Admin:</strong> +92 342 937 0603<br>
+          <strong>Landline:</strong> (051) 591 2926
+        </p>
+
+        <p>Thank you for your attention to these details, and we look forward to your participation.</p>
       `;
       break;
 
