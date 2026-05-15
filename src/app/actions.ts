@@ -99,7 +99,11 @@ export async function logout() {
 }
 
 export async function getUserRoles(userId: string): Promise<UserRole[]> {
-    const { data, error } = await supabase
+    // IMPORTANT: Must use supabaseAdmin (service role) here.
+    // The anonymous client is subject to RLS policies and has no user session
+    // context in Server Actions, causing it to silently return [] for all users,
+    // which triggers an infinite redirect loop (admin -> login -> admin).
+    const { data, error } = await supabaseAdmin
         .from('user_roles')
         .select(`
             roles (
