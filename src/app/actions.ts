@@ -450,10 +450,8 @@ export async function submitApplication(formData: FormData) {
             is_read: false
         });
 
-        // 4. Auto-trigger AI Analysis in the background (DO NOT AWAIT - Instant response for candidate)
-        analyzeCandidateWithAi(candidate.id).catch(err =>
-            console.error("Background AI Analysis failed for new applicant:", candidate.id, err)
-        );
+        // No automatic AI trigger here - prevents "ghost" analyzing status in serverless environments.
+        // Candidates will default to 'pending' (Ready to Screen) for stable manual/bulk analysis.
 
         revalidatePath("/admin");
         return { success: true };
