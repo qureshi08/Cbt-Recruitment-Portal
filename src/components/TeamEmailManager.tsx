@@ -174,12 +174,12 @@ export default function TeamEmailManager({ initialRecipients }: TeamEmailManager
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-emerald-800/80 leading-relaxed">
                     <div className="space-y-2">
                         <p><strong>Step 1:</strong> Candidate applies &rarr; <span className="font-semibold text-emerald-900">Recruitment & Approvers</span> notified.</p>
-                        <p><strong>Step 2:</strong> Approver approves candidate &rarr; <span className="font-semibold text-emerald-900">Recruitment Team</span> notified.</p>
+                        <p><strong>Step 2:</strong> Approver approves candidate &rarr; <span className="font-semibold text-emerald-900">Candidate</span> notified to book slot.</p>
                         <p><strong>Step 3:</strong> Candidate books slot &rarr; <span className="font-semibold text-emerald-900">Recruitment Team</span> notified.</p>
                     </div>
                     <div className="space-y-2">
-                        <p><strong>Step 4:</strong> Assessment marked complete &rarr; <span className="font-semibold text-emerald-900">L1 Interviewers</span> get meeting request.</p>
-                        <p><strong>Step 5:</strong> L2 requested by L1 &rarr; <span className="font-semibold text-emerald-900">L2 Interviewers</span> get meeting request.</p>
+                        <p><strong>Step 4:</strong> Assessment marked complete &rarr; <span className="font-semibold text-emerald-900">L1 Interviewers</span> get meeting link.</p>
+                        <p><strong>Step 5:</strong> L2 requested by L1 &rarr; <span className="font-semibold text-emerald-900">L2 Interviewers</span> get meeting link.</p>
                         <p><strong>Step 6:</strong> Final decision recorded &rarr; <span className="font-semibold text-emerald-900">Recruitment Team</span> notified to close file.</p>
                     </div>
                 </div>
