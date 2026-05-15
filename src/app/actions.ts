@@ -11,6 +11,7 @@ import {
     sendAssessmentEmail,
     sendRecommendedEmail,
     sendNotRecommendedEmail,
+    sendSelectedEmail,
     notifyWorkflowStage
 } from "@/lib/email";
 import { getCurrentUser } from "@/lib/auth-utils";
@@ -336,7 +337,7 @@ export async function submitApplication(formData: FormData) {
             const lastApp = pastApps[0];
 
             // If an active application exists, block
-            const activeStatuses = ['Applied', 'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'];
+            const activeStatuses = ['Applied', 'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Selected'];
             if (activeStatuses.includes(lastApp.status)) {
                 return {
                     error: "You already have an active application in the system. Please wait for your current application process to conclude."
@@ -571,6 +572,68 @@ export async function sendAssessmentInvite(candidateId: string) {
         return { success: true };
     } catch (error: any) {
         console.error('sendAssessmentInvite error:', error);
+        return { error: error.message };
+    }
+}
+
+/**
+ * Step 2 of the post-interview flow:
+ * Marks the candidate as 'Selected' and sends them the final
+ * "Welcome to CGAP!" email. Called manually by HR/Master from the UI.
+ */
+export async function sendCandidateSelectionEmail(candidateId: string) {
+    try {
+        const actingUser = await getCurrentUser();
+        const userName = actingUser?.full_name || 'System User';
+
+        const { data: candidate, error } = await supabaseAdmin
+            .from('candidates')
+            .select('name, email, status')
+            .eq('id', candidateId)
+            .single();
+
+        if (error || !candidate) throw new Error('Candidate not found.');
+        if (candidate.status !== 'Recommended') {
+            throw new Error(`Cannot send selection email: candidate status is "${candidate.status}", expected "Recommended".`);
+        }
+
+        // 1. Update status to 'Selected'
+        const { error: updateError } = await supabaseAdmin
+            .from('candidates')
+            .update({
+                status: 'Selected',
+                last_action_by: userName,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', candidateId);
+
+        if (updateError) throw updateError;
+
+        // 2. Send the final selection email to the candidate
+        await sendSelectedEmail(candidate.email, candidate.name);
+
+        // 3. Log the action
+        await logAction('CANDIDATE_SELECTED', candidateId, 'candidate', { sent_by: userName });
+
+        // 4. Notify recruitment team
+        try {
+            const recipients = await getRecipientsByRoles(['recruitment_team']);
+            if (recipients.length > 0) {
+                await notifyWorkflowStage('DECISION', recipients, {
+                    name: candidate.name,
+                    status: 'Selected for CGAP',
+                    interviewer: userName
+                });
+            }
+        } catch (notifyErr) {
+            console.error('Selection team notification failed:', notifyErr);
+        }
+
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin');
+        return { success: true, last_action_by: userName };
+    } catch (error: any) {
+        console.error('sendCandidateSelectionEmail error:', error);
         return { error: error.message };
     }
 }

@@ -77,14 +77,36 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
   const mailOptions = {
     from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
-    subject: 'Great News from CBT Recruitment',
+    subject: 'Application Update - Convergent Graduate Academy Program',
     html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #009245;">Good News, ${candidateName}!</h2>
-        <p>We are pleased to inform you that the interview panel has recommended you for the next phase of the CGAP program.</p>
-        <p>Our team will reach out to you shortly with more details regarding the final onboarding process.</p>
-        <p>Congratulations once again!</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7;">
+        <p>Hello!</p>
+        <p>I hope this email finds you well.</p>
+        <p>On behalf of Convergent Business Technologies, I am delighted to inform you that you have cleared the assessment for the <strong>Convergent Graduate Academy Program</strong>.</p>
+        <p>However, due to the high volume of applications and limited number of seats, a merit list will be created to select the final candidates. As a next step, your application will be internally reviewed and you will be notified of your application status at least one week before the commencement of the next batch. The tentative start date for the upcoming batch is in <strong>early July</strong>.</p>
+        <p>Please feel free to reach out in case of any questions or concerns. We look forward to having you as a part of the CGAP.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+        <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
+      </div>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
+export const sendSelectedEmail = async (candidateEmail: string, candidateName: string) => {
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
+    to: candidateEmail,
+    subject: 'Application Update - Welcome to CGAP!',
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7;">
+        <p>Dear ${candidateName},</p>
+        <p>I trust this email finds you well.</p>
+        <p>On behalf of Convergent Business Technologies, I am delighted to inform you that you have been <strong>selected</strong> for the <strong>Convergent Graduate Academy Program</strong>.</p>
+        <p>The program will commence with an orientation session, the details of which will be shared soon.</p>
+        <p>Please feel free to reach out in case of any questions or concerns. We look forward to having you as a part of the CGAP.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
         <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
       </div>
     `,

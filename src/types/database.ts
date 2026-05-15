@@ -25,7 +25,8 @@ export type CandidateStatus =
     | 'Interview Scheduled'
     | 'L2 Interview Required'
     | 'Recommended'
-    | 'Not Recommended';
+    | 'Not Recommended'
+    | 'Selected';
 
 export interface Candidate {
     id: string;
