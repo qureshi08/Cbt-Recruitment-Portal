@@ -450,12 +450,10 @@ export async function submitApplication(formData: FormData) {
             is_read: false
         });
 
-        // 4. Auto-trigger AI Analysis (awaited but candidate already gets email feedback)
-        try {
-            await analyzeCandidateWithAi(candidate.id);
-        } catch (aiErr) {
-            console.error("Background AI Analysis failed for new applicant:", candidate.id, aiErr);
-        }
+        // 4. Auto-trigger AI Analysis in the background (DO NOT AWAIT - Instant response for candidate)
+        analyzeCandidateWithAi(candidate.id).catch(err =>
+            console.error("Background AI Analysis failed for new applicant:", candidate.id, err)
+        );
 
         revalidatePath("/admin");
         return { success: true };
