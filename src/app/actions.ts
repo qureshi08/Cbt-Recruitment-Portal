@@ -225,15 +225,27 @@ export async function createAdminUser(email: string, fullName: string, roleNames
 
 export async function deleteAdminUser(userId: string) {
     try {
-        // 1. Delete from Auth (this also deletes from public.users due to CASCADE in DB)
+        // 1. Detach or delete dependent records to avoid Foreign Key violations
+        // Set user_id to null in audit_logs so history is preserved but link is gone
+        await supabaseAdmin.from('audit_logs').update({ user_id: null }).eq('user_id', userId);
+
+        // Detach from interviews and slots
+        await supabaseAdmin.from('interviews').update({ interviewer_id: null }).eq('interviewer_id', userId);
+        await supabaseAdmin.from('assessment_slots').update({ hr_id: null }).eq('hr_id', userId);
+
+        // Delete notifications for this user
+        await supabaseAdmin.from('notifications').delete().eq('user_id', userId);
+
+        // 2. Delete from Auth (this also deletes from public.users due to CASCADE in public.users table)
         const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
         if (authError) throw authError;
 
-        await logAction('USER_DELETED', userId, 'user', {});
+        await logAction('USER_DELETED', userId, 'user', { target_user_id: userId });
 
         revalidatePath('/admin/settings');
         return { success: true };
     } catch (error: any) {
+        console.error("deleteAdminUser error:", error);
         return { error: error.message };
     }
 }

@@ -42,7 +42,6 @@ export default function MicrosoftTeamsManager() {
             <p className="text-[12px] text-muted mb-4 leading-relaxed">
                 Provide a permanent Microsoft Teams meeting link. This link will be used for all scheduled interviews.
                 <br />
-                <span className="text-primary font-medium text-[11px]">No Azure App registration required. This is 100% IT-independent.</span>
             </p>
 
             <div className="bg-slate-50/50 border border-border rounded-sm p-4">
