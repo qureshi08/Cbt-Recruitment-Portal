@@ -1,74 +1,65 @@
-"use client";
+'use client';
 
-import { Video, Check, ShieldCheck, AlertCircle, Loader2, Link as LinkIcon, Save } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getMasterMeetingLink, updateMasterMeetingLink } from "@/app/actions";
+import { useState, useEffect } from 'react';
+import { Save, Loader2, Link as LinkIcon, ShieldCheck } from 'lucide-react';
+import { getMasterMeetingLink, updateMasterMeetingLink, sendTestInvite } from '@/app/actions';
 
 export default function MicrosoftTeamsManager() {
-    const searchParams = useSearchParams();
-    const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
-    const [msg, setMsg] = useState("");
-    const [masterLink, setMasterLink] = useState("");
+    const [masterLink, setMasterLink] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const microsoft = searchParams.get('microsoft');
-        if (microsoft === 'success') setStatus('success');
-        if (microsoft === 'error') {
-            setStatus('error');
-            setMsg(searchParams.get('msg') || "Failed to connect");
-        }
-
-        async function loadSettings() {
+        async function load() {
             const res = await getMasterMeetingLink();
             if (res.success) setMasterLink(res.value);
+            setIsLoading(false);
         }
-        loadSettings();
-    }, [searchParams]);
+        load();
+    }, []);
 
     const handleSaveLink = async () => {
         setIsSaving(true);
-        await updateMasterMeetingLink(masterLink);
+        const res = await updateMasterMeetingLink(masterLink);
+        if (res.success) {
+            alert("Master Meeting Link Saved!");
+        } else {
+            alert("Error: " + res.error);
+        }
         setIsSaving(false);
-        alert("Master Meeting Link Saved!");
     };
 
+    if (isLoading) return <div className="p-4 border border-border rounded-sm animate-pulse bg-slate-50/50" />;
+
     return (
-        <section className="border-t border-border pt-6 animate-in slide-in-from-bottom-2 duration-500 space-y-6">
-            <div className="flex items-center gap-2 mb-4">
-                <Video className="w-5 h-5 text-primary" strokeWidth={1.5} />
-                <h3
-                    className="text-heading font-bold"
-                    style={{ fontFamily: "var(--font-heading)", fontSize: "1.125rem", letterSpacing: "-0.02em" }}
-                >
-                    Microsoft <span className="italic-accent">Teams</span> Integration
-                </h3>
-            </div>
+        <section className="border-t border-border pt-6">
+            <h3
+                className="text-heading font-bold mb-1.5"
+                style={{ fontFamily: 'var(--font-heading)', fontSize: '1.125rem', letterSpacing: '-0.02em' }}
+            >
+                Shared <span className="italic-accent">Teams Link</span>
+            </h3>
+            <p className="text-[12px] text-muted mb-4 leading-relaxed">
+                Provide a permanent Microsoft Teams meeting link. This link will be used for all scheduled interviews.
+                <br />
+                <span className="text-primary font-medium text-[11px]">No Azure App registration required. This is 100% IT-independent.</span>
+            </p>
 
-            {/* Option 2: Manual Master Link (No Permissions Needed) */}
-            <div className="bg-surface border border-border rounded-md p-5 space-y-4">
-                <div className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/10 rounded-full mt-1">
-                        <LinkIcon className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[13px] font-bold text-heading">Fallback: Master Meeting Link</p>
-                        <p className="text-[11px] text-muted leading-relaxed">
-                            If the automated button above is blocked by your IT, simply paste a
-                            permanent Teams meeting link here. The portal will use this link for all interviews.
-                        </p>
-                    </div>
-                </div>
-
+            <div className="bg-slate-50/50 border border-border rounded-sm p-4">
+                <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-2 ml-1">
+                    Master Interview Link
+                </label>
                 <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={masterLink}
-                        onChange={(e) => setMasterLink(e.target.value)}
-                        placeholder="https://teams.microsoft.com/l/meetup-join/..."
-                        className="flex-1 bg-white border border-border rounded-sm px-4 py-2 text-xs outline-none focus:border-primary transition-all"
-                    />
+                    <div className="relative flex-1">
+                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
+                        <input
+                            type="text"
+                            value={masterLink}
+                            onChange={(e) => setMasterLink(e.target.value)}
+                            placeholder="https://teams.microsoft.com/l/meetup-join/..."
+                            className="w-full bg-white border border-border rounded-sm pl-9 pr-4 py-2 text-xs outline-none focus:border-primary transition-all"
+                        />
+                    </div>
                     <button
                         onClick={handleSaveLink}
                         disabled={isSaving}
@@ -79,16 +70,20 @@ export default function MicrosoftTeamsManager() {
                     </button>
                     <button
                         onClick={async () => {
-                            const { sendTestInvite } = await import("@/app/actions");
                             const res = await sendTestInvite();
                             if (res.success) alert("Test Email Sent to your account!");
                             else alert("Error: " + res.error);
                         }}
-                        className="btn-secondary !py-2 shrink-0"
+                        className="btn-secondary !py-2 shrink-0 flex items-center gap-2"
                     >
                         <ShieldCheck className="w-3.5 h-3.5" />
                         Send Test Invite
                     </button>
+                </div>
+
+                <div className="mt-3 flex items-start gap-2 text-[11px] text-amber-700 bg-amber-50/50 p-2 rounded-sm border border-amber-100">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 shrink-0" />
+                    <span><strong>Privacy Note:</strong> This link is shared across all interviews. Ensure your Teams settings allow for a clean meeting lobby.</span>
                 </div>
             </div>
         </section>
