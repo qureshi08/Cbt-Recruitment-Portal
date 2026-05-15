@@ -206,7 +206,19 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       `;
       break;
 
-    case 'SLOT_BOOKED':
+    case 'SLOT_BOOKED_INTERNAL':
+      subject = `[Slot Booked] ${data.name} scheduled assessment`;
+      title = 'Assessment Scheduled';
+      body = `
+        <p>A candidate has selected a slot for their technical assessment.</p>
+        <p><strong>Candidate:</strong> ${data.name}<br><strong>Time:</strong> ${data.slotTime}</p>
+        <div style="margin-top: 20px;">
+          <a href="${origin}/admin/applications" style="color: #009245; font-weight: bold;">View Application Pipeline</a>
+        </div>
+      `;
+      break;
+
+    case 'CANDIDATE_ASSESSMENT_CONFIRMED':
       subject = `[Confirmed] Assessment Scheduled: ${data.name}`;
       title = 'Assessment Details & Instructions';
       body = `

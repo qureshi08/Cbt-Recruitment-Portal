@@ -652,29 +652,35 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             throw new Error(statusResult.error || "Failed to update candidate status.");
         }
 
-        // Notify recruitment team & candidate about booking
+        // Notify recruitment team & candidate separately
         try {
             const recruitmentEmails = await getRecipientsByRoles(['recruitment_team']);
             const { data: cData } = await supabaseAdmin.from('candidates').select('name, email').eq('id', candidateId).single();
             const { data: sData } = await supabaseAdmin.from('assessment_slots').select('start_time').eq('id', slotId).single();
 
-            const allRecipients = Array.from(new Set([
-                ...(cData?.email ? [cData.email] : []),
-                ...recruitmentEmails
-            ])).filter(Boolean) as string[];
+            const slotTimeFormatted = sData ? new Date(sData.start_time).toLocaleString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }) : 'N/A';
 
-            if (allRecipients.length > 0) {
-                await notifyWorkflowStage('SLOT_BOOKED', allRecipients, {
+            // 1. Send detailed briefing to Candidate ONLY
+            if (cData?.email) {
+                await notifyWorkflowStage('CANDIDATE_ASSESSMENT_CONFIRMED', [cData.email], {
+                    name: cData.name,
+                    slotTime: slotTimeFormatted
+                });
+            }
+
+            // 2. Send concise alert to Recruitment Team ONLY
+            if (recruitmentEmails.length > 0) {
+                await notifyWorkflowStage('SLOT_BOOKED_INTERNAL', recruitmentEmails, {
                     name: cData?.name || 'A candidate',
-                    slotTime: sData ? new Date(sData.start_time).toLocaleString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    }) : 'N/A'
+                    slotTime: slotTimeFormatted
                 });
             }
         } catch (notifyErr) {
