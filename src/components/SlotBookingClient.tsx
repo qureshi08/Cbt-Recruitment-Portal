@@ -88,7 +88,7 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {initialSlots.map((slot) => (
+                {initialSlots.filter(slot => new Date(slot.start_time) > new Date()).map((slot) => (
                     <div
                         key={slot.id}
                         onClick={() => setSelectedSlot(slot.id)}

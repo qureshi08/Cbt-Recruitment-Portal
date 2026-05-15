@@ -72,6 +72,13 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         }
     };
 
+    const now = new Date();
+    const visibleSlots = slots.filter(slot => {
+        const isPast = new Date(slot.start_time) < now;
+        const isBooked = !!slot.candidate_id;
+        return !isPast || isBooked;
+    });
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-md border border-border shadow-soft">
@@ -89,7 +96,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {slots.map((slot) => {
+                {visibleSlots.map((slot) => {
                     const isLocked = slot.is_locked || !!slot.candidate_id;
                     return (
                         <div
