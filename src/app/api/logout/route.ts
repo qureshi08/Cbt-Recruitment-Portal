@@ -43,9 +43,6 @@ export async function GET() {
         }
     });
 
-    // Redirect to login with a hard 302
-    return NextResponse.redirect(
-        new URL('/login', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-        { status: 302 }
-    );
+    // Redirect to login using a relative URL to ensure it works in all environments
+    return NextResponse.redirect(new URL('/login', request.url));
 }

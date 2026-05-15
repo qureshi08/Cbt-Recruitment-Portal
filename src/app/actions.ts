@@ -184,8 +184,10 @@ export async function fetchAllUsers() {
 
 export async function createAdminUser(email: string, fullName: string, roleNames: string[], password?: string) {
     try {
-        console.log("Creating user:", email);
-        // 1. Create user in Supabase Auth
+        console.log("Attempting to create/sync user:", email);
+        let userId: string;
+
+        // 1. Try to create user in Supabase Auth
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password: password || 'Cbt@123456',
@@ -193,17 +195,33 @@ export async function createAdminUser(email: string, fullName: string, roleNames
             user_metadata: { full_name: fullName }
         });
 
-        if (authError) throw authError;
-        const userId = authData.user.id;
+        if (authError) {
+            // If user already exists in Auth, we need to find their ID
+            if (authError.message.includes("already been registered") || authError.status === 422) {
+                console.log("User already exists in Auth, fetching details...");
+                const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+                if (listError) throw listError;
+                
+                const existingUser = listData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+                if (!existingUser) throw new Error("Could not find existing user even though Auth reported they exist.");
+                userId = existingUser.id;
+            } else {
+                throw authError;
+            }
+        } else {
+            userId = authData.user.id;
+        }
 
-        // 2. Create entry in public.users table
+        // 2. Ensure entry exists in public.users table (Upsert)
         const { error: userError } = await supabaseAdmin
             .from('users')
             .upsert({ id: userId, email, full_name: fullName });
 
         if (userError) throw userError;
 
-        // 3. Assign roles
+        // 3. Clear existing roles to avoid duplicates and re-assign
+        await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+        
         for (const roleName of roleNames) {
             const { data: roleData } = await supabaseAdmin
                 .from('roles')
@@ -218,9 +236,10 @@ export async function createAdminUser(email: string, fullName: string, roleNames
             }
         }
 
-        await logAction('USER_CREATED', userId, 'user', { email, roles: roleNames });
+        await logAction('USER_SYNCED', userId, 'user', { email, roles: roleNames });
 
         revalidatePath('/admin/settings');
+        revalidatePath('/admin', 'layout');
         return { success: true };
     } catch (error: any) {
         console.error("Create user error:", error);
