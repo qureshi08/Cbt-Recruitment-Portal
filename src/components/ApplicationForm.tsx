@@ -9,6 +9,7 @@ export default function ApplicationForm() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [emailError, setEmailError] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,6 +36,7 @@ export default function ApplicationForm() {
         e.preventDefault();
         setIsSubmitting(true);
         setError(null);
+        if (emailError) return;
 
         try {
             const formData = new FormData(e.currentTarget);
@@ -89,7 +91,20 @@ export default function ApplicationForm() {
                 </div>
                 <div>
                     <Label>Email Address</Label>
-                    <input type="email" name="email" required className="input-field !py-2" placeholder="name@email.com" />
+                    <input
+                        type="email"
+                        name="email"
+                        required
+                        className={cn("input-field !py-2", emailError && "border-red-500 focus:border-red-500")}
+                        placeholder="name@email.com"
+                        onBlur={(e) => {
+                            const val = e.target.value;
+                            const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+                            if (val && !isValid) setEmailError("Please enter a valid email address.");
+                            else setEmailError(null);
+                        }}
+                    />
+                    {emailError && <p className="text-[10px] text-red-500 mt-1 font-medium ml-1">{emailError}</p>}
                 </div>
                 <div>
                     <Label>Mobile</Label>

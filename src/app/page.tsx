@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export default function Home() {
     return (
-        <div className="min-h-screen md:h-screen bg-white selection:bg-primary/10 flex flex-col md:overflow-hidden overflow-y-auto">
+        <div className="min-h-screen bg-white selection:bg-primary/10 flex flex-col overflow-y-auto">
             {/* Compact Header — 56px */}
             <nav className="h-12 flex items-center border-b border-border/40 bg-white/95 backdrop-blur-sm shrink-0">
                 <div className="container-main w-full flex justify-between items-center">
@@ -22,7 +22,7 @@ export default function Home() {
                 </div>
             </nav>
 
-            <main className="flex-1 flex items-center px-5 md:px-8 py-10 md:py-0 overflow-hidden">
+            <main className="flex-1 flex items-center px-5 md:px-8 py-6 md:py-10 overflow-y-auto">
                 <div className="container-main w-full grid lg:grid-cols-12 gap-8 xl:gap-14 items-center">
                     {/* Left: Editorial copy */}
                     <div className="lg:col-span-12 xl:col-span-5 space-y-4 md:space-y-6 text-center lg:text-left animate-in fade-in slide-in-from-left-4 duration-700">
@@ -48,8 +48,8 @@ export default function Home() {
                     </div>
 
                     {/* Right: Form card */}
-                    <div className="lg:col-span-12 xl:col-span-7 flex flex-col justify-center py-4 md:py-1">
-                        <div className="bg-white p-4 md:p-6 lg:p-8 border border-border rounded-[12px] shadow-soft overflow-hidden mx-auto w-full max-w-2xl lg:max-w-none">
+                    <div className="lg:col-span-12 xl:col-span-7 flex flex-col justify-center">
+                        <div className="bg-white p-4 md:p-6 lg:p-8 border border-border rounded-[12px] shadow-soft mx-auto w-full max-w-2xl lg:max-w-none">
                             <ApplicationForm />
                         </div>
                     </div>
