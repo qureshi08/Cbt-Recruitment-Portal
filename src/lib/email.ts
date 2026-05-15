@@ -181,6 +181,22 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       `;
       break;
 
+    case 'APPLICATION_RECEIVED_CANDIDATE':
+      subject = `Application Received: Convergent Graduate Academy Program`;
+      title = 'Thank You for Applying!';
+      body = `
+        <p>Hello ${data.name},</p>
+        <p>Thank you for applying to the <strong>Convergent Graduate Academy Program (CGAP)</strong>. We have successfully received your application for the <strong>${data.position}</strong> position.</p>
+        <p>Our team (and our AI screening assistant) is currently reviewing your profile and resume. We prioritize quality and technical excellence, so we appreciate your patience during this evaluation phase.</p>
+        <p><strong>Next Steps:</strong></p>
+        <ul>
+          <li>If your profile matches our criteria, you will receive an email to schedule a technical assessment.</li>
+          <li>In the meantime, feel free to explore our website to learn more about our culture and projects.</li>
+        </ul>
+        <p>We look forward to potentially having you join our team!</p>
+      `;
+      break;
+
     case 'APPROVED_PENDING_SLOTS':
       subject = `[Action Required] ${data.name} Approved — Slots Needed`;
       title = 'Candidate Approved: Slots Required';

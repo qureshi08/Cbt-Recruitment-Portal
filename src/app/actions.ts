@@ -426,21 +426,14 @@ export async function submitApplication(formData: FormData) {
 
         if (candidateError) throw candidateError;
 
-        // Auto-trigger AI Analysis
+        // 1. Notify Candidate IMMEDIATELY (UX: Provide instant feedback)
         try {
-            await analyzeCandidateWithAi(candidate.id);
-        } catch (aiErr) {
-            console.error("Background AI Analysis failed for new applicant:", candidate.id, aiErr);
+            await notifyWorkflowStage('APPLICATION_RECEIVED_CANDIDATE', [email], { name, position });
+        } catch (candidateNotifyErr) {
+            console.error("Candidate receipt email failed:", candidateNotifyErr);
         }
 
-        // Create notification for admin
-        await supabase.from('notifications').insert({
-            title: 'New Application',
-            message: `${name} has applied for ${position}.`,
-            is_read: false
-        });
-
-        // Notify recruitment team & Approvers
+        // 2. Notify recruitment team & Approvers
         try {
             const recipients = await getRecipientsByRoles(['recruitment_team', 'approver']);
             if (recipients.length > 0) {
@@ -448,6 +441,20 @@ export async function submitApplication(formData: FormData) {
             }
         } catch (notifyErr) {
             console.error("Workflow notification failed:", notifyErr);
+        }
+
+        // 3. Create notification for admin dashboard
+        await supabase.from('notifications').insert({
+            title: 'New Application',
+            message: `${name} has applied for ${position}.`,
+            is_read: false
+        });
+
+        // 4. Auto-trigger AI Analysis (awaited but candidate already gets email feedback)
+        try {
+            await analyzeCandidateWithAi(candidate.id);
+        } catch (aiErr) {
+            console.error("Background AI Analysis failed for new applicant:", candidate.id, aiErr);
         }
 
         revalidatePath("/admin");
