@@ -445,9 +445,23 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                 <Fragment key={candidate.id}>
                                     <tr className={cn("hover:bg-primary/[0.02] transition-colors", openActionId === candidate.id && "bg-primary/[0.02]")}>
                                         <td className="px-3 py-2.5">
-                                            <span className="text-[10px] font-bold text-muted bg-surface px-2 py-0.5 rounded-sm border border-border">
-                                                {candidate.batch_number || 'N/A'}
-                                            </span>
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className="text-[10px] font-bold text-muted bg-surface px-2 py-0.5 rounded-sm border border-border w-fit">
+                                                    {candidate.batch_number || 'N/A'}
+                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-bold text-muted/60 uppercase tracking-tighter leading-none">Applied</span>
+                                                    <span className="text-[10px] font-medium text-heading/70 tabular-nums leading-tight">
+                                                        {new Date(candidate.created_at).toLocaleDateString('en-GB', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td className="px-3 py-2.5 overflow-hidden">
                                             <div className="flex flex-col gap-0.5 min-w-0">
