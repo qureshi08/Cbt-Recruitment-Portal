@@ -1864,3 +1864,16 @@ export async function updateCurrentBatchNumber(batch: string) {
         return { success: false, error: error.message };
     }
 }
+export async function updatePassword(newPassword: string) {
+    try {
+        const supabaseServer = await createClient();
+        const { error } = await supabaseServer.auth.updateUser({
+            password: newPassword
+        });
+
+        if (error) throw error;
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}

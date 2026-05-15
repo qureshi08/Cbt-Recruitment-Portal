@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
 import { UserRole, logout } from "@/app/actions";
 import { useState } from "react";
 
@@ -34,6 +35,7 @@ const menuItems = [
 export default function Sidebar({ userRoles }: SidebarProps) {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
     const allowedItems = menuItems.filter(item =>
         item.roles.some(role => userRoles.includes(role as UserRole))
@@ -110,15 +112,13 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                     </div>
 
                     <div className="mt-auto px-3">
-                        <div className="p-3 bg-surface rounded-md border border-border mb-3">
-                            <div className="flex items-center gap-2 text-heading mb-1">
-                                <Shield className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">Master Auth</span>
-                            </div>
-                            <p className="text-[10px] text-muted leading-relaxed">
-                                Accessing with administrative protocols.
-                            </p>
-                        </div>
+                        <button
+                            onClick={() => setIsPasswordModalOpen(true)}
+                            className="flex items-center gap-2.5 px-2.5 py-2 w-full text-muted hover:text-primary hover:bg-primary/5 rounded-md transition-all text-[11px] font-semibold uppercase tracking-[0.12em] mb-2"
+                        >
+                            <Shield className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
+                            <span>Security Settings</span>
+                        </button>
 
                         <form action={logout} className="border-t border-border pt-3">
                             <button
@@ -131,6 +131,11 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                         </form>
                     </div>
                 </div>
+
+                <ChangePasswordModal
+                    isOpen={isPasswordModalOpen}
+                    onClose={() => setIsPasswordModalOpen(false)}
+                />
 
                 <div className="px-5 py-3 border-t border-border bg-surface">
                     <p className="text-[9px] font-semibold text-muted uppercase tracking-[0.16em] leading-none">
