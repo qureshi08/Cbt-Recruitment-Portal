@@ -1190,7 +1190,7 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
         revalidatePath('/admin/applications');
         revalidatePath('/admin');
 
-        return { success: true, meetingLink, isSimulated: meetingResult.isSimulated };
+        return { success: true, meetingLink };
     } catch (error: any) {
         console.error("generateAndLockInterview error:", error);
         return { error: error.message };
