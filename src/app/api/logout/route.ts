@@ -1,13 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-/**
- * Emergency logout endpoint.
- * Visit /api/logout in the browser to forcibly clear the session and
- * escape any redirect loop caused by a stuck or corrupted auth session.
- */
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
 
     const supabase = createServerClient(
@@ -19,30 +16,28 @@ export async function GET() {
                     return cookieStore.getAll();
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        cookieStore.set(name, value, options)
-                    );
+                    try {
+                        cookiesToSet.forEach(({ name, value, options }) =>
+                            cookieStore.set(name, value, options)
+                        );
+                    } catch (error) {
+                        // Handle potential cookie set errors in server components
+                    }
                 },
             },
         }
     );
 
-    // Sign out from Supabase
+    // Sign out
     await supabase.auth.signOut();
 
-    // Aggressively nuke every auth-related cookie
+    // Force clear cookies
     const allCookies = cookieStore.getAll();
     allCookies.forEach(cookie => {
-        if (
-            cookie.name.includes('auth') ||
-            cookie.name.includes('supabase') ||
-            cookie.name.includes('sb-') ||
-            cookie.name.includes('session')
-        ) {
+        if (cookie.name.includes('sb-') || cookie.name.includes('auth')) {
             cookieStore.delete(cookie.name);
         }
     });
 
-    // Redirect to login using a relative URL to ensure it works in all environments
     return NextResponse.redirect(new URL('/login', request.url));
 }
