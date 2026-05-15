@@ -83,7 +83,7 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
         <p>Hello!</p>
         <p>I hope this email finds you well.</p>
         <p>On behalf of Convergent Business Technologies, I am delighted to inform you that you have cleared the assessment for the <strong>Convergent Graduate Academy Program</strong>.</p>
-        <p>However, due to the high volume of applications and limited number of seats, a merit list will be created to select the final candidates. As a next step, your application will be internally reviewed and you will be notified of your application status at least one week before the commencement of the next batch. The tentative start date for the upcoming batch is in <strong>early July</strong>.</p>
+        <p>However, due to the high volume of applications and limited number of seats, a merit list will be created to select the final candidates. As a next step, your application will be internally reviewed and you will be notified of your application status at least one week before the commencement of the next batch.</p>
         <p>Please feel free to reach out in case of any questions or concerns. We look forward to having you as a part of the CGAP.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
         <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
