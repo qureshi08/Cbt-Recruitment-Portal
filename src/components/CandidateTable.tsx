@@ -450,15 +450,20 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                     {candidate.batch_number || 'N/A'}
                                                 </span>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] font-bold text-muted/60 uppercase tracking-tighter leading-none">Applied</span>
+                                                    <span className="text-[9px] font-bold text-muted/60 uppercase tracking-tighter leading-none mb-1">Applied</span>
                                                     <span className="text-[10px] font-medium text-heading/70 tabular-nums leading-tight">
                                                         {new Date(candidate.created_at).toLocaleDateString('en-GB', {
-                                                            day: 'numeric',
-                                                            month: 'short',
+                                                            day: '2-digit',
+                                                            month: '2-digit',
+                                                            year: 'numeric'
+                                                        })}
+                                                    </span>
+                                                    <span className="text-[10px] font-medium text-heading/70 tabular-nums leading-tight">
+                                                        {new Date(candidate.created_at).toLocaleTimeString('en-US', {
                                                             hour: '2-digit',
                                                             minute: '2-digit',
                                                             hour12: true
-                                                        })}
+                                                        }).toLowerCase()}
                                                     </span>
                                                 </div>
                                             </div>
