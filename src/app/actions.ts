@@ -666,6 +666,7 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             const { data: sData } = await supabaseAdmin.from('assessment_slots').select('start_time').eq('id', slotId).single();
 
             const slotTimeFormatted = sData ? new Date(sData.start_time).toLocaleString('en-US', {
+                timeZone: 'Asia/Karachi',
                 weekday: 'long',
                 month: 'long',
                 day: 'numeric',
