@@ -119,14 +119,15 @@ export const sendNotRecommendedEmail = async (candidateEmail: string, candidateN
   const mailOptions = {
     from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
-    subject: 'Update Regarding Your Application - CBT',
+    subject: 'Update Regarding Your Application - Convergent Graduate Academy Program',
     html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <h2>Update on your application, ${candidateName}</h2>
-        <p>Thank you for giving us the opportunity to consider you for the CGAP program.</p>
-        <p>After careful consideration, we regret to inform you that we will not be moving forward with your application at this time.</p>
-        <p>We appreciate your interest in CBT and wish you all the best in your future endeavors.</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7; color: #333;">
+        <p>Hello ${candidateName},</p>
+        <p>I am writing to you as a follow-up to your application for the <strong>Convergent Graduate Academy Program</strong>.</p>
+        <p>Thank you for your interest in our program and for taking the time to apply. After careful review of your application, we regret to inform you that you have not been shortlisted to proceed further in the recruitment process.</p>
+        <p>However, we strongly encourage you to apply again after six (06) months.</p>
+        <p>We appreciate your interest in Convergent and wish you the very best in your future endeavors.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
         <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
       </div>
     `,
@@ -209,7 +210,7 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       body = `
         <p>Hello ${data.name},</p>
         <p>Thank you for applying to the <strong>Convergent Graduate Academy Program (CGAP)</strong>. We have successfully received your application for the <strong>${data.position}</strong> position.</p>
-        <p>Our team (and our AI screening assistant) is currently reviewing your profile and resume. We prioritize quality and technical excellence, so we appreciate your patience during this evaluation phase.</p>
+        <p>Our team is currently reviewing your profile and resume. We prioritize quality and technical excellence, so we appreciate your patience during this evaluation phase.</p>
         <p><strong>Next Steps:</strong></p>
         <ul>
           <li>If your profile matches our criteria, you will receive an email to schedule a technical assessment.</li>
