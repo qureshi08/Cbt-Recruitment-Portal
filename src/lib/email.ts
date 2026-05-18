@@ -287,8 +287,6 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
           <li>Focus on addressing each question individually</li>
         </ul>
 
-        <p>Please confirm your availability for the scheduled slot mentioned above by responding to this email at your earliest convenience.</p>
-
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
           <p><strong>Address:</strong><br>
           Convergent Business Technologies<br>
