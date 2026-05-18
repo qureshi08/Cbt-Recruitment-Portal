@@ -90,7 +90,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         const total = filteredCandidates.length;
         const pending = filteredCandidates.filter(c => c.status === 'Applied').length;
         const testParticipants = filteredCandidates.filter(c =>
-            ['Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed'].includes(c.status)
+            ['Approved', 'Invite Sent', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed'].includes(c.status)
         ).length;
         const activeInterviews = filteredCandidates.filter(c =>
             ['To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'].includes(c.status)

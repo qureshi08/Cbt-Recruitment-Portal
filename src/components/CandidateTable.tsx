@@ -162,6 +162,7 @@ const statusColors: Record<CandidateStatus, string> = {
     Applied: "bg-white text-heading border-border",
     Rejected: "bg-surface text-muted border-border font-bold",
     Approved: "bg-primary text-white border-primary shadow-sm",
+    "Invite Sent": "bg-blue-50 text-blue-700 border-blue-200 font-bold",
     "Assessment Scheduled": "bg-heading text-white border-heading shadow-sm",
     Confirmed: "bg-primary text-white border-primary shadow-sm",
     Rescheduled: "bg-heading text-white border-heading shadow-sm",
@@ -687,7 +688,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         <tr className="bg-gradient-to-r from-primary/[0.03] to-transparent">
                                             <td colSpan={8} className="px-4 py-3">
                                                 <div className="flex flex-wrap items-center justify-end gap-3 fade-in slide-in-from-top-1 animate-in duration-200">
-                                                    {candidate.status === 'Approved' && (isMaster || isHR) && (
+                                                    {(candidate.status === 'Approved' || candidate.status === 'Invite Sent') && (isMaster || isHR) && (
                                                         <>
                                                             {/* Send Assessment Invite — primary HR action */}
                                                             <button

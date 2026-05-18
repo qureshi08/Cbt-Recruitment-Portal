@@ -361,7 +361,7 @@ export async function submitApplication(formData: FormData) {
             const lastApp = pastApps[0];
 
             // If an active application exists, block
-            const activeStatuses = ['Applied', 'Approved', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Selected'];
+            const activeStatuses = ['Applied', 'Approved', 'Invite Sent', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Selected'];
             if (activeStatuses.includes(lastApp.status)) {
                 return {
                     error: "You already have an active application in the system. Please wait for your current application process to conclude."
@@ -576,8 +576,8 @@ export async function sendAssessmentInvite(candidateId: string) {
             .single();
 
         if (error || !candidate) throw new Error('Candidate not found.');
-        if (candidate.status !== 'Approved') {
-            throw new Error(`Cannot send invite: candidate status is "${candidate.status}", expected "Approved".`);
+        if (candidate.status !== 'Approved' && candidate.status !== 'Invite Sent') {
+            throw new Error(`Cannot send invite: candidate status is "${candidate.status}", expected "Approved" or "Invite Sent".`);
         }
 
         const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
@@ -585,6 +585,18 @@ export async function sendAssessmentInvite(candidateId: string) {
 
         // Send the booking email to the candidate
         await sendAssessmentEmail(candidate.email, candidate.name, bookingLink);
+
+        // Update candidate status to Invite Sent in database
+        const { error: statusUpdateError } = await supabaseAdmin
+            .from('candidates')
+            .update({
+                status: 'Invite Sent',
+                last_action_by: userName,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', candidateId);
+
+        if (statusUpdateError) throw statusUpdateError;
 
         // Log the action
         await logAction('ASSESSMENT_INVITE_SENT', candidateId, 'candidate', { sent_by: userName });
@@ -730,7 +742,7 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             .eq("id", candidateId)
             .single();
 
-        if (candidate?.status !== "Approved") {
+        if (candidate?.status !== "Approved" && candidate?.status !== "Invite Sent") {
             return { error: `You have scheduled an assessment (Current status: ${candidate?.status}).` };
         }
 
@@ -850,8 +862,8 @@ export async function rescheduleAssessment(candidateId: string) {
 
         if (slotError) throw slotError;
 
-        // 3. Reset candidate status back to Approved
-        await updateCandidateStatus(candidateId, "Approved");
+        // 3. Reset candidate status back to Invite Sent
+        await updateCandidateStatus(candidateId, "Invite Sent");
 
         revalidatePath("/admin/slots");
         revalidatePath("/admin/applications");

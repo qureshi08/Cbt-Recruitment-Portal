@@ -16,6 +16,7 @@ export type CandidateStatus =
     | 'Applied'
     | 'Rejected'
     | 'Approved'
+    | 'Invite Sent'
     | 'Assessment Scheduled'
     | 'Confirmed'
     | 'Rescheduled'
