@@ -691,6 +691,36 @@ export async function createAssessmentSlot(startTime: string, endTime: string) {
     }
 }
 
+export async function deleteAssessmentSlot(slotId: string) {
+    try {
+        const { data: slot, error: fetchError } = await supabase
+            .from("assessment_slots")
+            .select("candidate_id")
+            .eq("id", slotId)
+            .single();
+
+        if (fetchError) throw fetchError;
+        if (!slot) throw new Error("Slot not found");
+
+        if (slot.candidate_id) {
+            return { error: "Cannot delete a slot that is already booked by a candidate." };
+        }
+
+        const { error } = await supabase
+            .from("assessment_slots")
+            .delete()
+            .eq("id", slotId);
+
+        if (error) throw error;
+
+        revalidatePath("/admin/slots");
+        revalidatePath("/admin");
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
 export async function bookAssessmentSlot(candidateId: string, slotId: string) {
     try {
         // 0. Verify candidate is actually allowed to book (must be 'Approved')

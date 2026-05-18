@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createAssessmentSlot, completeAssessment } from "@/app/actions";
+import { createAssessmentSlot, completeAssessment, deleteAssessmentSlot } from "@/app/actions";
 
 interface Slot {
     id: string;
@@ -72,6 +72,26 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         }
     };
 
+    const handleDeleteSlot = async (slotId: string) => {
+        if (!window.confirm("Are you sure you want to delete this assessment slot?")) return;
+
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            const result = await deleteAssessmentSlot(slotId);
+            if (result.success) {
+                setSlots((prev) => prev.filter((s) => s.id !== slotId));
+                alert("Assessment slot deleted successfully!");
+            } else {
+                alert(result.error || "Failed to delete slot");
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to delete slot");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const now = new Date();
     const visibleSlots = slots.filter(slot => {
         const isPast = new Date(slot.start_time) < now;
@@ -113,17 +133,29 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                 )}>
                                     <CalendarIcon className="w-5 h-5" />
                                 </div>
-                                {isLocked ? (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-sm border border-rose-100">
-                                        <Lock className="w-3 h-3" />
-                                        <span className="text-[9px] font-bold uppercase tracking-widest">Locked</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-sm border border-emerald-100">
-                                        <Unlock className="w-3 h-3" />
-                                        <span className="text-[9px] font-bold uppercase tracking-widest">Open</span>
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {!slot.candidate_id && (
+                                        <button
+                                            onClick={() => handleDeleteSlot(slot.id)}
+                                            disabled={isSubmitting}
+                                            className="p-1.5 text-muted hover:text-rose-600 hover:bg-rose-50 rounded-sm border border-transparent hover:border-rose-100 transition-colors"
+                                            title="Delete Slot"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    {isLocked ? (
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-sm border border-rose-100">
+                                            <Lock className="w-3 h-3" />
+                                            <span className="text-[9px] font-bold uppercase tracking-widest">Locked</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-sm border border-emerald-100">
+                                            <Unlock className="w-3 h-3" />
+                                            <span className="text-[9px] font-bold uppercase tracking-widest">Open</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-4 flex-grow">
