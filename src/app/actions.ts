@@ -889,14 +889,76 @@ export async function getTeamNotificationRecipients() {
     return data;
 }
 
-// Helper to get emails for specific roles
+// Helper to get emails for specific roles from BOTH team_notifications and registered users
 async function getRecipientsByRoles(categories: string[]): Promise<string[]> {
     try {
-        const { data } = await supabaseAdmin
+        // 1. Fetch from team_notifications (manually configured alerts)
+        const { data: teamNotifs } = await supabaseAdmin
             .from('team_notifications')
             .select('email')
             .in('category', categories);
-        return data?.map(r => r.email) || [];
+        
+        const emails: string[] = teamNotifs?.map(r => r.email.toLowerCase().trim()) || [];
+
+        // 2. Map categories to database role names (with legacy role fallbacks)
+        const dbRoles: string[] = [];
+        categories.forEach(cat => {
+            if (cat === 'recruitment_team') {
+                dbRoles.push('HR', 'Master');
+            } else if (cat === 'approver') {
+                dbRoles.push('Approver');
+            } else if (cat === 'l1_interviewer') {
+                dbRoles.push('L1_Interviewer', 'Interviewer');
+            } else if (cat === 'l2_interviewer') {
+                dbRoles.push('L2_Interviewer', 'Interviewer');
+            }
+        });
+
+        // 3. Fetch emails of active users who have been assigned these database roles
+        if (dbRoles.length > 0) {
+            const { data: rolesData } = await supabaseAdmin
+                .from('roles')
+                .select('id')
+                .in('name', dbRoles);
+            
+            const roleIds = rolesData?.map(r => r.id) || [];
+
+            if (roleIds.length > 0) {
+                const { data: userRolesData } = await supabaseAdmin
+                    .from('user_roles')
+                    .select('user_id')
+                    .in('role_id', roleIds);
+                
+                const userIds = userRolesData?.map(ur => ur.user_id) || [];
+
+                if (userIds.length > 0) {
+                    const { data: usersData } = await supabaseAdmin
+                        .from('users')
+                        .select('email')
+                        .in('id', userIds);
+                    
+                    usersData?.forEach(u => {
+                        if (u.email) {
+                            emails.push(u.email.toLowerCase().trim());
+                        }
+                    });
+                }
+            }
+        }
+
+        // Return unique, non-empty emails
+        const uniqueEmails = Array.from(new Set(emails)).filter(Boolean);
+
+        // Safety fallback: if no emails are configured for L1/L2 Interviewers, fallback to the Master / System Admin email
+        if (uniqueEmails.length === 0 && (categories.includes('l1_interviewer') || categories.includes('l2_interviewer'))) {
+            const systemEmail = process.env.EMAIL_USER;
+            if (systemEmail) {
+                console.warn(`No active interviewers configured for categories: ${categories.join(', ')}. Falling back to system email: ${systemEmail}`);
+                uniqueEmails.push(systemEmail.toLowerCase().trim());
+            }
+        }
+
+        return uniqueEmails;
     } catch (e) {
         console.error("Failed to fetch recipients:", e);
         return [];
