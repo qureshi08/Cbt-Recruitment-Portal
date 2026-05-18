@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { after } from 'next/server';
 import {
     sendAssessmentEmail,
     sendRecommendedEmail,
@@ -474,8 +475,16 @@ export async function submitApplication(formData: FormData) {
             is_read: false
         });
 
-        // No automatic AI trigger here - prevents "ghost" analyzing status in serverless environments.
-        // Candidates will default to 'pending' (Ready to Screen) for stable manual/bulk analysis.
+        // 4. Automatically trigger AI resume analysis in the background after the response is returned to candidate
+        after(async () => {
+            try {
+                console.log(`[AI Auto-Screening] Starting background analysis for candidate: ${candidate.id} (${candidate.name})`);
+                await analyzeCandidateWithAi(candidate.id);
+                console.log(`[AI Auto-Screening] Finished background analysis for candidate: ${candidate.id}`);
+            } catch (err) {
+                console.error(`[AI Auto-Screening] Error in background analysis for candidate ${candidate.id}:`, err);
+            }
+        });
 
         revalidatePath("/admin");
         return { success: true };
