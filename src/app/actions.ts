@@ -2255,6 +2255,7 @@ export async function sendDailySummaryNotifications() {
 
         if (deleteError) {
             console.error("[Daily Summary] Failed to delete processed items from queue:", deleteError);
+            return { success: false, error: `Failed to clear queue: ${deleteError.message}` };
         } else {
             console.log(`[Daily Summary] Flushed ${itemIds.length} processed items from notification queue.`);
         }

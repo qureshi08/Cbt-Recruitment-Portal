@@ -139,21 +139,27 @@ export const sendNotRecommendedEmail = async (candidateEmail: string, candidateN
 export const sendTeamNotification = async (recipients: string[], subject: string, html: string) => {
   if (!recipients || recipients.length === 0) return null;
 
-  const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
-    to: recipients.join(','),
-    subject: subject,
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        ${html}
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment System</p>
-      </div>
-    `,
-  };
+  const results = [];
 
-  return transporter.sendMail(mailOptions);
+  for (const email of recipients) {
+    const mailOptions = {
+      from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: subject,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          ${html}
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment System</p>
+        </div>
+      `,
+    };
+    results.push(transporter.sendMail(mailOptions));
+  }
+
+  return Promise.all(results);
 };
+
 
 export const notifyRole = async (emails: string[], subject: string, title: string, body: string, attachments?: any[]) => {
   if (!emails || emails.length === 0) return null;
