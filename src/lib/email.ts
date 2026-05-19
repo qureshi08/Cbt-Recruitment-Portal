@@ -186,8 +186,47 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
   return Promise.all(results);
 };
 
+import { supabaseAdmin } from './supabase-admin';
+
+// Helper to queue a notification in the database
+async function queueNotification(category: string, eventType: string, details: any) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('notification_queue')
+      .insert({
+        category,
+        event_type: eventType,
+        details
+      });
+    if (error) throw error;
+    console.log(`[Notification Queued] Stage: ${eventType} for Role: ${category}`);
+  } catch (e) {
+    console.error("Failed to queue notification:", e);
+  }
+}
+
 export const notifyWorkflowStage = async (stage: string, emails: string[], data: any) => {
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
+
+  // Queue administrative notifications instead of sending immediately
+  const queuedStages: Record<string, string[]> = {
+    'NEW_APPLICATION': ['recruitment_team', 'approver'],
+    'APPROVED_PENDING_SLOTS': ['recruitment_team'],
+    'INVITE_SENT': ['recruitment_team'],
+    'SLOT_BOOKED_INTERNAL': ['recruitment_team'],
+    'DECISION': ['recruitment_team'],
+    'AVAILABILITY_RESPONSE': ['recruitment_team']
+  };
+
+  if (stage in queuedStages) {
+    const roles = queuedStages[stage];
+    for (const role of roles) {
+      await queueNotification(role, stage, data);
+    }
+    // Return a resolved result matching signature expectations
+    return [{ accepted: true }];
+  }
+
   let subject = '';
   let title = '';
   let body = '';

@@ -13,7 +13,8 @@ import {
     sendRecommendedEmail,
     sendNotRecommendedEmail,
     sendSelectedEmail,
-    notifyWorkflowStage
+    notifyWorkflowStage,
+    sendTeamNotification
 } from "@/lib/email";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { PDFDocument, PDFName, PDFDict, PDFRawStream } from 'pdf-lib';
@@ -2036,6 +2037,7 @@ export async function updateCurrentBatchNumber(batch: string) {
         return { success: false, error: error.message };
     }
 }
+
 export async function updatePassword(newPassword: string) {
     try {
         const supabaseServer = await createClient();
@@ -2049,3 +2051,218 @@ export async function updatePassword(newPassword: string) {
         return { success: false, error: error.message };
     }
 }
+
+export async function sendDailySummaryNotifications() {
+    try {
+        console.log("[Daily Summary] Running daily digest generation...");
+
+        // 1. Fetch all queued notifications
+        const { data: queuedItems, error: fetchError } = await supabaseAdmin
+            .from('notification_queue')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (fetchError) throw fetchError;
+        if (!queuedItems || queuedItems.length === 0) {
+            console.log("[Daily Summary] No pending notifications in queue. Skipping summary dispatch.");
+            return { success: true, message: "No items queued" };
+        }
+
+        // 2. Group items by category (role)
+        const itemsByCategory: Record<string, typeof queuedItems> = {};
+        for (const item of queuedItems) {
+            if (!itemsByCategory[item.category]) {
+                itemsByCategory[item.category] = [];
+            }
+            itemsByCategory[item.category].push(item);
+        }
+
+        const categories = Object.keys(itemsByCategory);
+        console.log(`[Daily Summary] Dispatching summaries for roles: ${categories.join(', ')}`);
+
+        // 3. For each category, get recipients and send a consolidated email
+        for (const category of categories) {
+            const items = itemsByCategory[category];
+            const recipients = await getRecipientsByRoles([category]);
+            if (recipients.length === 0) {
+                console.warn(`[Daily Summary] No email recipients configured for role category: ${category}. Skipping.`);
+                continue;
+            }
+
+            // Group by event type
+            const eventsByStyle: Record<string, any[]> = {};
+            for (const item of items) {
+                if (!eventsByStyle[item.event_type]) {
+                    eventsByStyle[item.event_type] = [];
+                }
+                eventsByStyle[item.event_type].push(item.details);
+            }
+
+            // Build HTML Body sections
+            let sectionsHtml = '';
+
+            // A. New Applications
+            if (eventsByStyle['NEW_APPLICATION']?.length > 0) {
+                sectionsHtml += `
+                    <div style="margin-bottom: 25px; border-left: 4px solid #009245; padding-left: 15px;">
+                        <h3 style="color: #009245; margin: 0 0 10px 0; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Intake: New Applications</h3>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #eee; color: #666;">
+                                    <th style="padding: 6px 0;">Candidate</th>
+                                    <th style="padding: 6px 0;">Position</th>
+                                    <th style="padding: 6px 0;">Email</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${eventsByStyle['NEW_APPLICATION'].map(d => `
+                                    <tr style="border-bottom: 1px dashed #f0f0f0;">
+                                        <td style="padding: 8px 0; font-weight: bold; color: #111;">${d.name}</td>
+                                        <td style="padding: 8px 0; color: #555;">${d.position}</td>
+                                        <td style="padding: 8px 0; color: #888;">${d.email}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // B. Slot Bookings
+            if (eventsByStyle['SLOT_BOOKED_INTERNAL']?.length > 0) {
+                sectionsHtml += `
+                    <div style="margin-bottom: 25px; border-left: 4px solid #1e293b; padding-left: 15px;">
+                        <h3 style="color: #1e293b; margin: 0 0 10px 0; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Technical Assessments Scheduled</h3>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #eee; color: #666;">
+                                    <th style="padding: 6px 0;">Candidate</th>
+                                    <th style="padding: 6px 0;">Scheduled Date / Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${eventsByStyle['SLOT_BOOKED_INTERNAL'].map(d => `
+                                    <tr style="border-bottom: 1px dashed #f0f0f0;">
+                                        <td style="padding: 8px 0; font-weight: bold; color: #111;">${d.name}</td>
+                                        <td style="padding: 8px 0; color: #009245; font-weight: bold;">${d.slotTime}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // C. Approved, Pending Slots
+            if (eventsByStyle['APPROVED_PENDING_SLOTS']?.length > 0) {
+                sectionsHtml += `
+                    <div style="margin-bottom: 25px; border-left: 4px solid #b45309; padding-left: 15px;">
+                        <h3 style="color: #b45309; margin: 0 0 10px 0; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Approved (Awaiting Slots)</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #333; line-height: 1.6;">
+                            ${eventsByStyle['APPROVED_PENDING_SLOTS'].map(d => `
+                                <li style="margin-bottom: 4px;"><strong>${d.name}</strong> has been approved. HR needs to create slot resources.</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // D. Invites Sent
+            if (eventsByStyle['INVITE_SENT']?.length > 0) {
+                sectionsHtml += `
+                    <div style="margin-bottom: 25px; border-left: 4px solid #2563eb; padding-left: 15px;">
+                        <h3 style="color: #2563eb; margin: 0 0 10px 0; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Assessment Invites Dispatched</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #333; line-height: 1.6;">
+                            ${eventsByStyle['INVITE_SENT'].map(d => `
+                                <li style="margin-bottom: 4px;"><strong>${d.name}</strong> was sent a slot booking invitation link by <em>${d.sentBy}</em>.</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // E. Decisions Logged
+            if (eventsByStyle['DECISION']?.length > 0) {
+                sectionsHtml += `
+                    <div style="margin-bottom: 25px; border-left: 4px solid #0d9488; padding-left: 15px;">
+                        <h3 style="color: #0d9488; margin: 0 0 10px 0; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Decisions & Feedback Logs</h3>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #eee; color: #666;">
+                                    <th style="padding: 6px 0;">Candidate</th>
+                                    <th style="padding: 6px 0;">Status Outcome</th>
+                                    <th style="padding: 6px 0;">Recorded By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${eventsByStyle['DECISION'].map(d => `
+                                    <tr style="border-bottom: 1px dashed #f0f0f0;">
+                                        <td style="padding: 8px 0; font-weight: bold; color: #111;">${d.name}</td>
+                                        <td style="padding: 8px 0; font-weight: bold; color: ${d.status === 'Recommended' || d.status === 'Selected' ? '#009245' : '#dc2626'}">${d.status}</td>
+                                        <td style="padding: 8px 0; color: #666; font-style: italic;">${d.interviewer}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // F. Availability Responses
+            if (eventsByStyle['AVAILABILITY_RESPONSE']?.length > 0) {
+                sectionsHtml += `
+                    <div style="margin-bottom: 25px; border-left: 4px solid #4f46e5; padding-left: 15px;">
+                        <h3 style="color: #4f46e5; margin: 0 0 10px 0; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Interviewer Availability Updates</h3>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #333; line-height: 1.6;">
+                            ${eventsByStyle['AVAILABILITY_RESPONSE'].map(d => `
+                                <li style="margin-bottom: 6px;">
+                                    <strong>${d.interviewerName || d.interviewerEmail}</strong> responded for <strong>${d.candidateName}</strong>: 
+                                    <span style="font-weight: bold; color: ${d.isAvailable ? '#009245' : '#dc2626'};">${d.isAvailable ? 'Available' : 'Unavailable'}</span>
+                                    ${d.isAvailable && d.preferredTime ? ` (Preferred time: <em>${d.preferredTime}</em>)` : ''}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Format Role Name for Header Title
+            const roleDisplayName = category === 'recruitment_team' ? 'Recruitment & HR Team' : 'Approver Panel';
+
+            // Send the unified digest
+            const subject = `[Daily Summary] CBT Recruitment Updates — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            const fullHtml = `
+                <div style="margin-bottom: 25px;">
+                    <h2 style="color: #009245; margin: 0 0 5px 0; font-size: 20px; font-weight: bold;">Daily Recruitment Summary</h2>
+                    <p style="font-size: 12px; color: #666; margin: 0;">Compiled for <strong>${roleDisplayName}</strong> | Local Time: ${new Date().toLocaleString()}</p>
+                </div>
+                ${sectionsHtml}
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app'}/admin" style="background-color: #009245; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 13px; display: inline-block;">Access Admin Dashboard</a>
+                </div>
+            `;
+
+            await sendTeamNotification(recipients, subject, fullHtml);
+            console.log(`[Daily Summary] Dispatch complete for: ${category} to ${recipients.length} users.`);
+        }
+
+        // 4. Delete successfully processed items from the queue
+        const itemIds = queuedItems.map(item => item.id);
+        const { error: deleteError } = await supabaseAdmin
+            .from('notification_queue')
+            .delete()
+            .in('id', itemIds);
+
+        if (deleteError) {
+            console.error("[Daily Summary] Failed to delete processed items from queue:", deleteError);
+        } else {
+            console.log(`[Daily Summary] Flushed ${itemIds.length} processed items from notification queue.`);
+        }
+
+        return { success: true, count: queuedItems.length };
+    } catch (error: any) {
+        console.error("[Daily Summary] Error running daily summary dispatch:", error);
+        return { success: false, error: error.message };
+    }
+}
+
