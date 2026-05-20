@@ -27,7 +27,8 @@ export type CandidateStatus =
     | 'L2 Interview Required'
     | 'Recommended'
     | 'Not Recommended'
-    | 'Selected';
+    | 'Selected'
+    | 'Absent';
 
 export interface Candidate {
     id: string;
@@ -88,6 +89,9 @@ export interface Candidate {
         l1_interviewer_name?: string | null;
         l2_interviewer_name?: string | null;
     };
+    assessment_slot?: {
+        start_time: string;
+    } | null;
 }
 
 export interface Application {

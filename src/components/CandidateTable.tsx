@@ -174,6 +174,7 @@ const statusColors: Record<CandidateStatus, string> = {
     "Not Recommended": "bg-red-600 text-white border-red-700 shadow-sm font-bold",
     "L2 Interview Required": "bg-heading text-white border-heading shadow-sm font-bold",
     Selected: "bg-emerald-700 text-white border-emerald-800 shadow-premium font-bold",
+    Absent: "bg-red-50 text-red-700 border-red-200 font-bold",
 };
 
 const formatCNIC = (cnic: string) => {
@@ -370,7 +371,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     };
 
     const filteredCandidates = useMemo(() => {
-        return candidates.filter(candidate => {
+        const filtered = candidates.filter(candidate => {
             const matchesSearch =
                 candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -381,6 +382,21 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
 
             return matchesSearch && matchesStatus && matchesBatch;
         });
+
+        // Dynamic sorting based on status filter
+        if (['Assessment Scheduled', 'Confirmed', 'Rescheduled'].includes(statusFilter)) {
+            filtered.sort((a, b) => {
+                const timeA = a.assessment_slot?.start_time ? new Date(a.assessment_slot.start_time).getTime() : 0;
+                const timeB = b.assessment_slot?.start_time ? new Date(b.assessment_slot.start_time).getTime() : 0;
+                // If neither has a slot, leave as is
+                if (!timeA && !timeB) return 0;
+                if (!timeA) return 1; // Put ones without time at the bottom
+                if (!timeB) return -1;
+                return timeA - timeB; // Ascending (earliest first)
+            });
+        }
+
+        return filtered;
     }, [candidates, searchQuery, statusFilter, batchFilter]);
 
     const statuses = ["All", ...Object.keys(statusColors)];

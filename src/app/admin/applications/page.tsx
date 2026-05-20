@@ -8,9 +8,10 @@ export default async function ApplicationsPage() {
     const roles = user?.roles || [];
 
     // Fetch candidates + their latest interview scores in parallel
-    const [{ data: candidates, error }, { data: interviews }] = await Promise.all([
+    const [{ data: candidates, error }, { data: interviews }, { data: slots }] = await Promise.all([
         supabase.from("candidates").select("*").order("created_at", { ascending: false }),
         supabase.from("interviews").select("candidate_id, decision, l1_feedback_json, l2_feedback_json, l1_interviewer_name, l2_interviewer_name"),
+        supabase.from("assessment_slots").select("candidate_id, start_time").not("candidate_id", "is", null),
     ]);
 
     if (error) {
@@ -29,10 +30,19 @@ export default async function ApplicationsPage() {
         });
     }
 
+    // Build a lookup map for assessment slots
+    const slotMap = new Map<string, { start_time: string }>();
+    for (const slot of slots || []) {
+        if (slot.candidate_id) {
+            slotMap.set(slot.candidate_id, { start_time: slot.start_time });
+        }
+    }
+
     // Merge interview scores into candidate objects
     const enrichedCandidates: Candidate[] = (candidates || []).map((c: any) => ({
         ...c,
         interview_scores: scoreMap.get(c.id) ?? undefined,
+        assessment_slot: slotMap.get(c.id) ?? undefined,
     }));
 
     return (

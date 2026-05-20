@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2 } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2, UserX } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createAssessmentSlot, completeAssessment, deleteAssessmentSlot } from "@/app/actions";
+import { createAssessmentSlot, completeAssessment, deleteAssessmentSlot, updateCandidateStatus } from "@/app/actions";
 
 interface Slot {
     id: string;
@@ -20,6 +20,7 @@ interface SlotManagerProps {
 
 export default function SlotManager({ initialSlots }: SlotManagerProps) {
     const [slots, setSlots] = useState<Slot[]>(initialSlots);
+    const [filterView, setFilterView] = useState<'All' | 'Today' | 'Upcoming' | 'Absentees' | 'Open'>('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,26 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         }
     };
 
+    const markAbsent = async (slotId: string, candidateId: string) => {
+        if (!window.confirm("Mark this candidate as absent? They will be removed from the active pipeline.")) return;
+
+        setIsSubmitting(true);
+        try {
+            // @ts-ignore
+            const result = await updateCandidateStatus(candidateId, "Absent");
+            if (result.success) {
+                alert("Candidate marked as absent.");
+                window.location.reload();
+            } else {
+                alert(result.error || "Failed to update status.");
+            }
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleDeleteSlot = async (slotId: string) => {
         if (!window.confirm("Are you sure you want to delete this assessment slot?")) return;
 
@@ -93,10 +114,21 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
     };
 
     const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
     const visibleSlots = slots.filter(slot => {
         const isPast = new Date(slot.start_time) < now;
         const isBooked = !!slot.candidate_id;
-        return !isPast || isBooked;
+        const candidateStatus = slot.candidates?.status;
+        
+        const slotDate = new Date(slot.start_time).toISOString().split('T')[0];
+        
+        if (filterView === 'Today') return slotDate === todayStr && isBooked;
+        if (filterView === 'Upcoming') return new Date(slot.start_time) > now && isBooked;
+        if (filterView === 'Absentees') return candidateStatus === 'Absent';
+        if (filterView === 'Open') return !isBooked && !isPast;
+        
+        return !isPast || isBooked; // 'All' default
     });
 
     return (
@@ -113,6 +145,24 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                     <Plus className="w-4 h-4" />
                     CREATE SLOT
                 </button>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap gap-2">
+                {['All', 'Today', 'Upcoming', 'Absentees', 'Open'].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setFilterView(tab as any)}
+                        className={cn(
+                            "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all",
+                            filterView === tab 
+                                ? "bg-primary text-white shadow-md shadow-primary/20 border border-primary" 
+                                : "bg-white text-muted border border-border hover:border-primary/50 hover:text-heading"
+                        )}
+                    >
+                        {tab}
+                    </button>
+                ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -183,20 +233,30 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                                 <span className="text-[10px] font-bold text-primary mt-1 block tracking-tight uppercase tracking-widest">{slot.candidates.status}</span>
                                             </div>
                                             {slot.candidates.status === "Assessment Scheduled" && (
-                                                <button
-                                                    onClick={() => markCompleted(slot.id, slot.candidates!.id)}
-                                                    disabled={isSubmitting}
-                                                    className="w-full btn-primary !py-2 text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
-                                                >
-                                                    {isSubmitting ? (
-                                                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <CheckCircle className="w-3.5 h-3.5" />
-                                                            Mark Evaluation Complete
-                                                        </>
-                                                    )}
-                                                </button>
+                                                <div className="flex flex-col gap-2">
+                                                    <button
+                                                        onClick={() => markCompleted(slot.id, slot.candidates!.id)}
+                                                        disabled={isSubmitting}
+                                                        className="w-full btn-primary !py-2 text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
+                                                    >
+                                                        {isSubmitting ? (
+                                                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                        ) : (
+                                                            <>
+                                                                <CheckCircle className="w-3.5 h-3.5" />
+                                                                Mark Evaluation Complete
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => markAbsent(slot.id, slot.candidates!.id)}
+                                                        disabled={isSubmitting}
+                                                        className="w-full px-4 py-2 bg-white border border-rose-200 text-rose-600 rounded-sm text-[10px] font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2 hover:bg-rose-50 transition-colors shadow-soft"
+                                                    >
+                                                        <UserX className="w-3.5 h-3.5" />
+                                                        Mark Absent
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     ) : (
