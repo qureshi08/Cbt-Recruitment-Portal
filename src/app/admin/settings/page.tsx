@@ -5,6 +5,7 @@ import AiCriteriaManager from "@/components/AiCriteriaManager";
 import TeamEmailManager from "@/components/TeamEmailManager";
 import MicrosoftTeamsManager from "@/components/MicrosoftTeamsManager";
 import BatchManager from "@/components/BatchManager";
+import DailySummaryManager from "@/components/DailySummaryManager";
 import { ShieldAlert } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -65,6 +66,8 @@ export default async function SettingsPage() {
             <BatchManager />
 
             <MicrosoftTeamsManager />
+
+            <DailySummaryManager />
 
             {isMaster && (
                 <section className="border-t border-border pt-6">
