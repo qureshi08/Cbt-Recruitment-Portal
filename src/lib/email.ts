@@ -62,7 +62,7 @@ export const sendAssessmentEmail = async (candidateEmail: string, candidateName:
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #009245;">Congratulations, ${candidateName}!</h2>
         <p>Your application for the CGAP program has been approved. The next step is a technical assessment.</p>
-        <p>Please use the link below to select a convenient time slot for your assessment:</p>
+        <p>Please use the link below to select a convenient time slot for your assessment. You can also use this same link to reschedule your assessment if needed.</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${bookingLink}" style="background-color: #009245; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Schedule Assessment</a>
         </div>
