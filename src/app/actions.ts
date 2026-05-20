@@ -1224,8 +1224,7 @@ export async function lockInterviewMeeting(interviewId: string, candidateId: str
         try {
             // Priority Emails
             const recipients = [
-                interview.candidates?.email, // Candidate
-                process.env.EMAIL_USER // muhammad.anas.quershi@convergentbt.com
+                interview.candidates?.email // Candidate
             ];
 
             // Determine if it was an L1 or L2 based on current candidate status/flow
@@ -1333,7 +1332,6 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
 
             const recipients = [
                 candidateData?.email, // Candidate
-                process.env.EMAIL_USER, // muhammad.anas.quershi@convergentbt.com
                 avail.interviewer_email // The Interviewer
             ];
 
@@ -1342,6 +1340,7 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
             if (allEmails.length > 0) {
                 await notifyWorkflowStage('INTERVIEW_CONFIRMED', allEmails, {
                     candidateName: candidateData?.name || 'Candidate',
+                    interviewerName: avail.interviewer_name,
                     scheduledAt: new Date(startTime).toLocaleString('en-US', {
                         weekday: 'long',
                         year: 'numeric',

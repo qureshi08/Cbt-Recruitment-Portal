@@ -10,6 +10,9 @@ const transporter = nodemailer.createTransport({
   host: 'smtp.office365.com',
   port: 587,
   secure: false,          // STARTTLS – Office 365 upgrades the connection after EHLO
+  pool: true,             // Enable connection pooling
+  maxConnections: 3,      // Limit concurrent connections to avoid Office 365 throttling
+  maxMessages: 100,
   auth: {
     user: process.env.EMAIL_USER!,
     pass: process.env.EMAIL_PASSWORD!,
@@ -186,10 +189,16 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
       attachments: attachments || []
     };
 
-    results.push(transporter.sendMail(mailOptions));
+    try {
+      console.log(`[SMTP] Sending email to ${email}`);
+      const info = await transporter.sendMail(mailOptions);
+      results.push(info);
+    } catch (err) {
+      console.error(`[SMTP ERROR] Failed to send email to ${email}:`, err);
+    }
   }
 
-  return Promise.all(results);
+  return results;
 };
 
 import { supabaseAdmin } from './supabase-admin';
@@ -422,7 +431,8 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
         <p>This is a formal confirmation that the interview for <strong>${data.candidateName}</strong> has been scheduled.</p>
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 0 0 10px 0;"><strong>Scheduled Time:</strong> ${data.scheduledAt}</p>
-          <p style="margin: 0 0 15px 0;"><strong>Location:</strong> Microsoft Teams Meeting</p>
+          <p style="margin: 0 0 10px 0;"><strong>Location:</strong> Microsoft Teams Meeting</p>
+          ${data.interviewerName ? `<p style="margin: 0 0 15px 0;"><strong>Interviewer:</strong> ${data.interviewerName}</p>` : ''}
           <div style="text-align: center; margin-bottom: 15px;">
             <a href="${data.meetingLink}" style="background-color: #009245; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Join Teams Meeting</a>
           </div>
