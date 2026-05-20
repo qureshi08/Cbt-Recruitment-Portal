@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MailCheck, Loader2, Info, RefreshCw, AlertCircle, Inbox, UserCheck, UserX, FileText } from 'lucide-react';
-import { sendDailySummaryNotifications, getQueuedNotifications } from '@/app/actions';
+import { MailCheck, Loader2, Info, RefreshCw, AlertCircle, Inbox, UserCheck, UserX, FileText, Trash2 } from 'lucide-react';
+import { sendDailySummaryNotifications, getQueuedNotifications, clearQueuedNotifications } from '@/app/actions';
 
 interface QueuedItem {
     id: string;
@@ -14,6 +14,7 @@ interface QueuedItem {
 
 export default function DailySummaryManager() {
     const [isTriggering, setIsTriggering] = useState(false);
+    const [isClearing, setIsClearing] = useState(false);
     const [isLoadingQueue, setIsLoadingQueue] = useState(true);
     const [queuedItems, setQueuedItems] = useState<QueuedItem[]>([]);
     const [resultMessage, setResultMessage] = useState<string | null>(null);
@@ -46,7 +47,8 @@ export default function DailySummaryManager() {
 
         if (!window.confirm(
             "Are you sure you want to trigger the daily summary job now?\n\n" +
-            `This will instantly dispatch all ${queuedItems.length} pending events/emails, and clear the queue.`
+            `This will instantly dispatch all ${queuedItems.length} pending events/emails, and clear the queue.\n` +
+            "Note: All duplicate entries for the same candidate will automatically be de-duplicated before sending."
         )) {
             return;
         }
@@ -74,6 +76,42 @@ export default function DailySummaryManager() {
         }
     };
 
+    const handleClearQueue = async () => {
+        if (queuedItems.length === 0) {
+            alert("The queue is already empty!");
+            return;
+        }
+
+        if (!window.confirm(
+            "CRITICAL WARNING:\n\n" +
+            `Are you sure you want to clear and delete all ${queuedItems.length} queued events?\n` +
+            "This will instantly delete them from the database WITHOUT sending any emails.\n\n" +
+            "This is highly recommended to clean out duplicate or stale testing logs. This action is permanent."
+        )) {
+            return;
+        }
+
+        setIsClearing(true);
+        setResultMessage(null);
+
+        try {
+            const res = await clearQueuedNotifications();
+            if (res.success) {
+                setResultMessage("Success: Notification queue successfully cleared without sending any emails.");
+                alert("Queue Cleared Successfully!");
+                await loadQueue();
+            } else {
+                setResultMessage(`Error: ${res.error || 'Failed to clear queue'}`);
+                alert(`Failed to clear queue: ${res.error}`);
+            }
+        } catch (err: any) {
+            setResultMessage(`Error: ${err.message || 'An unexpected error occurred'}`);
+            alert(`An unexpected error occurred: ${err.message}`);
+        } finally {
+            setIsClearing(false);
+        }
+    };
+
     // Filter queue
     const candidateEmails = queuedItems.filter(item => item.category === 'candidate_decision');
     const teamNotifications = queuedItems.filter(item => item.category !== 'candidate_decision');
@@ -89,7 +127,7 @@ export default function DailySummaryManager() {
                 </h3>
                 <button
                     onClick={loadQueue}
-                    disabled={isLoadingQueue || isTriggering}
+                    disabled={isLoadingQueue || isTriggering || isClearing}
                     className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-bold transition-colors"
                 >
                     <RefreshCw className={`w-3.5 h-3.5 ${isLoadingQueue ? 'animate-spin' : ''}`} />
@@ -208,15 +246,30 @@ export default function DailySummaryManager() {
                             <div className="flex items-start gap-2 text-[11px] text-muted leading-relaxed">
                                 <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                                 <span>
-                                    Triggering the dispatch manually will instantly clear these lists, sending all candidate emails directly to the candidates and administrative logs to the HR/Approver teams.
+                                    <strong>Queue De-duplication:</strong> When you trigger dispatch, duplicates (like multiple bookings or application entries for the same candidate) are automatically merged into a single row.
+                                    <br />
+                                    Use <strong>Dispatch Summary Now</strong> to process and send, or click <strong>Clear Queue</strong> to permanently delete these entries without sending.
                                 </span>
                             </div>
                         </div>
 
-                        <div className="flex items-center shrink-0">
+                        <div className="flex flex-wrap items-center gap-3 shrink-0">
+                            <button
+                                onClick={handleClearQueue}
+                                disabled={isTriggering || isClearing || isLoadingQueue || queuedItems.length === 0}
+                                className="px-3.5 py-2 border border-red-200 text-red-700 bg-red-50/50 hover:bg-red-50 text-[11px] font-bold rounded-sm flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isClearing ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                                <span>Clear Queue</span>
+                            </button>
+
                             <button
                                 onClick={handleTrigger}
-                                disabled={isTriggering || isLoadingQueue || queuedItems.length === 0}
+                                disabled={isTriggering || isClearing || isLoadingQueue || queuedItems.length === 0}
                                 className="btn-primary-v2 !py-2 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isTriggering ? (

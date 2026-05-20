@@ -2140,6 +2140,78 @@ export async function sendDailySummaryNotifications() {
                     eventsByStyle[item.event_type].push(item.details);
                 }
 
+                // De-duplicate events to ensure the digest looks clean and professional
+                if (eventsByStyle['NEW_APPLICATION']?.length > 0) {
+                    const uniqueNewApps = [];
+                    const seenEmails = new Set();
+                    for (const app of eventsByStyle['NEW_APPLICATION']) {
+                        if (app?.email && !seenEmails.has(app.email)) {
+                            seenEmails.add(app.email);
+                            uniqueNewApps.push(app);
+                        }
+                    }
+                    eventsByStyle['NEW_APPLICATION'] = uniqueNewApps;
+                }
+
+                if (eventsByStyle['SLOT_BOOKED_INTERNAL']?.length > 0) {
+                    const uniqueBookings = [];
+                    const seenBookingCandidates = new Set();
+                    for (const booking of eventsByStyle['SLOT_BOOKED_INTERNAL']) {
+                        if (booking?.name && !seenBookingCandidates.has(booking.name)) {
+                            seenBookingCandidates.add(booking.name);
+                            uniqueBookings.push(booking);
+                        }
+                    }
+                    eventsByStyle['SLOT_BOOKED_INTERNAL'] = uniqueBookings;
+                }
+
+                if (eventsByStyle['APPROVED_PENDING_SLOTS']?.length > 0) {
+                    const uniqueApproved = [];
+                    const seenApprovedCandidates = new Set();
+                    for (const app of eventsByStyle['APPROVED_PENDING_SLOTS']) {
+                        if (app?.name && !seenApprovedCandidates.has(app.name)) {
+                            seenApprovedCandidates.add(app.name);
+                            uniqueApproved.push(app);
+                        }
+                    }
+                    eventsByStyle['APPROVED_PENDING_SLOTS'] = uniqueApproved;
+                }
+
+                if (eventsByStyle['INVITE_SENT']?.length > 0) {
+                    const uniqueInvites = [];
+                    const seenInvites = new Set();
+                    for (const invite of eventsByStyle['INVITE_SENT']) {
+                        if (invite?.name && !seenInvites.has(invite.name)) {
+                            seenInvites.add(invite.name);
+                            uniqueInvites.push(invite);
+                        }
+                    }
+                    eventsByStyle['INVITE_SENT'] = uniqueInvites;
+                }
+
+                if (eventsByStyle['DECISION']?.length > 0) {
+                    const decisionsMap = new Map();
+                    for (const dec of eventsByStyle['DECISION']) {
+                        if (dec?.name) {
+                            decisionsMap.set(dec.name, dec);
+                        }
+                    }
+                    eventsByStyle['DECISION'] = Array.from(decisionsMap.values());
+                }
+
+                if (eventsByStyle['AVAILABILITY_RESPONSE']?.length > 0) {
+                    const uniqueAvailability = [];
+                    const seenAvailability = new Set();
+                    for (const av of eventsByStyle['AVAILABILITY_RESPONSE']) {
+                        const key = `${av?.candidateName || av?.candidateId}-${av?.interviewerEmail || av?.interviewerName}`;
+                        if (!seenAvailability.has(key)) {
+                            seenAvailability.add(key);
+                            uniqueAvailability.push(av);
+                        }
+                    }
+                    eventsByStyle['AVAILABILITY_RESPONSE'] = uniqueAvailability;
+                }
+
                 // Build HTML Body sections
                 let sectionsHtml = '';
 
@@ -2319,6 +2391,20 @@ export async function getQueuedNotifications() {
 
         if (error) throw error;
         return { success: true, data: data || [] };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function clearQueuedNotifications() {
+    try {
+        const { error } = await supabaseAdmin
+            .from('notification_queue')
+            .delete()
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+
+        if (error) throw error;
+        return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
