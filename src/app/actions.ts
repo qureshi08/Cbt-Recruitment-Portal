@@ -2310,3 +2310,17 @@ export async function sendDailySummaryNotifications() {
     }
 }
 
+export async function getQueuedNotifications() {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('notification_queue')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return { success: true, data: data || [] };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
