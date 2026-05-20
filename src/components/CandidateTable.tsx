@@ -704,7 +704,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         <tr className="bg-gradient-to-r from-primary/[0.03] to-transparent">
                                             <td colSpan={8} className="px-4 py-3">
                                                 <div className="flex flex-wrap items-center justify-end gap-3 fade-in slide-in-from-top-1 animate-in duration-200">
-                                                    {(candidate.status === 'Approved' || candidate.status === 'Invite Sent') && (isMaster || isHR) && (
+                                                    {(candidate.status === 'Approved' || candidate.status === 'Invite Sent' || candidate.status === 'Absent') && (isMaster || isHR) && (
                                                         <>
                                                             {/* Send Assessment Invite — primary HR action */}
                                                             <button

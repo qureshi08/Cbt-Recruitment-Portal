@@ -577,8 +577,8 @@ export async function sendAssessmentInvite(candidateId: string) {
             .single();
 
         if (error || !candidate) throw new Error('Candidate not found.');
-        if (candidate.status !== 'Approved' && candidate.status !== 'Invite Sent') {
-            throw new Error(`Cannot send invite: candidate status is "${candidate.status}", expected "Approved" or "Invite Sent".`);
+        if (candidate.status !== 'Approved' && candidate.status !== 'Invite Sent' && candidate.status !== 'Absent') {
+            throw new Error(`Cannot send invite: candidate status is "${candidate.status}", expected "Approved", "Invite Sent" or "Absent".`);
         }
 
         const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
@@ -743,7 +743,7 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             .eq("id", candidateId)
             .single();
 
-        if (candidate?.status !== "Approved" && candidate?.status !== "Invite Sent") {
+        if (candidate?.status !== "Approved" && candidate?.status !== "Invite Sent" && candidate?.status !== "Absent") {
             return { error: `You have scheduled an assessment (Current status: ${candidate?.status}).` };
         }
 

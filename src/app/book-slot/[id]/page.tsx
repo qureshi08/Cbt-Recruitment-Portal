@@ -23,7 +23,7 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
         return notFound();
     }
 
-    if (candidate.status !== "Approved" && candidate.status !== "Invite Sent") {
+    if (candidate.status !== "Approved" && candidate.status !== "Invite Sent" && candidate.status !== "Absent") {
         // If already scheduled, show their current slot + reschedule option
         if (candidate.status === "Assessment Scheduled") {
             const { data: currentSlot } = await supabase
