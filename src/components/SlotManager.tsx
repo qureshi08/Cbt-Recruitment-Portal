@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2, UserX, AlertTriangle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createAssessmentSlot, completeAssessment, deleteAssessmentSlot, updateCandidateStatus, rescheduleAssessment } from "@/app/actions";
+import { createAssessmentSlot, createAssessmentSlotsBulk, completeAssessment, deleteAssessmentSlot, updateCandidateStatus, rescheduleAssessment } from "@/app/actions";
+
+const STANDARD_DAY_START_TIMES = ["10:30", "10:45", "11:00", "11:15"];
+const SLOT_DURATION_MS = 2 * 60 * 60 * 1000;
 
 interface Slot {
     id: string;
@@ -22,6 +25,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
     const [slots, setSlots] = useState<Slot[]>(initialSlots);
     const [filterView, setFilterView] = useState<'All' | 'Today' | 'Upcoming' | 'Pending' | 'Absentees' | 'Open'>('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [creationMode, setCreationMode] = useState<'standard' | 'custom'>('standard');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -32,24 +36,44 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
 
         const formData = new FormData(e.currentTarget);
         const date = formData.get("date") as string;
-        const startTime = formData.get("startTime") as string;
 
-        const startDateTime = new Date(`${date}T${startTime}`);
-        const endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+        if (creationMode === 'standard') {
+            const slotsData = STANDARD_DAY_START_TIMES.map(time => {
+                const start = new Date(`${date}T${time}`);
+                const end = new Date(start.getTime() + SLOT_DURATION_MS);
+                return { start_time: start.toISOString(), end_time: end.toISOString() };
+            });
 
-        const result = await createAssessmentSlot(
-            startDateTime.toISOString(),
-            endDateTime.toISOString()
-        );
+            const result = await createAssessmentSlotsBulk(slotsData);
 
-        if (result.success) {
-            setSlots((prev) => [...prev, result.data as Slot].sort((a, b) =>
-                new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-            ));
-            setIsModalOpen(false);
-            (e.target as HTMLFormElement).reset();
+            if (result.success) {
+                setSlots((prev) => [...prev, ...(result.data as Slot[])].sort((a, b) =>
+                    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+                ));
+                setIsModalOpen(false);
+                (e.target as HTMLFormElement).reset();
+            } else {
+                setError(result.error || "Failed to create slots");
+            }
         } else {
-            setError(result.error || "Failed to create slot");
+            const startTime = formData.get("startTime") as string;
+            const startDateTime = new Date(`${date}T${startTime}`);
+            const endDateTime = new Date(startDateTime.getTime() + SLOT_DURATION_MS);
+
+            const result = await createAssessmentSlot(
+                startDateTime.toISOString(),
+                endDateTime.toISOString()
+            );
+
+            if (result.success) {
+                setSlots((prev) => [...prev, result.data as Slot].sort((a, b) =>
+                    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+                ));
+                setIsModalOpen(false);
+                (e.target as HTMLFormElement).reset();
+            } else {
+                setError(result.error || "Failed to create slot");
+            }
         }
         setIsSubmitting(false);
     };
@@ -443,21 +467,74 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                         </div>
 
                         <form onSubmit={handleCreateSlot} className="p-10 space-y-8">
+                            <div className="grid grid-cols-2 gap-2 p-1 bg-surface border border-border rounded-sm">
+                                <button
+                                    type="button"
+                                    onClick={() => setCreationMode('standard')}
+                                    className={cn(
+                                        "px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] rounded-sm transition-all",
+                                        creationMode === 'standard'
+                                            ? "bg-primary text-white shadow-sm"
+                                            : "text-muted hover:text-heading"
+                                    )}
+                                >
+                                    Standard Day · 4 Slots
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCreationMode('custom')}
+                                    className={cn(
+                                        "px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] rounded-sm transition-all",
+                                        creationMode === 'custom'
+                                            ? "bg-primary text-white shadow-sm"
+                                            : "text-muted hover:text-heading"
+                                    )}
+                                >
+                                    Custom Time
+                                </button>
+                            </div>
+
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Target Date</label>
                                 <input type="date" name="date" required className="input-field" />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Start Time</label>
-                                <input type="time" name="startTime" required className="input-field" />
-                                <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border mt-3">
+
+                            {creationMode === 'standard' ? (
+                                <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border">
                                     <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                                    <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
-                                        System Protocol: Assessment windows are strictly 120 minutes in duration.
-                                        Ending time will be automatically calculated.
-                                    </p>
+                                    <div className="space-y-1.5">
+                                        <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
+                                            Creates 4 standard assessment slots on the selected date:
+                                        </p>
+                                        <ul className="text-[11px] font-bold text-heading space-y-0.5">
+                                            {STANDARD_DAY_START_TIMES.map(time => {
+                                                const [h, m] = time.split(':').map(Number);
+                                                const endH = h + 2;
+                                                const fmt = (hh: number, mm: number) => {
+                                                    const period = hh >= 12 ? 'PM' : 'AM';
+                                                    const hour12 = hh % 12 === 0 ? 12 : hh % 12;
+                                                    return `${hour12}:${String(mm).padStart(2, '0')} ${period}`;
+                                                };
+                                                return (
+                                                    <li key={time}>· {fmt(h, m)} — {fmt(endH, m)}</li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Start Time</label>
+                                    <input type="time" name="startTime" required className="input-field" />
+                                    <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border mt-3">
+                                        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                        <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
+                                            Assessment windows are strictly 120 minutes in duration.
+                                            Ending time will be automatically calculated.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                             {error && (
                                 <p className="text-[11px] text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100 font-bold italic">
@@ -474,7 +551,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                     {isSubmitting ? (
                                         <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
-                                        "GENERATE SLOT"
+                                        creationMode === 'standard' ? "GENERATE 4 SLOTS" : "GENERATE SLOT"
                                     )}
                                 </button>
                             </div>
