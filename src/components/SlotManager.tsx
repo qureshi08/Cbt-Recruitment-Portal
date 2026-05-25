@@ -135,6 +135,28 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
+    // Statuses that mean the assessment has been resolved (don't need HR attention).
+    const RESOLVED_STATUSES = new Set([
+        'Absent',
+        'To Be Interviewed',
+        'Assessment Completed',
+        'Interview Scheduled',
+        'L2 Interview Required',
+        'Recommended',
+        'Not Recommended',
+        'Selected',
+        'Rejected',
+    ]);
+
+    const isPendingSlot = (slot: Slot) => {
+        const isPast = new Date(slot.start_time) < now;
+        const isBooked = !!slot.candidate_id;
+        const candidateStatus = slot.candidates?.status;
+        // Surface any past booked slot whose candidate hasn't been resolved yet —
+        // includes 'Assessment Scheduled', 'Confirmed', 'Rescheduled', etc.
+        return isPast && isBooked && !!candidateStatus && !RESOLVED_STATUSES.has(candidateStatus);
+    };
+
     const visibleSlots = slots.filter(slot => {
         const isPast = new Date(slot.start_time) < now;
         const isBooked = !!slot.candidate_id;
@@ -144,7 +166,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
 
         if (filterView === 'Today') return slotDate === todayStr && isBooked;
         if (filterView === 'Upcoming') return new Date(slot.start_time) > now && isBooked;
-        if (filterView === 'Pending') return isPast && isBooked && candidateStatus === 'Assessment Scheduled';
+        if (filterView === 'Pending') return isPendingSlot(slot);
         if (filterView === 'Absentees') return candidateStatus === 'Absent';
         if (filterView === 'Open') return !isBooked && !isPast;
 
@@ -164,10 +186,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
     );
 
     const todayDateStr = new Date().toDateString();
-    const pendingCount = slots.filter(s => {
-        const isPast = new Date(s.start_time) < now;
-        return isPast && !!s.candidate_id && s.candidates?.status === 'Assessment Scheduled';
-    }).length;
+    const pendingCount = slots.filter(isPendingSlot).length;
 
     return (
         <div className="space-y-8">
@@ -250,7 +269,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                     const isLocked = slot.is_locked || !!slot.candidate_id;
                                     const isPastSlot = new Date(slot.start_time) < now;
                                     const status = slot.candidates?.status;
-                                    const isOverdue = isPastSlot && !!slot.candidate_id && status === 'Assessment Scheduled';
+                                    const isOverdue = isPendingSlot(slot);
 
                                     return (
                                         <div
@@ -335,7 +354,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                                                     {slot.candidates.status}
                                                                 </span>
                                                             </div>
-                                                            {slot.candidates.status === "Assessment Scheduled" && (
+                                                            {!RESOLVED_STATUSES.has(slot.candidates.status) && (
                                                                 <div className="flex flex-col gap-2">
                                                                     <button
                                                                         onClick={() => markCompleted(slot.id, slot.candidates!.id)}

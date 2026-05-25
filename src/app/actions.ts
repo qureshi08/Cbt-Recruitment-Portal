@@ -864,8 +864,9 @@ export async function rescheduleAssessment(candidateId: string) {
             .eq("id", candidateId)
             .single();
 
-        if (candidate?.status !== "Assessment Scheduled") {
-            return { error: "Only candidates with 'Assessment Scheduled' status can reschedule." };
+        const RESCHEDULABLE_STATUSES = ['Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Invite Sent'];
+        if (!candidate?.status || !RESCHEDULABLE_STATUSES.includes(candidate.status)) {
+            return { error: `Cannot reschedule from status "${candidate?.status ?? 'unknown'}".` };
         }
 
         // 2. Free up their current slot
