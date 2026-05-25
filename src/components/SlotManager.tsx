@@ -26,8 +26,54 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
     const [filterView, setFilterView] = useState<'All' | 'Today' | 'Upcoming' | 'Pending' | 'Absentees' | 'Open'>('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [creationMode, setCreationMode] = useState<'standard' | 'custom'>('standard');
+    const [selectedDates, setSelectedDates] = useState<string[]>([]);
+    const [pendingDate, setPendingDate] = useState<string>('');
+    const [rangeStart, setRangeStart] = useState<string>('');
+    const [rangeEnd, setRangeEnd] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedDates([]);
+        setPendingDate('');
+        setRangeStart('');
+        setRangeEnd('');
+        setError(null);
+    };
+
+    const addPendingDate = () => {
+        if (!pendingDate) return;
+        if (selectedDates.includes(pendingDate)) {
+            setPendingDate('');
+            return;
+        }
+        setSelectedDates(prev => [...prev, pendingDate].sort());
+        setPendingDate('');
+    };
+
+    const addDateRange = () => {
+        if (!rangeStart || !rangeEnd) return;
+        const start = new Date(`${rangeStart}T00:00`);
+        const end = new Date(`${rangeEnd}T00:00`);
+        if (start.getTime() > end.getTime()) {
+            setError("Range start must be on or before range end.");
+            return;
+        }
+        const dates: string[] = [];
+        for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+            const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            dates.push(iso);
+        }
+        setSelectedDates(prev => Array.from(new Set([...prev, ...dates])).sort());
+        setRangeStart('');
+        setRangeEnd('');
+        setError(null);
+    };
+
+    const removeSelectedDate = (d: string) => {
+        setSelectedDates(prev => prev.filter(x => x !== d));
+    };
 
     const handleCreateSlot = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -35,14 +81,21 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         setError(null);
 
         const formData = new FormData(e.currentTarget);
-        const date = formData.get("date") as string;
 
         if (creationMode === 'standard') {
-            const slotsData = STANDARD_DAY_START_TIMES.map(time => {
-                const start = new Date(`${date}T${time}`);
-                const end = new Date(start.getTime() + SLOT_DURATION_MS);
-                return { start_time: start.toISOString(), end_time: end.toISOString() };
-            });
+            if (selectedDates.length === 0) {
+                setError("Add at least one date.");
+                setIsSubmitting(false);
+                return;
+            }
+
+            const slotsData = selectedDates.flatMap(date =>
+                STANDARD_DAY_START_TIMES.map(time => {
+                    const start = new Date(`${date}T${time}`);
+                    const end = new Date(start.getTime() + SLOT_DURATION_MS);
+                    return { start_time: start.toISOString(), end_time: end.toISOString() };
+                })
+            );
 
             const result = await createAssessmentSlotsBulk(slotsData);
 
@@ -50,12 +103,12 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                 setSlots((prev) => [...prev, ...(result.data as Slot[])].sort((a, b) =>
                     new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
                 ));
-                setIsModalOpen(false);
-                (e.target as HTMLFormElement).reset();
+                closeModal();
             } else {
                 setError(result.error || "Failed to create slots");
             }
         } else {
+            const date = formData.get("date") as string;
             const startTime = formData.get("startTime") as string;
             const startDateTime = new Date(`${date}T${startTime}`);
             const endDateTime = new Date(startDateTime.getTime() + SLOT_DURATION_MS);
@@ -69,7 +122,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                 setSlots((prev) => [...prev, result.data as Slot].sort((a, b) =>
                     new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
                 ));
-                setIsModalOpen(false);
+                closeModal();
                 (e.target as HTMLFormElement).reset();
             } else {
                 setError(result.error || "Failed to create slot");
@@ -451,7 +504,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
             {/* Create Slot Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-heading/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
+                    <div className="fixed inset-0 bg-heading/60 backdrop-blur-md" onClick={closeModal} />
                     <div className="bg-white rounded-md shadow-premium w-full max-w-lg relative z-10 overflow-hidden animate-in fade-in zoom-in duration-300">
                         <div className="p-10 border-b border-border flex justify-between items-start bg-surface">
                             <div>
@@ -459,7 +512,8 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                 <p className="text-[10px] font-bold text-muted uppercase tracking-[0.3em] mt-1">Define New Assessment Period</p>
                             </div>
                             <button
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={closeModal}
+                                type="button"
                                 className="p-2 bg-white text-muted rounded-sm shadow-sm hover:rotate-90 transition-all hover:text-heading border border-border"
                             >
                                 <X className="w-5 h-5" />
@@ -494,46 +548,133 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                 </button>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Target Date</label>
-                                <input type="date" name="date" required className="input-field" />
-                            </div>
-
                             {creationMode === 'standard' ? (
-                                <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border">
-                                    <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                                    <div className="space-y-1.5">
-                                        <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
-                                            Creates 4 standard assessment slots on the selected date:
-                                        </p>
-                                        <ul className="text-[11px] font-bold text-heading space-y-0.5">
-                                            {STANDARD_DAY_START_TIMES.map(time => {
-                                                const [h, m] = time.split(':').map(Number);
-                                                const endH = h + 2;
-                                                const fmt = (hh: number, mm: number) => {
-                                                    const period = hh >= 12 ? 'PM' : 'AM';
-                                                    const hour12 = hh % 12 === 0 ? 12 : hh % 12;
-                                                    return `${hour12}:${String(mm).padStart(2, '0')} ${period}`;
-                                                };
-                                                return (
-                                                    <li key={time}>· {fmt(h, m)} — {fmt(endH, m)}</li>
-                                                );
-                                            })}
-                                        </ul>
+                                <div className="space-y-5">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Add Single Date</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="date"
+                                                value={pendingDate}
+                                                onChange={(e) => setPendingDate(e.target.value)}
+                                                className="input-field flex-1"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={addPendingDate}
+                                                disabled={!pendingDate}
+                                                className="px-4 bg-primary text-white rounded-sm text-[10px] font-bold uppercase tracking-[0.15em] disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                                            >
+                                                + Add
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Or Add a Date Range</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="date"
+                                                value={rangeStart}
+                                                onChange={(e) => setRangeStart(e.target.value)}
+                                                className="input-field flex-1"
+                                                placeholder="From"
+                                            />
+                                            <input
+                                                type="date"
+                                                value={rangeEnd}
+                                                onChange={(e) => setRangeEnd(e.target.value)}
+                                                className="input-field flex-1"
+                                                placeholder="To"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={addDateRange}
+                                                disabled={!rangeStart || !rangeEnd}
+                                                className="px-4 bg-primary text-white rounded-sm text-[10px] font-bold uppercase tracking-[0.15em] disabled:opacity-40 hover:bg-primary/90 transition-colors"
+                                            >
+                                                + Range
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {selectedDates.length > 0 && (
+                                        <div className="space-y-2 bg-surface p-4 rounded-sm border border-border">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                                                    {selectedDates.length} day{selectedDates.length !== 1 ? 's' : ''} selected · {selectedDates.length * 4} slots total
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedDates([])}
+                                                    className="text-[10px] font-bold text-muted hover:text-rose-600 uppercase tracking-widest"
+                                                >
+                                                    Clear all
+                                                </button>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedDates.map(d => {
+                                                    const [y, m, day] = d.split('-').map(Number);
+                                                    const dObj = new Date(y, m - 1, day);
+                                                    const label = dObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                                                    return (
+                                                        <div key={d} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 bg-white text-heading border border-primary/30 rounded-full text-[11px] font-bold">
+                                                            {label}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeSelectedDate(d)}
+                                                                className="hover:bg-rose-50 hover:text-rose-600 rounded-full p-0.5 transition-colors"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border">
+                                        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
+                                                Each selected day creates 4 standard slots:
+                                            </p>
+                                            <ul className="text-[11px] font-bold text-heading space-y-0.5">
+                                                {STANDARD_DAY_START_TIMES.map(time => {
+                                                    const [h, m] = time.split(':').map(Number);
+                                                    const endH = h + 2;
+                                                    const fmt = (hh: number, mm: number) => {
+                                                        const period = hh >= 12 ? 'PM' : 'AM';
+                                                        const hour12 = hh % 12 === 0 ? 12 : hh % 12;
+                                                        return `${hour12}:${String(mm).padStart(2, '0')} ${period}`;
+                                                    };
+                                                    return (
+                                                        <li key={time}>· {fmt(h, m)} — {fmt(endH, m)}</li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Start Time</label>
-                                    <input type="time" name="startTime" required className="input-field" />
-                                    <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border mt-3">
-                                        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                                        <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
-                                            Assessment windows are strictly 120 minutes in duration.
-                                            Ending time will be automatically calculated.
-                                        </p>
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Target Date</label>
+                                        <input type="date" name="date" required className="input-field" />
                                     </div>
-                                </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-muted uppercase tracking-[0.2em] pl-1">Start Time</label>
+                                        <input type="time" name="startTime" required className="input-field" />
+                                        <div className="flex items-start gap-3 bg-surface p-4 rounded-sm border border-border mt-3">
+                                            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                            <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
+                                                Assessment windows are strictly 120 minutes in duration.
+                                                Ending time will be automatically calculated.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </>
                             )}
 
                             {error && (
@@ -545,13 +686,17 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                             <div className="pt-4 flex gap-3">
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting}
-                                    className="btn-primary w-full shadow-lg shadow-primary/20 flex items-center justify-center gap-2 py-3 text-sm"
+                                    disabled={isSubmitting || (creationMode === 'standard' && selectedDates.length === 0)}
+                                    className="btn-primary w-full shadow-lg shadow-primary/20 flex items-center justify-center gap-2 py-3 text-sm disabled:opacity-40"
                                 >
                                     {isSubmitting ? (
                                         <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : creationMode === 'standard' ? (
+                                        selectedDates.length === 0
+                                            ? "ADD A DATE TO CONTINUE"
+                                            : `GENERATE ${selectedDates.length * 4} SLOTS · ${selectedDates.length} DAY${selectedDates.length !== 1 ? 'S' : ''}`
                                     ) : (
-                                        creationMode === 'standard' ? "GENERATE 4 SLOTS" : "GENERATE SLOT"
+                                        "GENERATE SLOT"
                                     )}
                                 </button>
                             </div>
