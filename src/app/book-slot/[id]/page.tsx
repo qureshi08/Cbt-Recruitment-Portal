@@ -5,6 +5,7 @@ import SlotBookingClient from "@/components/SlotBookingClient";
 import RescheduleButton from "@/components/RescheduleButton";
 import { notFound } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
+import { formatSlotDate, formatSlotTime } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -57,12 +58,13 @@ export default async function BookSlotPage(props: { params: Promise<{ id: string
                                     className="text-heading font-bold"
                                     style={{ fontFamily: "var(--font-heading)", fontSize: "0.95rem", fontStyle: "italic" }}
                                 >
-                                    {new Date(currentSlot.start_time).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                                    {formatSlotDate(currentSlot.start_time)}
                                 </p>
                                 <p className="text-[13px] font-semibold text-primary font-mono">
-                                    {new Date(currentSlot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {formatSlotTime(currentSlot.start_time)}
                                     {" — "}
-                                    {new Date(currentSlot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {formatSlotTime(currentSlot.end_time)}
+                                    <span className="text-primary/60 ml-1.5">PKT</span>
                                 </p>
                             </div>
                         )}

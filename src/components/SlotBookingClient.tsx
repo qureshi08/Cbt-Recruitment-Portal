@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Calendar as CalendarIcon, Clock, CheckCircle2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
 import { bookAssessmentSlot } from "@/app/actions";
 
 interface Slot {
@@ -102,13 +102,14 @@ export default function SlotBookingClient({ candidateId, candidateName, initialS
                         <CalendarIcon className={cn("w-5 h-5", selectedSlot === slot.id ? "text-primary" : "text-muted group-hover:text-primary transition-colors")} />
                         <div>
                             <p className="font-bold text-heading text-sm italic">
-                                {new Date(slot.start_time).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                                {formatSlotDate(slot.start_time)}
                             </p>
                             <p className="text-muted flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-widest mt-1">
                                 <Clock className="w-3 h-3" />
-                                {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {formatSlotTime(slot.start_time)}
                                 {" — "}
-                                {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {formatSlotTime(slot.end_time)}
+                                <span className="text-primary/70">PKT</span>
                             </p>
                         </div>
                     </div>
