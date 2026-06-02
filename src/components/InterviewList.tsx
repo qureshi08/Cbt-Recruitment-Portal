@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
 import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting, generateAndLockInterview, getInterviewerAvailability } from "@/app/actions";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -390,11 +390,11 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                     <td className="px-6 py-5 align-top">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-[var(--heading)]">
-                                                {new Date(interview.scheduled_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                {formatSlotDate(interview.scheduled_at, { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </span>
                                             <span className="text-[11px] text-[var(--muted)] font-medium mt-0.5 flex items-center gap-1.5">
                                                 <Clock className="w-3 h-3" />
-                                                {new Date(interview.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                                {formatSlotTime(interview.scheduled_at)} <span className="text-[var(--muted)]/60">PKT</span>
                                             </span>
                                         </div>
                                     </td>

@@ -2,11 +2,19 @@
 
 import { useState } from "react";
 import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2, UserX, AlertTriangle, RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatSlotDate, formatSlotTime, pktDateKey } from "@/lib/utils";
 import { createAssessmentSlot, createAssessmentSlotsBulk, completeAssessment, deleteAssessmentSlot, updateCandidateStatus, rescheduleAssessment } from "@/app/actions";
 
 const STANDARD_DAY_START_TIMES = ["10:30", "10:45", "11:00", "11:15"];
 const SLOT_DURATION_MS = 2 * 60 * 60 * 1000;
+// Pakistan is fixed at UTC+5 year-round (no DST). Anchoring slot times to this
+// offset means an admin booking "10:30 on June 15" produces the same UTC
+// instant regardless of the admin's own browser timezone.
+const PKT_OFFSET = "+05:00";
+
+function buildPktInstant(date: string, time: string): Date {
+    return new Date(`${date}T${time}:00${PKT_OFFSET}`);
+}
 
 interface Slot {
     id: string;
@@ -91,7 +99,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
 
             const slotsData = selectedDates.flatMap(date =>
                 STANDARD_DAY_START_TIMES.map(time => {
-                    const start = new Date(`${date}T${time}`);
+                    const start = buildPktInstant(date, time);
                     const end = new Date(start.getTime() + SLOT_DURATION_MS);
                     return { start_time: start.toISOString(), end_time: end.toISOString() };
                 })
@@ -110,7 +118,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         } else {
             const date = formData.get("date") as string;
             const startTime = formData.get("startTime") as string;
-            const startDateTime = new Date(`${date}T${startTime}`);
+            const startDateTime = buildPktInstant(date, startTime);
             const endDateTime = new Date(startDateTime.getTime() + SLOT_DURATION_MS);
 
             const result = await createAssessmentSlot(
@@ -210,7 +218,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
     };
 
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayKey = pktDateKey(now);
 
     // Statuses that mean the assessment has been resolved (don't need HR attention).
     const RESOLVED_STATUSES = new Set([
@@ -239,9 +247,9 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         const isBooked = !!slot.candidate_id;
         const candidateStatus = slot.candidates?.status;
 
-        const slotDate = new Date(slot.start_time).toISOString().split('T')[0];
+        const slotKey = pktDateKey(slot.start_time);
 
-        if (filterView === 'Today') return slotDate === todayStr && isBooked;
+        if (filterView === 'Today') return slotKey === todayKey && isBooked;
         if (filterView === 'Upcoming') return new Date(slot.start_time) > now && isBooked;
         if (filterView === 'Pending') return isPendingSlot(slot);
         if (filterView === 'Absentees') return candidateStatus === 'Absent';
@@ -250,19 +258,16 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         return !isPast || isBooked; // 'All' default
     });
 
-    // Group visible slots by calendar date so HR can scan day-by-day.
+    // Group visible slots by Pakistan-time calendar date so HR can scan day-by-day.
     const slotsByDate = visibleSlots.reduce((acc, slot) => {
-        const dateKey = new Date(slot.start_time).toDateString();
+        const dateKey = pktDateKey(slot.start_time);
         if (!acc[dateKey]) acc[dateKey] = [];
         acc[dateKey].push(slot);
         return acc;
     }, {} as Record<string, Slot[]>);
 
-    const sortedDateKeys = Object.keys(slotsByDate).sort(
-        (a, b) => new Date(a).getTime() - new Date(b).getTime()
-    );
+    const sortedDateKeys = Object.keys(slotsByDate).sort();
 
-    const todayDateStr = new Date().toDateString();
     const pendingCount = slots.filter(isPendingSlot).length;
 
     return (
@@ -314,10 +319,12 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
 
             <div className="space-y-10">
                 {sortedDateKeys.map(dateKey => {
-                    const dateObj = new Date(dateKey);
-                    const isToday = dateKey === todayDateStr;
-                    const isPastDate = dateObj.getTime() < new Date(todayDateStr).getTime();
+                    const isToday = dateKey === todayKey;
+                    const isPastDate = dateKey < todayKey;
                     const groupSlots = slotsByDate[dateKey];
+                    // Use the first slot in this date group as a representative timestamp
+                    // so the header label renders in Pakistan time.
+                    const headerSample = groupSlots[0].start_time;
 
                     return (
                         <section key={dateKey} className="space-y-4">
@@ -331,7 +338,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                             : "bg-white border-border text-heading"
                                 )}>
                                     <p className="text-[15px] font-black font-heading italic leading-none">
-                                        {dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                                        {formatSlotDate(headerSample)}
                                     </p>
                                 </div>
                                 <span className="text-[10px] font-bold text-muted uppercase tracking-widest pb-1">
@@ -408,9 +415,10 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                                     <div className="flex items-center gap-2 text-xs font-bold text-muted">
                                                         <Clock className="w-3.5 h-3.5 opacity-60" />
                                                         <span className="text-heading text-[13px]">
-                                                            {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            {formatSlotTime(slot.start_time)}
                                                             {" — "}
-                                                            {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            {formatSlotTime(slot.end_time)}
+                                                            <span className="text-muted/70 ml-1.5 text-[11px]">PKT</span>
                                                         </span>
                                                     </div>
                                                 </div>
