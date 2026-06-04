@@ -230,7 +230,6 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
     'INVITE_SENT': ['recruitment_team'],
     'SLOT_BOOKED_INTERNAL': ['recruitment_team'],
     'DECISION': ['recruitment_team'],
-    'AVAILABILITY_RESPONSE': ['recruitment_team']
   };
 
   if (stage in queuedStages) {

@@ -1128,15 +1128,20 @@ export async function requestL2Interview(interviewId: string, candidateId: strin
         const user = await getCurrentUser();
         const interviewerName = user?.full_name || 'Interviewer';
 
-        // 1. Save L1 feedback and mark as needing L2 review (same record, no duplicate)
+        // 1. Save L1 feedback, mark as needing L2 review, and reset meeting fields
+        //    so HR can lock a fresh L2 meeting via the same scheduler used for L1.
         const { error: updateError } = await supabaseAdmin
             .from("interviews")
             .update({
                 decision: "L2 Interview Required",
                 feedback: `L1: ${l1Feedback}`,
                 l1_feedback_json: l1FeedbackJson || null,
-                l1_interviewer_name: interviewerName
-            })
+                l1_interviewer_name: interviewerName,
+                is_locked: false,
+                meeting_link: null,
+                locked_by: null,
+                scheduled_at: new Date().toISOString(),
+            } as any)
             .eq("id", interviewId);
 
         if (updateError) throw updateError;
