@@ -425,48 +425,13 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       const outlookUrl = `https://outlook.office.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${encodeURIComponent(`CBT Interview: ${data.candidateName}`)}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${encodeURIComponent(`Meeting Link: ${data.meetingLink}`)}&location=${encodeURIComponent(data.meetingLink)}`;
 
       const isL2Round = data.round === 'L2';
+      const isInterviewerEmail = data.audience === 'interviewer';
 
-      subject = isL2Round
-        ? `[Confirmed] Final Round Interview Scheduled: ${data.candidateName}`
-        : `[Confirmed] Interview Scheduled: ${data.candidateName}`;
-      title = isL2Round ? 'Final Round Interview Invitation' : 'Interview Invitation & Meeting Link';
-
-      const intro = isL2Round
-        ? `
-          <p>Hello <strong>${data.candidateName}</strong>,</p>
-          <p>Congratulations! Based on your successful completion of the technical assessment and your Round 1 interview, you have been advanced to the <strong>final round</strong> of our interview process for the Convergent Graduate Academy Program.</p>
-          <p>The details for your final-round interview are below.</p>
-        `
-        : `<p>This is a formal confirmation that the interview for <strong>${data.candidateName}</strong> has been scheduled.</p>`;
-
-      const attendanceNote = isL2Round
-        ? `
-          <div style="background-color: #fefce8; border: 1px solid #facc15; padding: 16px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0 0 8px 0;"><strong>Attendance — your choice:</strong></p>
-            <p style="margin: 0; font-size: 13px; line-height: 1.6;">You may join this final-round interview <strong>online</strong> via the Microsoft Teams link above, or attend <strong>in person at our office premises</strong>. Either option works — pick whichever is more convenient for you.</p>
-          </div>
-          <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee;">
-            <p style="margin: 0 0 6px 0;"><strong>Office Address:</strong></p>
-            <p style="margin: 0; font-size: 13px; line-height: 1.6;">
-              Convergent Business Technologies<br>
-              Fourth floor, Plot. No. 64, Civic Center, Executive Block<br>
-              Gulberg Greens, Islamabad
-            </p>
-            <a href="https://goo.gl/maps/MxcbdEmMPqopr6UVA" style="color: #009245; font-weight: bold; text-decoration: none; font-size: 13px;">View on Google Maps &rarr;</a>
-          </div>
-          <p style="font-size: 12px; color: #64748b; margin-top: 16px;">
-            If you choose to come on-premises, please inform the guard of your arrival on reaching the building, or contact us on:<br>
-            <strong>Office Admin:</strong> +92 342 937 0603<br>
-            <strong>Landline:</strong> (051) 591 2926
-          </p>
-        `
-        : '';
-
-      body = `
-        ${intro}
+      // Shared meeting card used by both audiences.
+      const meetingCard = `
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 0 0 10px 0;"><strong>Scheduled Time:</strong> ${data.scheduledAt}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Location:</strong> Microsoft Teams Meeting${isL2Round ? ' (or in-person — see below)' : ''}</p>
+          <p style="margin: 0 0 10px 0;"><strong>Location:</strong> Microsoft Teams Meeting${isL2Round && !isInterviewerEmail ? ' (or in-person — see below)' : ''}</p>
           ${data.interviewerName ? `<p style="margin: 0 0 15px 0;"><strong>Interviewer:</strong> ${data.interviewerName}</p>` : ''}
           <div style="text-align: center; margin-bottom: 15px;">
             <a href="${data.meetingLink}" style="background-color: #009245; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Join Teams Meeting</a>
@@ -479,11 +444,68 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
              </div>
           </div>
         </div>
-        ${attendanceNote}
-        <p><strong>Participants:</strong> Candidate, Interviewer, and Recruitment Team.</p>
-        <p style="font-size: 13px; color: #64748b;">Please ensure you have a stable internet connection and your camera/microphone are working correctly${isL2Round ? ' if joining online' : ''}.</p>
-        <p style="font-size: 11px; color: #009245; font-weight: bold;">Note: A calendar invite file (.ics) is also attached to this email for Desktop users.</p>
       `;
+
+      if (isInterviewerEmail) {
+        // Interviewer-facing email — neutral briefing, no candidate-targeted copy.
+        subject = isL2Round
+          ? `[L2 Scheduled] Final round interview with ${data.candidateName}`
+          : `[Scheduled] Interview with ${data.candidateName}`;
+        title = isL2Round ? 'L2 Interview Scheduled' : 'Interview Scheduled';
+        body = `
+          <p>Hello${data.interviewerName ? ` <strong>${data.interviewerName}</strong>` : ''},</p>
+          <p>You have been confirmed to conduct ${isL2Round ? 'the <strong>final round (L2)</strong> interview' : 'the interview'} for candidate <strong>${data.candidateName}</strong> at the time you indicated as available.</p>
+          ${meetingCard}
+          ${isL2Round ? `<p style="font-size: 13px; color: #64748b;">The candidate has also been notified that they may attend either online via the Teams link above, or in person at the office.</p>` : `<p style="font-size: 13px; color: #64748b;">The candidate has also been emailed this meeting link separately.</p>`}
+          <p style="font-size: 11px; color: #009245; font-weight: bold;">A calendar invite file (.ics) is attached for Desktop users.</p>
+        `;
+      } else {
+        // Candidate-facing email.
+        subject = isL2Round
+          ? `[Confirmed] Final Round Interview Scheduled: ${data.candidateName}`
+          : `[Confirmed] Interview Scheduled: ${data.candidateName}`;
+        title = isL2Round ? 'Final Round Interview Invitation' : 'Interview Invitation & Meeting Link';
+
+        const intro = isL2Round
+          ? `
+            <p>Hello <strong>${data.candidateName}</strong>,</p>
+            <p>Congratulations! Based on your successful completion of the technical assessment and your Round 1 interview, you have been advanced to the <strong>final round</strong> of our interview process for the Convergent Graduate Academy Program.</p>
+            <p>The details for your final-round interview are below.</p>
+          `
+          : `<p>This is a formal confirmation that the interview for <strong>${data.candidateName}</strong> has been scheduled.</p>`;
+
+        const attendanceNote = isL2Round
+          ? `
+            <div style="background-color: #fefce8; border: 1px solid #facc15; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0 0 8px 0;"><strong>Attendance — your choice:</strong></p>
+              <p style="margin: 0; font-size: 13px; line-height: 1.6;">You may join this final-round interview <strong>online</strong> via the Microsoft Teams link above, or attend <strong>in person at our office premises</strong>. Either option works — pick whichever is more convenient for you.</p>
+            </div>
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee;">
+              <p style="margin: 0 0 6px 0;"><strong>Office Address:</strong></p>
+              <p style="margin: 0; font-size: 13px; line-height: 1.6;">
+                Convergent Business Technologies<br>
+                Fourth floor, Plot. No. 64, Civic Center, Executive Block<br>
+                Gulberg Greens, Islamabad
+              </p>
+              <a href="https://goo.gl/maps/MxcbdEmMPqopr6UVA" style="color: #009245; font-weight: bold; text-decoration: none; font-size: 13px;">View on Google Maps &rarr;</a>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-top: 16px;">
+              If you choose to come on-premises, please inform the guard of your arrival on reaching the building, or contact us on:<br>
+              <strong>Office Admin:</strong> +92 342 937 0603<br>
+              <strong>Landline:</strong> (051) 591 2926
+            </p>
+          `
+          : '';
+
+        body = `
+          ${intro}
+          ${meetingCard}
+          ${attendanceNote}
+          <p><strong>Participants:</strong> Candidate, Interviewer, and Recruitment Team.</p>
+          <p style="font-size: 13px; color: #64748b;">Please ensure you have a stable internet connection and your camera/microphone are working correctly${isL2Round ? ' if joining online' : ''}.</p>
+          <p style="font-size: 11px; color: #009245; font-weight: bold;">Note: A calendar invite file (.ics) is also attached to this email for Desktop users.</p>
+        `;
+      }
 
       try {
         const icsContent = generateICS(

@@ -1385,29 +1385,39 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
                 ? interview.candidates[0]
                 : interview.candidates;
 
-            const recipients = [
-                candidateData?.email, // Candidate
-                avail.interviewer_email // The Interviewer
-            ];
+            const scheduledAtFormatted = new Date(startTime).toLocaleString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Asia/Karachi'
+            });
 
-            const allEmails = Array.from(new Set(recipients)).filter(Boolean) as string[];
+            const sharedPayload = {
+                candidateName: candidateData?.name || 'Candidate',
+                interviewerName: avail.interviewer_name,
+                scheduledAt: scheduledAtFormatted,
+                meetingLink: meetingLink,
+                startTime: startTime,
+                round: round,
+            };
 
-            if (allEmails.length > 0) {
-                await notifyWorkflowStage('INTERVIEW_CONFIRMED', allEmails, {
-                    candidateName: candidateData?.name || 'Candidate',
-                    interviewerName: avail.interviewer_name,
-                    scheduledAt: new Date(startTime).toLocaleString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'Asia/Karachi'
-                    }),
-                    meetingLink: meetingLink,
-                    startTime: startTime,
-                    round: round
+            // Candidate gets the celebratory, candidate-facing copy.
+            if (candidateData?.email) {
+                await notifyWorkflowStage('INTERVIEW_CONFIRMED', [candidateData.email], {
+                    ...sharedPayload,
+                    audience: 'candidate',
+                });
+            }
+
+            // Interviewer gets a separate, interviewer-facing briefing — never
+            // the candidate's "Congratulations" email.
+            if (avail.interviewer_email && avail.interviewer_email !== candidateData?.email) {
+                await notifyWorkflowStage('INTERVIEW_CONFIRMED', [avail.interviewer_email], {
+                    ...sharedPayload,
+                    audience: 'interviewer',
                 });
             }
         } catch (notifyErr) {
