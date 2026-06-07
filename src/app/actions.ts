@@ -1329,6 +1329,15 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
 
         if (availError || !avail) throw new Error("Selected availability record not found.");
 
+        // Detect round before we overwrite the interview row — if its current
+        // decision is 'L2 Interview Required', HR is locking the L2 meeting.
+        const { data: priorInterview } = await supabaseAdmin
+            .from('interviews')
+            .select('decision')
+            .eq('id', interviewId)
+            .single();
+        const round: 'L1' | 'L2' = priorInterview?.decision === 'L2 Interview Required' ? 'L2' : 'L1';
+
         const startTime = avail.preferred_time;
         // Default duration 1 hour
         const endTime = new Date(new Date(startTime).getTime() + (60 * 60 * 1000)).toISOString();
@@ -1397,7 +1406,8 @@ export async function generateAndLockInterview(interviewId: string, candidateId:
                         timeZone: 'Asia/Karachi'
                     }),
                     meetingLink: meetingLink,
-                    startTime: startTime
+                    startTime: startTime,
+                    round: round
                 });
             }
         } catch (notifyErr) {
