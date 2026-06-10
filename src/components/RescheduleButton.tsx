@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, AlertTriangle } from "lucide-react";
-import { rescheduleAssessment } from "@/app/actions";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 
 interface RescheduleButtonProps {
     candidateId: string;
@@ -10,22 +9,12 @@ interface RescheduleButtonProps {
 
 export default function RescheduleButton({ candidateId }: RescheduleButtonProps) {
     const [isConfirming, setIsConfirming] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
-    const handleReschedule = async () => {
-        setIsLoading(true);
-        setError(null);
-
-        const result = await rescheduleAssessment(candidateId);
-
-        if (result.success) {
-            // Reload the page — server will now show the slot selection UI
-            window.location.reload();
-        } else {
-            setError(result.error || "Failed to reschedule. Please try again.");
-            setIsLoading(false);
-        }
+    // Navigate into the slot picker while keeping the current booking held.
+    // The slot is only swapped (atomically) once they actually pick a new one.
+    // If they close the tab, their original slot stays intact.
+    const goToPicker = () => {
+        window.location.href = `/book-slot/${candidateId}?reschedule=1`;
     };
 
     if (!isConfirming) {
@@ -41,34 +30,26 @@ export default function RescheduleButton({ candidateId }: RescheduleButtonProps)
 
     return (
         <div className="space-y-3 animate-in fade-in duration-200">
-            <div className="flex items-center gap-2 justify-center text-amber-600">
-                <AlertTriangle className="w-4 h-4" />
-                <p className="text-xs font-semibold">This will cancel your current booking.</p>
+            <div className="flex items-start gap-2 justify-center text-amber-600 text-left max-w-xs mx-auto">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p className="text-xs font-semibold">
+                    Your current slot will stay reserved. It will only change once you pick and confirm a new time.
+                </p>
             </div>
-
-            {error && (
-                <p className="text-xs text-red-600 font-medium">{error}</p>
-            )}
 
             <div className="flex gap-2 justify-center">
                 <button
                     onClick={() => setIsConfirming(false)}
-                    disabled={isLoading}
                     className="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
                 >
                     Keep Current
                 </button>
                 <button
-                    onClick={handleReschedule}
-                    disabled={isLoading}
-                    className="px-4 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50"
+                    onClick={goToPicker}
+                    className="px-4 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2"
                 >
-                    {isLoading ? (
-                        <RefreshCw className="w-3 h-3 animate-spin" />
-                    ) : (
-                        <RefreshCw className="w-3 h-3" />
-                    )}
-                    {isLoading ? "Rescheduling..." : "Yes, Reschedule"}
+                    See Other Times
+                    <ArrowRight className="w-3 h-3" />
                 </button>
             </div>
         </div>

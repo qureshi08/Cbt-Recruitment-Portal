@@ -29,25 +29,30 @@ export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Int
 async function logAction(action: string, entityId: string, entityType: string, details: any) {
     try {
         const user = await getCurrentUser();
-        if (!user) return null;
+        // Unauthenticated requests come from the candidate self-service flow
+        // (/book-slot/[id]). Log them as 'Candidate (self)' so the audit trail
+        // is complete — silently skipping these used to make candidate-triggered
+        // status changes invisible.
+        const actorName = user?.full_name ?? 'Candidate (self)';
+        const actorId = user?.id ?? null;
 
         await supabaseAdmin.from('audit_logs').insert({
-            user_id: user.id,
-            user_name: user.full_name,
+            user_id: actorId,
+            user_name: actorName,
             action,
             entity_id: entityId,
             entity_type: entityType,
-            details
+            details,
         });
 
         // If it's a candidate action, also update the denormalized field for easy UI access
         if (entityType === 'candidate') {
             await supabaseAdmin
                 .from('candidates')
-                .update({ last_action_by: user.full_name })
+                .update({ last_action_by: actorName })
                 .eq('id', entityId);
         }
-        return user.full_name;
+        return actorName;
     } catch (error) {
         console.error("Logging failed:", error);
         return null;
@@ -776,15 +781,19 @@ export async function deleteAssessmentSlot(slotId: string) {
 
 export async function bookAssessmentSlot(candidateId: string, slotId: string) {
     try {
-        // 0. Verify candidate is actually allowed to book (must be 'Approved')
+        // 0. Verify candidate is allowed to book. 'Assessment Scheduled' is
+        //    allowed because that's the swap path — they're picking a new slot
+        //    while still holding their existing one. The subsequent unlock+lock
+        //    sequence in this same function performs the swap atomically.
         const { data: candidate } = await supabase
             .from("candidates")
             .select("status")
             .eq("id", candidateId)
             .single();
 
-        if (candidate?.status !== "Approved" && candidate?.status !== "Invite Sent" && candidate?.status !== "Absent") {
-            return { error: `You have scheduled an assessment (Current status: ${candidate?.status}).` };
+        const ALLOWED_STATUSES = ['Approved', 'Invite Sent', 'Absent', 'Assessment Scheduled'];
+        if (!candidate?.status || !ALLOWED_STATUSES.includes(candidate.status)) {
+            return { error: `You cannot book a slot from your current status (${candidate?.status}).` };
         }
 
         // 1. Check if the slot is still available...
@@ -801,7 +810,15 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             return { error: "This slot was just booked by another candidate. Please select a different one." };
         }
 
-        // 2. Unlock any previous slots booked by this candidate (CLEANUP BEFORE RESCHEDULING)
+        // 2. Capture the previous slot (if any) BEFORE we unlock it, so the
+        //    audit log can record what was swapped out.
+        const { data: previousSlots } = await supabaseAdmin
+            .from("assessment_slots")
+            .select("id, start_time")
+            .eq("candidate_id", candidateId);
+        const previousSlot = previousSlots?.[0] ?? null;
+
+        // 3. Unlock any previous slots booked by this candidate (CLEANUP BEFORE RESCHEDULING)
         await supabase
             .from("assessment_slots")
             .update({
@@ -810,7 +827,7 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             })
             .eq("candidate_id", candidateId);
 
-        // 3. Lock the new slot (with concurrency check)
+        // 4. Lock the new slot (with concurrency check)
         const { error: lockError, data: updatedData } = await supabase
             .from("assessment_slots")
             .update({
@@ -827,11 +844,24 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
             return { error: "Slot is no longer available. Please refresh and try another." };
         }
 
+        const newSlotStart = updatedData[0]?.start_time;
+
         // Update candidate status
         const statusResult = await updateCandidateStatus(candidateId, "Assessment Scheduled");
         if (!statusResult.success) {
             throw new Error(statusResult.error || "Failed to update candidate status.");
         }
+
+        // Explicit slot-level audit entry so the full booking transition
+        // (who, when, from-which-slot, to-which-slot) is recoverable even
+        // months later. Includes a flag for whether this was a reschedule.
+        await logAction('SLOT_BOOKED', candidateId, 'candidate', {
+            slot_id: slotId,
+            new_slot_start: newSlotStart,
+            previous_slot_id: previousSlot?.id ?? null,
+            previous_slot_start: previousSlot?.start_time ?? null,
+            is_reschedule: !!previousSlot,
+        });
 
         // Notify recruitment team & candidate separately
         try {
@@ -881,10 +911,11 @@ export async function bookAssessmentSlot(candidateId: string, slotId: string) {
 
 export async function rescheduleAssessment(candidateId: string) {
     try {
-        // 1. Verify candidate is currently scheduled
-        const { data: candidate } = await supabase
+        // 1. Verify candidate is currently scheduled — also grab name + email
+        //    so we can email them confirming the cancellation.
+        const { data: candidate } = await supabaseAdmin
             .from("candidates")
-            .select("status")
+            .select("status, name, email")
             .eq("id", candidateId)
             .single();
 
@@ -893,7 +924,14 @@ export async function rescheduleAssessment(candidateId: string) {
             return { error: `Cannot reschedule from status "${candidate?.status ?? 'unknown'}".` };
         }
 
-        // 2. Free up their current slot
+        // 2. Capture the prior slot times before nulling them out, so the
+        //    cancellation email can reference what we're cancelling.
+        const { data: priorSlots } = await supabaseAdmin
+            .from("assessment_slots")
+            .select("start_time, end_time")
+            .eq("candidate_id", candidateId);
+
+        // 3. Free up their current slot
         const { error: slotError } = await supabaseAdmin
             .from("assessment_slots")
             .update({
@@ -904,8 +942,51 @@ export async function rescheduleAssessment(candidateId: string) {
 
         if (slotError) throw slotError;
 
-        // 3. Reset candidate status back to Invite Sent
+        // 4. Reset candidate status back to Invite Sent
         await updateCandidateStatus(candidateId, "Invite Sent");
+
+        // Explicit slot-level cancellation audit so the trail shows what slot
+        // was given up, not just that the candidate moved back to Invite Sent.
+        if (priorSlots && priorSlots.length > 0) {
+            await logAction('SLOT_CANCELLED', candidateId, 'candidate', {
+                cancelled_slots: priorSlots.map(s => ({
+                    start_time: s.start_time,
+                    end_time: s.end_time,
+                })),
+            });
+        }
+
+        // 5. Email the candidate so they have a record that their booking was
+        //    cancelled. Without this email, a candidate who self-cancels and
+        //    forgets to re-book has no signal that anything changed and may
+        //    show up to a slot that no longer exists.
+        if (candidate.email) {
+            try {
+                const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
+                const bookingLink = `${origin}/book-slot/${candidateId}`;
+                const priorSlot = priorSlots?.[0];
+                const priorSlotTime = priorSlot
+                    ? new Date(priorSlot.start_time).toLocaleString('en-US', {
+                        timeZone: 'Asia/Karachi',
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                    })
+                    : null;
+
+                await notifyWorkflowStage('ASSESSMENT_RESCHEDULED', [candidate.email], {
+                    name: candidate.name,
+                    priorSlotTime,
+                    bookingLink,
+                });
+            } catch (notifyErr) {
+                console.error("Reschedule notification failed:", notifyErr);
+            }
+        }
 
         revalidatePath("/admin/slots");
         revalidatePath("/admin/applications");
