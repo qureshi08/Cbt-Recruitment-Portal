@@ -358,6 +358,22 @@ export const notifyWorkflowStage = async (stage: string, emails: string[], data:
       `;
       break;
 
+    case 'ASSESSMENT_RESCHEDULED':
+      subject = `[Action Required] Your CBT Assessment slot has been cancelled — please re-book`;
+      title = 'Assessment Slot Cancelled';
+      body = `
+        <p>Hello <strong>${data.name}</strong>,</p>
+        <p>This email is to confirm that your previously scheduled CBT Convergent Graduate Academy Program assessment slot${data.priorSlotTime ? ` (<strong>${data.priorSlotTime}</strong>)` : ''} has been <strong>cancelled</strong> following a reschedule request.</p>
+        <p style="font-weight: bold; color: #b45309;">You are not currently booked into any assessment slot.</p>
+        <p>Please use the link below to select a new convenient time for your assessment as soon as possible:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${data.bookingLink}" style="background-color: #009245; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Choose a New Slot</a>
+        </div>
+        <p style="font-size: 12px; color: #64748b;">If this reschedule request was made by mistake, you can still re-book the original time (if it is still available) using the same link above.</p>
+        <p>If you have any questions, simply reply to this email.</p>
+      `;
+      break;
+
     case 'INTERVIEW_L1':
       subject = `[L1 Request] Interview with ${data.name}`;
       title = 'Meeting Request: L1 Interview';
