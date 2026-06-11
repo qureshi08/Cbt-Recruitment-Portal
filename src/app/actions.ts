@@ -2284,40 +2284,35 @@ export async function sendDailySummaryNotifications() {
                     eventsByStyle['NEW_APPLICATION'] = uniqueNewApps;
                 }
 
-                if (eventsByStyle['SLOT_BOOKED_INTERNAL']?.length > 0) {
-                    const uniqueBookings = [];
-                    const seenBookingCandidates = new Set();
-                    for (const booking of eventsByStyle['SLOT_BOOKED_INTERNAL']) {
-                        if (booking?.name && !seenBookingCandidates.has(booking.name)) {
-                            seenBookingCandidates.add(booking.name);
-                            uniqueBookings.push(booking);
+                // Queue items are ordered ASC (oldest first). Dedup must keep
+                // the LATEST entry per candidate so reschedules / re-invites
+                // overwrite stale earlier entries. Otherwise the digest can
+                // show a slotTime the candidate has since changed (e.g. they
+                // booked Thursday, then moved to Wednesday — old code kept the
+                // Thursday entry and dropped Wednesday).
+                const keepLatestByName = <T extends { name?: string }>(items: T[]): T[] => {
+                    const seen = new Set<string>();
+                    const out: T[] = [];
+                    for (let i = items.length - 1; i >= 0; i--) {
+                        const x = items[i];
+                        if (x?.name && !seen.has(x.name)) {
+                            seen.add(x.name);
+                            out.unshift(x);
                         }
                     }
-                    eventsByStyle['SLOT_BOOKED_INTERNAL'] = uniqueBookings;
+                    return out;
+                };
+
+                if (eventsByStyle['SLOT_BOOKED_INTERNAL']?.length > 0) {
+                    eventsByStyle['SLOT_BOOKED_INTERNAL'] = keepLatestByName(eventsByStyle['SLOT_BOOKED_INTERNAL']);
                 }
 
                 if (eventsByStyle['APPROVED_PENDING_SLOTS']?.length > 0) {
-                    const uniqueApproved = [];
-                    const seenApprovedCandidates = new Set();
-                    for (const app of eventsByStyle['APPROVED_PENDING_SLOTS']) {
-                        if (app?.name && !seenApprovedCandidates.has(app.name)) {
-                            seenApprovedCandidates.add(app.name);
-                            uniqueApproved.push(app);
-                        }
-                    }
-                    eventsByStyle['APPROVED_PENDING_SLOTS'] = uniqueApproved;
+                    eventsByStyle['APPROVED_PENDING_SLOTS'] = keepLatestByName(eventsByStyle['APPROVED_PENDING_SLOTS']);
                 }
 
                 if (eventsByStyle['INVITE_SENT']?.length > 0) {
-                    const uniqueInvites = [];
-                    const seenInvites = new Set();
-                    for (const invite of eventsByStyle['INVITE_SENT']) {
-                        if (invite?.name && !seenInvites.has(invite.name)) {
-                            seenInvites.add(invite.name);
-                            uniqueInvites.push(invite);
-                        }
-                    }
-                    eventsByStyle['INVITE_SENT'] = uniqueInvites;
+                    eventsByStyle['INVITE_SENT'] = keepLatestByName(eventsByStyle['INVITE_SENT']);
                 }
 
                 if (eventsByStyle['DECISION']?.length > 0) {
@@ -2331,16 +2326,15 @@ export async function sendDailySummaryNotifications() {
                 }
 
                 if (eventsByStyle['AVAILABILITY_RESPONSE']?.length > 0) {
-                    const uniqueAvailability = [];
-                    const seenAvailability = new Set();
+                    // Keep the latest availability submission per (candidate, interviewer)
+                    // pair. If an interviewer re-submitted (e.g. changed their
+                    // preferred time), the latest one should reach the digest.
+                    const latestByPair = new Map<string, any>();
                     for (const av of eventsByStyle['AVAILABILITY_RESPONSE']) {
                         const key = `${av?.candidateName || av?.candidateId}-${av?.interviewerEmail || av?.interviewerName}`;
-                        if (!seenAvailability.has(key)) {
-                            seenAvailability.add(key);
-                            uniqueAvailability.push(av);
-                        }
+                        latestByPair.set(key, av);
                     }
-                    eventsByStyle['AVAILABILITY_RESPONSE'] = uniqueAvailability;
+                    eventsByStyle['AVAILABILITY_RESPONSE'] = Array.from(latestByPair.values());
                 }
 
                 // Build HTML Body sections
