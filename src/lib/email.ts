@@ -101,22 +101,23 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
 
 export const sendSelectedEmail = async (candidateEmail: string, candidateName: string) => {
   // Tech Destination Skills URL (PSEB's apprenticeship portal). Allow override via env.
-  const techDestinationUrl = process.env.PSEB_TECH_DESTINATION_URL || 'https://techdestination.com.pk/';
+  const techDestinationUrl = process.env.PSEB_TECH_DESTINATION_URL || 'https://skills.techdestination.com/';
 
-  // Try to attach the signed-undertaking PDF if it exists on disk. We look for
-  // it at public/cgap-undertaking.pdf so HR can swap the file without a code
-  // change. If the file is missing, the email still sends — the text still
-  // mentions the attachment but you'll need to attach manually for that send.
+  // Try to attach the signed-undertaking PDF if it exists on disk. Lives under
+  // public/onboarding/ so the public root stays clean and HR can swap the file
+  // without a code change. If the file is missing, the email still sends — the
+  // text still mentions the attachment but you'll need to attach manually for
+  // that send.
   const attachments: { filename: string; content: Buffer }[] = [];
   try {
-    const undertakingPath = path.join(process.cwd(), 'public', 'cgap-undertaking.pdf');
+    const undertakingPath = path.join(process.cwd(), 'public', 'onboarding', 'cgap-undertaking.pdf');
     if (fs.existsSync(undertakingPath)) {
       attachments.push({
         filename: 'CGAP-Undertaking.pdf',
         content: fs.readFileSync(undertakingPath),
       });
     } else {
-      console.warn('[sendSelectedEmail] cgap-undertaking.pdf not found at public/ — sending without attachment.');
+      console.warn('[sendSelectedEmail] cgap-undertaking.pdf not found at public/onboarding/ — sending without attachment.');
     }
   } catch (e) {
     console.error('[sendSelectedEmail] Failed to load undertaking attachment:', e);
@@ -125,7 +126,7 @@ export const sendSelectedEmail = async (candidateEmail: string, candidateName: s
   const mailOptions = {
     from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
-    subject: 'Welcome to the Convergent Graduate Academy Program (CGAP)',
+    subject: 'Application Update - Welcome to CGAP!',
     html: `
       <div style="font-family: sans-serif; max-width: 640px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7; color: #1f2937;">
         <p>Dear ${candidateName},</p>
