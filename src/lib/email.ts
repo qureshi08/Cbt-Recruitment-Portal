@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Microsoft 365 SMTP transporter.
@@ -98,21 +100,71 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
 };
 
 export const sendSelectedEmail = async (candidateEmail: string, candidateName: string) => {
+  // Tech Destination Skills URL (PSEB's apprenticeship portal). Allow override via env.
+  const techDestinationUrl = process.env.PSEB_TECH_DESTINATION_URL || 'https://techdestination.com.pk/';
+
+  // Try to attach the signed-undertaking PDF if it exists on disk. We look for
+  // it at public/cgap-undertaking.pdf so HR can swap the file without a code
+  // change. If the file is missing, the email still sends — the text still
+  // mentions the attachment but you'll need to attach manually for that send.
+  const attachments: { filename: string; content: Buffer }[] = [];
+  try {
+    const undertakingPath = path.join(process.cwd(), 'public', 'cgap-undertaking.pdf');
+    if (fs.existsSync(undertakingPath)) {
+      attachments.push({
+        filename: 'CGAP-Undertaking.pdf',
+        content: fs.readFileSync(undertakingPath),
+      });
+    } else {
+      console.warn('[sendSelectedEmail] cgap-undertaking.pdf not found at public/ — sending without attachment.');
+    }
+  } catch (e) {
+    console.error('[sendSelectedEmail] Failed to load undertaking attachment:', e);
+  }
+
   const mailOptions = {
     from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
-    subject: 'Application Update - Welcome to CGAP!',
+    subject: 'Welcome to the Convergent Graduate Academy Program (CGAP)',
     html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7;">
+      <div style="font-family: sans-serif; max-width: 640px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7; color: #1f2937;">
         <p>Dear ${candidateName},</p>
-        <p>I trust this email finds you well.</p>
-        <p>On behalf of Convergent Business Technologies, I am delighted to inform you that you have been <strong>selected</strong> for the <strong>Convergent Graduate Academy Program</strong>.</p>
-        <p>The program will commence with an orientation session, the details of which will be shared soon.</p>
-        <p>Please feel free to reach out in case of any questions or concerns. We look forward to having you as a part of the CGAP.</p>
+
+        <p>On behalf of Convergent Business Technologies, we are delighted to inform you that you have been <strong>selected</strong> for the <strong>Convergent Graduate Academy Program (CGAP)</strong>. Congratulations on your selection.</p>
+
+        <p>The CGAP will commence with an orientation session. Details regarding the orientation will be shared with you separately via email. Please note that you will be required to bring your <strong>original CNIC</strong> with you on the day of the orientation session for verification purposes.</p>
+
+        <p>To complete your enrolment process, please follow the steps below to create your profile on the PSEB portal, as this cohort is funded by the <strong>Pakistan Software Export Board (PSEB)</strong>:</p>
+
+        <ol style="padding-left: 22px; margin: 12px 0;">
+          <li>Visit <a href="${techDestinationUrl}" style="color: #009245; font-weight: bold;">Tech Destination Skills</a></li>
+          <li>Click on <strong>"Register Now"</strong> for Internships/Apprenticeships Program</li>
+          <li>Create your account and complete your profile</li>
+          <li>Click on <strong>"Apply for Apprenticeship"</strong></li>
+          <li>Complete <strong>Step 1 and 2</strong></li>
+          <li>Click on <strong>"Confirm &amp; submit"</strong></li>
+        </ol>
+
+        <p>Kindly note that, as part of the onboarding process, we require the following documents in soft copy. Please <strong>reply to this email</strong> with:</p>
+
+        <ul style="padding-left: 22px; margin: 12px 0;">
+          <li>Your degree's final transcript</li>
+          <li>Screenshot of your PSEB profile</li>
+          <li>Confirmation email of your PSEB account creation</li>
+          <li>Signed undertaking (attached)</li>
+        </ul>
+
+        <p>Please ensure that all required documents are submitted in your reply at your earliest convenience.</p>
+
+        <p>Should you have any questions or require any assistance, feel free to reach out.</p>
+
+        <p>We look forward to welcoming you to the CGAP.</p>
+
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-        <p style="font-size: 12px; color: #666;">Convergent Business Technologies - Recruitment Team</p>
+        <p style="font-size: 12px; color: #666;">Convergent Business Technologies &mdash; Recruitment Team</p>
       </div>
     `,
+    attachments,
   };
 
   return transporter.sendMail(mailOptions);
