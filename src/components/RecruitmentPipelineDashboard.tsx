@@ -7,6 +7,7 @@ import {
     FileText,
     MessageSquare,
     CheckCircle,
+    Award,
     Layers,
     ChevronRight,
     ArrowUpRight,
@@ -96,8 +97,9 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             ['To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'].includes(c.status)
         ).length;
         const recommended = filteredCandidates.filter(c => c.status === 'Recommended').length;
+        const selected = filteredCandidates.filter(c => c.status === 'Selected').length;
 
-        return { total, pending, testParticipants, activeInterviews, recommended };
+        return { total, pending, testParticipants, activeInterviews, recommended, selected };
     }, [filteredCandidates]);
 
     const batches = useMemo(() => {
@@ -106,8 +108,12 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
     }, [initialCandidates]);
 
     const efficiency = useMemo(() => {
-        const totalAfterScreening = stats.testParticipants + stats.activeInterviews + stats.recommended;
-        const totalAfterTest = stats.activeInterviews + stats.recommended;
+        const totalAfterScreening = stats.testParticipants + stats.activeInterviews + stats.recommended + stats.selected;
+        const totalAfterTest = stats.activeInterviews + stats.recommended + stats.selected;
+        // Total who ever reached the Recommended bucket — currently Recommended
+        // plus anyone moved beyond it (Selected). Used as the denominator for
+        // the Recommended -> Selected conversion KPI.
+        const totalRecommendedOrBeyond = stats.recommended + stats.selected;
 
         return {
             testRate: stats.total ? Math.round((totalAfterScreening / stats.total) * 100) : 0,
@@ -118,9 +124,9 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             interviewNumerator: totalAfterTest,
             interviewDenominator: totalAfterScreening,
 
-            recRate: totalAfterScreening ? Math.round((stats.recommended / totalAfterScreening) * 100) : 0,
-            recNumerator: stats.recommended,
-            recDenominator: totalAfterScreening
+            selectionRate: totalRecommendedOrBeyond ? Math.round((stats.selected / totalRecommendedOrBeyond) * 100) : 0,
+            selectionNumerator: stats.selected,
+            selectionDenominator: totalRecommendedOrBeyond,
         };
     }, [stats]);
 
@@ -163,12 +169,13 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             </div>
 
             {/* Pipeline */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <PipelineStage title="Applications" count={stats.total} subtitle="Gross intake" icon={Users} color="bg-heading" />
                 <PipelineStage title="Pending" count={stats.pending} subtitle="Awaiting screening" icon={Clock} color="bg-muted" />
                 <PipelineStage title="Assessment" count={stats.testParticipants} subtitle="In technical testing" icon={FileText} color="bg-primary/80" />
                 <PipelineStage title="Interviewing" count={stats.activeInterviews} subtitle="Technical interviews" icon={MessageSquare} color="bg-primary" />
-                <PipelineStage title="Recommended" count={stats.recommended} subtitle="Successful candidates" icon={CheckCircle} color="bg-primary-dark" />
+                <PipelineStage title="Recommended" count={stats.recommended} subtitle="Awaiting offer" icon={CheckCircle} color="bg-primary-dark" />
+                <PipelineStage title="Selected" count={stats.selected} subtitle="Joined the program" icon={Award} color="bg-heading" />
             </div>
 
             {/* Conversion Metrics */}
@@ -197,9 +204,9 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     />
 
                     <div className="flex items-center justify-between mb-3 relative z-10">
-                        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.16em]">Pipeline Conversion</span>
+                        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.16em]">Selection Conversion</span>
                         <div className="px-2 py-0.5 bg-white/10 rounded-full text-white text-[10px] font-semibold border border-white/10">
-                            {efficiency.recNumerator} / {efficiency.recDenominator}
+                            {efficiency.selectionNumerator} / {efficiency.selectionDenominator}
                         </div>
                     </div>
 
@@ -208,15 +215,15 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                             className="text-white leading-none font-bold"
                             style={{ fontFamily: "var(--font-heading)", fontSize: "2rem", letterSpacing: "-0.03em", fontStyle: "italic" }}
                         >
-                            {efficiency.recRate}%
+                            {efficiency.selectionRate}%
                         </span>
                         <div className="bg-primary text-white px-2 py-0.5 rounded-full text-[10px] font-semibold mb-1 uppercase tracking-[0.14em]">
-                            Final Yield
+                            Selected
                         </div>
                     </div>
 
                     <p className="text-[10.5px] text-white/40 mt-3 leading-relaxed relative z-10 uppercase tracking-[0.14em] font-medium">
-                        Total yield from assessment phase
+                        Recommended → Selected conversion
                     </p>
                 </div>
             </div>
