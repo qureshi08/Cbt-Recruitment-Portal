@@ -31,6 +31,8 @@ interface Interview {
     is_locked?: boolean | null;
     l1_feedback_json?: StructuredFeedback | null;
     l2_feedback_json?: StructuredFeedback | null;
+    l1_interviewer_name?: string | null;
+    l2_interviewer_name?: string | null;
     candidates?: {
         name: string;
         position: string;
@@ -91,7 +93,7 @@ function ScoreDots({ score }: { score: number }) {
     );
 }
 
-function FeedbackSection({ label, fb, type }: { label: string; fb: StructuredFeedback; type: 'first' | 'second' }) {
+function FeedbackSection({ label, fb, type, interviewerName }: { label: string; fb: StructuredFeedback; type: 'first' | 'second'; interviewerName?: string | null }) {
     const avg = calcAvg(fb);
     const isSecond = type === 'second';
 
@@ -101,7 +103,14 @@ function FeedbackSection({ label, fb, type }: { label: string; fb: StructuredFee
             isSecond ? "border-indigo-100" : "border-border"
         )}>
             <div className="flex items-center justify-between pb-3 border-b border-[var(--surface)]">
-                <p className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</p>
+                <div className="flex flex-col gap-1">
+                    <p className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</p>
+                    {interviewerName && (
+                        <p className="text-[10px] font-semibold text-[var(--heading)]">
+                            by <span className="italic">{interviewerName}</span>
+                        </p>
+                    )}
+                </div>
                 {avg > 0 && (
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-[var(--muted)] uppercase">Average Score</span>
@@ -171,8 +180,8 @@ function ScorecardViewer({ interview }: { interview: Interview }) {
                         </div>
 
                         <div className="overflow-y-auto p-6 space-y-6 flex-1 bg-white">
-                            {hasL1 && <FeedbackSection label="First Evaluation Pass" fb={interview.l1_feedback_json!} type="first" />}
-                            {hasL2 && <FeedbackSection label="Final Round Insights" fb={interview.l2_feedback_json!} type="second" />}
+                            {hasL1 && <FeedbackSection label="First Evaluation Pass" fb={interview.l1_feedback_json!} type="first" interviewerName={interview.l1_interviewer_name} />}
+                            {hasL2 && <FeedbackSection label="Final Round Insights" fb={interview.l2_feedback_json!} type="second" interviewerName={interview.l2_interviewer_name} />}
                         </div>
 
                         <div className="p-4 border-t bg-white text-center shrink-0">
@@ -547,18 +556,30 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                 ))}
                             </div>
 
-                            <div className="bg-surface p-5 rounded-sm border border-border shadow-soft space-y-3">
+                            <div className={cn(
+                                "p-5 rounded-sm border shadow-soft space-y-3 transition-colors",
+                                feedback.overall_notes.trim().length === 0
+                                    ? "bg-amber-50/40 border-amber-200"
+                                    : "bg-surface border-border"
+                            )}>
                                 <h4 className="text-[11px] font-bold text-heading flex items-center gap-2 uppercase tracking-widest">
                                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                                     Final Recommendation Synthesis
+                                    <span className="text-red-600 normal-case tracking-normal text-[10px] font-bold">* Required</span>
                                 </h4>
                                 <textarea
                                     className="w-full bg-white border border-border rounded-sm p-4 text-xs font-medium placeholder:text-muted focus:border-primary outline-none transition-colors"
                                     rows={3}
-                                    placeholder="Provide holistic summary..."
+                                    placeholder="Provide a holistic summary of your assessment of the candidate. This is required before submitting a decision."
                                     value={feedback.overall_notes}
                                     onChange={(e) => setFeedback(prev => ({ ...prev, overall_notes: e.target.value }))}
+                                    required
                                 />
+                                {feedback.overall_notes.trim().length === 0 && (
+                                    <p className="text-[10px] text-amber-700 font-semibold">
+                                        Comments are mandatory — please summarise your evaluation before submitting a decision.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -571,39 +592,54 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                             </div>
 
                             <div className="flex items-center gap-3">
-                                {isL2Round ? (
-                                    <button
-                                        onClick={() => handleDecision('Recommended')}
-                                        disabled={isSubmitting || calcAvg(feedback) === 0}
-                                        className="bg-primary text-white border border-primary-hover px-6 py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all"
-                                    >
-                                        Finalize Selection
-                                    </button>
-                                ) : (
-                                    <>
-                                        <button
-                                            onClick={() => handleDecision('Not Recommended')}
-                                            disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="px-5 py-3 rounded-sm border border-border bg-white text-red-600 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
-                                        >
-                                            Reject
-                                        </button>
-                                        <button
-                                            onClick={() => handleDecision('L2 Interview Required')}
-                                            disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="px-5 py-3 rounded-sm border border-border bg-white text-indigo-600 font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all"
-                                        >
-                                            Request L2
-                                        </button>
+                                {(() => {
+                                    const notesMissing = feedback.overall_notes.trim().length === 0;
+                                    const scoresMissing = calcAvg(feedback) === 0;
+                                    const blocked = isSubmitting || scoresMissing || notesMissing;
+                                    const blockReason = scoresMissing
+                                        ? 'Score every category before submitting'
+                                        : notesMissing
+                                            ? 'Comments are required before submitting'
+                                            : '';
+
+                                    return isL2Round ? (
                                         <button
                                             onClick={() => handleDecision('Recommended')}
-                                            disabled={isSubmitting || calcAvg(feedback) === 0}
-                                            className="bg-primary text-white border border-primary-hover px-5 py-3 rounded-sm text-[10px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all"
+                                            disabled={blocked}
+                                            title={blockReason}
+                                            className="bg-primary text-white border border-primary-hover px-6 py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all disabled:opacity-40 disabled:hover:scale-100"
                                         >
-                                            Recommend
+                                            Finalize Selection
                                         </button>
-                                    </>
-                                )}
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => handleDecision('Not Recommended')}
+                                                disabled={blocked}
+                                                title={blockReason}
+                                                className="px-5 py-3 rounded-sm border border-border bg-white text-red-600 font-bold text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-40"
+                                            >
+                                                Reject
+                                            </button>
+                                            <button
+                                                onClick={() => handleDecision('L2 Interview Required')}
+                                                disabled={blocked}
+                                                title={blockReason}
+                                                className="px-5 py-3 rounded-sm border border-border bg-white text-indigo-600 font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all disabled:opacity-40"
+                                            >
+                                                Request L2
+                                            </button>
+                                            <button
+                                                onClick={() => handleDecision('Recommended')}
+                                                disabled={blocked}
+                                                title={blockReason}
+                                                className="bg-primary text-white border border-primary-hover px-5 py-3 rounded-sm text-[10px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all disabled:opacity-40 disabled:hover:scale-100"
+                                            >
+                                                Recommend
+                                            </button>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>
