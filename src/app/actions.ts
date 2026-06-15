@@ -64,6 +64,15 @@ export async function login(formData: FormData) {
     const password = formData.get("password") as string;
     const supabaseClient = await createClient();
 
+    // Hard-clear any existing session first. Without this, a stale cookie
+    // from a previous user can survive a failed login attempt and silently
+    // keep them signed in as whoever was on the machine before.
+    try {
+        await supabaseClient.auth.signOut();
+    } catch {
+        // Already signed out — fine.
+    }
+
     const { error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
