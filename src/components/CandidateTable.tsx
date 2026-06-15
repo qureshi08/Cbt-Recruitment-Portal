@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, Fragment } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus, InterviewFeedbackJson } from "@/types/database";
 import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail } from "@/app/actions";
+import { withLoading } from "@/lib/loading";
 import {
     ExternalLink,
     CheckCircle,
@@ -288,7 +289,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             )) return;
         }
 
-        const result: any = await updateCandidateStatus(id, newStatus);
+        const result: any = await withLoading(() => updateCandidateStatus(id, newStatus));
         if (result.success) {
             setCandidates(prev =>
                 prev.map(c => c.id === id ? { ...c, status: newStatus, last_action_by: result.last_action_by } : c)
@@ -715,7 +716,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                                     )) return;
                                                                     setSendingInviteId(candidate.id);
                                                                     setOpenActionId(null);
-                                                                    const result = await sendAssessmentInvite(candidate.id);
+                                                                    const result = await withLoading(() => sendAssessmentInvite(candidate.id));
                                                                     setSendingInviteId(null);
                                                                     if (result.success) {
                                                                         alert(`Booking invite sent to ${candidate.name} successfully!`);
@@ -756,7 +757,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                                 )) return;
                                                                 setSendingSelectionId(candidate.id);
                                                                 setOpenActionId(null);
-                                                                const result = await sendCandidateSelectionEmail(candidate.id);
+                                                                const result = await withLoading(() => sendCandidateSelectionEmail(candidate.id));
                                                                 setSendingSelectionId(null);
                                                                 if (result.success) {
                                                                     setCandidates(prev =>

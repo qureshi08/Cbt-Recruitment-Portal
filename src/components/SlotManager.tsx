@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2, UserX, AlertTriangle, RotateCcw } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime, pktDateKey } from "@/lib/utils";
+import { withLoading } from "@/lib/loading";
 import { createAssessmentSlot, createAssessmentSlotsBulk, completeAssessment, deleteAssessmentSlot, updateCandidateStatus, rescheduleAssessment } from "@/app/actions";
 
 const STANDARD_DAY_START_TIMES = ["10:30", "10:45", "11:00", "11:15"];
@@ -105,7 +106,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                 })
             );
 
-            const result = await createAssessmentSlotsBulk(slotsData);
+            const result = await withLoading(() => createAssessmentSlotsBulk(slotsData));
 
             if (result.success) {
                 setSlots((prev) => [...prev, ...(result.data as Slot[])].sort((a, b) =>
@@ -121,10 +122,10 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
             const startDateTime = buildPktInstant(date, startTime);
             const endDateTime = new Date(startDateTime.getTime() + SLOT_DURATION_MS);
 
-            const result = await createAssessmentSlot(
+            const result = await withLoading(() => createAssessmentSlot(
                 startDateTime.toISOString(),
                 endDateTime.toISOString()
-            );
+            ));
 
             if (result.success) {
                 setSlots((prev) => [...prev, result.data as Slot].sort((a, b) =>
@@ -144,7 +145,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
 
         setIsSubmitting(true);
         try {
-            const result = await completeAssessment(candidateId);
+            const result = await withLoading(() => completeAssessment(candidateId));
             if (result.success) {
                 alert("Assessment marked as completed!");
                 window.location.reload();
@@ -164,7 +165,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         setIsSubmitting(true);
         try {
             // @ts-ignore
-            const result = await updateCandidateStatus(candidateId, "Absent");
+            const result = await withLoading(() => updateCandidateStatus(candidateId, "Absent"));
             if (result.success) {
                 alert("Candidate marked as absent.");
                 window.location.reload();
@@ -183,7 +184,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
 
         setIsSubmitting(true);
         try {
-            const result = await rescheduleAssessment(candidateId);
+            const result = await withLoading(() => rescheduleAssessment(candidateId));
             if (result.success) {
                 alert("Slot freed. Candidate can now reschedule via their booking link.");
                 window.location.reload();
@@ -203,7 +204,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         setIsSubmitting(true);
         setError(null);
         try {
-            const result = await deleteAssessmentSlot(slotId);
+            const result = await withLoading(() => deleteAssessmentSlot(slotId));
             if (result.success) {
                 setSlots((prev) => prev.filter((s) => s.id !== slotId));
                 alert("Assessment slot deleted successfully!");
