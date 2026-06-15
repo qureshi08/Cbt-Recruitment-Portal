@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
+import { withLoading } from "@/lib/loading";
 import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting, generateAndLockInterview, getInterviewerAvailability } from "@/app/actions";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -320,23 +321,25 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
 
         setIsSubmitting(true);
         try {
-            const legacyText = SCORE_CATEGORIES.map(cat => {
-                const d = feedback[cat.key];
-                return `${cat.label}: ${d.score}/5${d.notes ? ` — ${d.notes}` : ''}`;
-            }).join('\n') + (feedback.overall_notes ? `\nOverall: ${feedback.overall_notes}` : '');
+            await withLoading(async () => {
+                const legacyText = SCORE_CATEGORIES.map(cat => {
+                    const d = feedback[cat.key];
+                    return `${cat.label}: ${d.score}/5${d.notes ? ` — ${d.notes}` : ''}`;
+                }).join('\n') + (feedback.overall_notes ? `\nOverall: ${feedback.overall_notes}` : '');
 
-            if (decision === 'L2 Interview Required') {
-                const result = await requestL2Interview(selectedInterview.id, selectedInterview.candidate_id, legacyText, feedback as any);
-                if (result.error) throw new Error(result.error);
-                setInterviews(prev => prev.map(i => i.id === selectedInterview.id ? { ...i, decision: 'L2 Interview Required', l1_feedback_json: feedback } : i));
-            } else {
-                const round = isL2Round ? 'L2' : 'L1';
-                const finalFeedbackText = isL2Round ? (selectedInterview.feedback ? `${selectedInterview.feedback}\nL2: ${legacyText}` : `L2: ${legacyText}`) : legacyText;
-                const result = await submitFinalInterviewFeedback(selectedInterview.id, selectedInterview.candidate_id, decision, finalFeedbackText, feedback as any, round);
-                if (result.error) throw new Error(result.error);
-                setInterviews(prev => prev.map(i => i.id === selectedInterview.id ? { ...i, decision, [round === 'L1' ? 'l1_feedback_json' : 'l2_feedback_json']: feedback } : i));
-            }
-            setSelectedInterview(null);
+                if (decision === 'L2 Interview Required') {
+                    const result = await requestL2Interview(selectedInterview.id, selectedInterview.candidate_id, legacyText, feedback as any);
+                    if (result.error) throw new Error(result.error);
+                    setInterviews(prev => prev.map(i => i.id === selectedInterview.id ? { ...i, decision: 'L2 Interview Required', l1_feedback_json: feedback } : i));
+                } else {
+                    const round = isL2Round ? 'L2' : 'L1';
+                    const finalFeedbackText = isL2Round ? (selectedInterview.feedback ? `${selectedInterview.feedback}\nL2: ${legacyText}` : `L2: ${legacyText}`) : legacyText;
+                    const result = await submitFinalInterviewFeedback(selectedInterview.id, selectedInterview.candidate_id, decision, finalFeedbackText, feedback as any, round);
+                    if (result.error) throw new Error(result.error);
+                    setInterviews(prev => prev.map(i => i.id === selectedInterview.id ? { ...i, decision, [round === 'L1' ? 'l1_feedback_json' : 'l2_feedback_json']: feedback } : i));
+                }
+                setSelectedInterview(null);
+            });
         } catch (err: any) {
             alert(err.message);
         } finally {
@@ -348,7 +351,9 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
         if (!meetingModalInterview) return;
         setIsSubmitting(true);
         try {
-            const result = await generateAndLockInterview(meetingModalInterview.id, meetingModalInterview.candidate_id, availabilityId);
+            const result = await withLoading(() =>
+                generateAndLockInterview(meetingModalInterview.id, meetingModalInterview.candidate_id, availabilityId)
+            );
             if (result.error) throw new Error(result.error);
             alert("Meeting generated successfully!");
             window.location.reload();

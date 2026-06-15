@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Calendar as CalendarIcon, Clock, CheckCircle2, X, ArrowLeft } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
+import { withLoading } from "@/lib/loading";
 import { bookAssessmentSlot } from "@/app/actions";
 
 interface Slot {
@@ -36,7 +37,7 @@ export default function SlotBookingClient({
         setIsSubmitting(true);
         setError(null);
 
-        const result = await bookAssessmentSlot(candidateId, selectedSlot);
+        const result = await withLoading(() => bookAssessmentSlot(candidateId, selectedSlot));
 
         if (result.success) {
             setIsSuccess(true);
