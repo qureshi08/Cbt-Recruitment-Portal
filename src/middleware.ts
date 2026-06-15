@@ -34,18 +34,19 @@ export async function middleware(request: NextRequest) {
     // IMPORTANT: Use getUser() instead of getSession() for security
     const { data: { user } } = await supabase.auth.getUser()
 
-    const isLoginPage = request.nextUrl.pathname === '/login'
     const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
 
-    // 1. If trying to access admin without login -> Redirect to login
+    // If trying to access admin without login -> Redirect to login
     if (isAdminPage && !user) {
         return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // 2. If trying to access login while already logged in -> Redirect to admin
-    if (isLoginPage && user) {
-        return NextResponse.redirect(new URL('/admin', request.url))
-    }
+    // NOTE: previously we redirected '/login' to '/admin' when a session
+    // existed. That blocked legitimate account switching on shared devices —
+    // a second user could never reach the form, so they ended up signed in as
+    // whoever last used the machine. /login is always reachable now; the page
+    // itself shows the active session and lets the user either go to the
+    // dashboard or submit new credentials (which signs the previous user out).
 
     return response
 }
