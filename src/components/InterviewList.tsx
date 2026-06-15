@@ -602,16 +602,9 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                             ? 'Comments are required before submitting'
                                             : '';
 
-                                    return isL2Round ? (
-                                        <button
-                                            onClick={() => handleDecision('Recommended')}
-                                            disabled={blocked}
-                                            title={blockReason}
-                                            className="bg-primary text-white border border-primary-hover px-6 py-3 rounded-sm text-[11px] font-bold uppercase tracking-widest shadow-md hover:scale-105 transition-all disabled:opacity-40 disabled:hover:scale-100"
-                                        >
-                                            Finalize Selection
-                                        </button>
-                                    ) : (
+                                    // L2 round: Reject / Recommend only (no Request L2 — already on L2).
+                                    // L1 round: Reject / Request L2 / Recommend.
+                                    return (
                                         <>
                                             <button
                                                 onClick={() => handleDecision('Not Recommended')}
@@ -621,14 +614,16 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                             >
                                                 Reject
                                             </button>
-                                            <button
-                                                onClick={() => handleDecision('L2 Interview Required')}
-                                                disabled={blocked}
-                                                title={blockReason}
-                                                className="px-5 py-3 rounded-sm border border-border bg-white text-indigo-600 font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all disabled:opacity-40"
-                                            >
-                                                Request L2
-                                            </button>
+                                            {!isL2Round && (
+                                                <button
+                                                    onClick={() => handleDecision('L2 Interview Required')}
+                                                    disabled={blocked}
+                                                    title={blockReason}
+                                                    className="px-5 py-3 rounded-sm border border-border bg-white text-indigo-600 font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all disabled:opacity-40"
+                                                >
+                                                    Request L2
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => handleDecision('Recommended')}
                                                 disabled={blocked}
