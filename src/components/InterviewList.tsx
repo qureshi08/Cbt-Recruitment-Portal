@@ -445,107 +445,100 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
         }));
     };
 
-    const STATUS_TABS: { key: StatusFilter; label: string }[] = [
-        { key: 'All', label: 'All' },
-        { key: 'Awaiting', label: 'Awaiting Decision' },
-        { key: 'Recommended', label: 'Recommended' },
-        { key: 'L2 Required', label: 'L2 Required' },
-        { key: 'Not Recommended', label: 'Not Recommended' },
+    const statusOptions: { value: StatusFilter; label: string }[] = [
+        { value: 'All', label: `All (${statusCounts.All})` },
+        { value: 'Awaiting', label: `Awaiting (${statusCounts.Awaiting})` },
+        { value: 'Recommended', label: `Recommended (${statusCounts.Recommended})` },
+        { value: 'L2 Required', label: `L2 Required (${statusCounts['L2 Required']})` },
+        { value: 'Not Recommended', label: `Not Recommended (${statusCounts['Not Recommended']})` },
     ];
-    const TIME_TABS: { key: TimeFilter; label: string }[] = [
-        { key: 'All', label: 'All Time' },
-        { key: 'Upcoming', label: 'Upcoming' },
-        { key: 'Today', label: 'Today' },
-        { key: 'Past', label: 'Past' },
+    const timeOptions: { value: TimeFilter; label: string }[] = [
+        { value: 'All', label: 'All Time' },
+        { value: 'Upcoming', label: 'Upcoming' },
+        { value: 'Today', label: 'Today' },
+        { value: 'Past', label: 'Past' },
     ];
 
     return (
         <div className="bg-white border border-border rounded-sm shadow-soft overflow-hidden">
-            {/* Filter / search bar */}
-            <div className="p-4 border-b border-border bg-surface space-y-3">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                    {/* Search */}
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by candidate name…"
-                            className="w-full pl-9 pr-3 py-2 text-[12px] bg-white border border-border rounded-sm focus:border-primary outline-none"
-                        />
-                    </div>
+            {/* Single-row filter strip */}
+            <div className="px-4 py-3 border-b border-border bg-surface flex flex-wrap items-center gap-2">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search by candidate name…"
+                        className="w-full pl-9 pr-3 py-2 text-[12px] bg-white border border-border rounded-sm focus:border-primary outline-none"
+                    />
+                </div>
 
-                    {/* Sort direction toggle */}
+                {/* Status dropdown */}
+                <div className="relative">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                        className={cn(
+                            "appearance-none pl-3 pr-8 py-2 text-[11px] font-semibold bg-white border rounded-sm cursor-pointer focus:outline-none transition-colors",
+                            statusFilter !== 'All'
+                                ? "border-primary text-primary"
+                                : "border-border text-heading hover:border-primary/50"
+                        )}
+                    >
+                        {statusOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                    <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted rotate-90 pointer-events-none" strokeWidth={1.5} />
+                </div>
+
+                {/* Time scope dropdown */}
+                <div className="relative">
+                    <select
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+                        className={cn(
+                            "appearance-none pl-3 pr-8 py-2 text-[11px] font-semibold bg-white border rounded-sm cursor-pointer focus:outline-none transition-colors",
+                            timeFilter !== 'All'
+                                ? "border-heading text-heading"
+                                : "border-border text-heading hover:border-heading/50"
+                        )}
+                    >
+                        {timeOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                    <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted rotate-90 pointer-events-none" strokeWidth={1.5} />
+                </div>
+
+                {/* Sort toggle */}
+                <button
+                    type="button"
+                    onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                    className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold text-heading bg-white border border-border rounded-sm hover:border-primary/50 transition-colors"
+                    title={sortDir === 'desc' ? 'Latest first — click to flip' : 'Oldest first — click to flip'}
+                >
+                    {sortDir === 'desc' ? <ArrowDown className="w-3.5 h-3.5" strokeWidth={1.5} /> : <ArrowUp className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                    <span>{sortDir === 'desc' ? 'Latest' : 'Oldest'}</span>
+                </button>
+
+                {hasActiveFilters && (
                     <button
                         type="button"
-                        onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
-                        className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-heading bg-white border border-border rounded-sm hover:border-primary/50 transition-colors"
-                        title={sortDir === 'desc' ? 'Latest first — click to flip' : 'Oldest first — click to flip'}
+                        onClick={resetFilters}
+                        className="flex items-center gap-1 px-2.5 py-2 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 rounded-sm transition-colors"
                     >
-                        {sortDir === 'desc' ? <ArrowDown className="w-3 h-3" strokeWidth={1.5} /> : <ArrowUp className="w-3 h-3" strokeWidth={1.5} />}
-                        <span>{sortDir === 'desc' ? 'Latest first' : 'Oldest first'}</span>
+                        <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        Clear
                     </button>
+                )}
 
-                    {hasActiveFilters && (
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-rose-600 hover:bg-rose-50 rounded-sm transition-colors"
-                        >
-                            <X className="w-3 h-3" strokeWidth={1.5} />
-                            Clear filters
-                        </button>
-                    )}
-
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest lg:ml-auto">
-                        Showing {visibleInterviews.length} of {interviews.length}
-                    </span>
-                </div>
-
-                {/* Status pills */}
-                <div className="flex flex-wrap gap-1.5">
-                    {STATUS_TABS.map(tab => (
-                        <button
-                            key={tab.key}
-                            type="button"
-                            onClick={() => setStatusFilter(tab.key)}
-                            className={cn(
-                                "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all",
-                                statusFilter === tab.key
-                                    ? "bg-primary text-white border-primary shadow-sm"
-                                    : "bg-white text-muted border-border hover:border-primary/50 hover:text-heading"
-                            )}
-                        >
-                            {tab.label}
-                            <span className={cn(
-                                "ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black",
-                                statusFilter === tab.key ? "bg-white/20 text-white" : "bg-surface text-muted"
-                            )}>
-                                {statusCounts[tab.key]}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Time scope pills */}
-                <div className="flex flex-wrap gap-1.5">
-                    {TIME_TABS.map(tab => (
-                        <button
-                            key={tab.key}
-                            type="button"
-                            onClick={() => setTimeFilter(tab.key)}
-                            className={cn(
-                                "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all",
-                                timeFilter === tab.key
-                                    ? "bg-heading text-white border-heading"
-                                    : "bg-white text-muted border-border hover:border-heading/50 hover:text-heading"
-                            )}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
+                {/* Counter — pushed right */}
+                <span className="ml-auto text-[11px] font-semibold text-muted">
+                    Showing <span className="text-heading">{visibleInterviews.length}</span> of {interviews.length}
+                </span>
             </div>
 
             <div className="overflow-x-auto">
