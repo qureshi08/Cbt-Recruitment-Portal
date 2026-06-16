@@ -354,18 +354,27 @@ export async function submitApplication(formData: FormData) {
     try {
         if (!resume || resume.size === 0) throw new Error("Resume is required");
         if (!cnic) throw new Error("CNIC Number is required");
+        if (!email) throw new Error("Email is required");
 
-        // Normalize CNIC: Remove all non-digit characters for consistent lookup
+        // Normalize CNIC and enforce strict Pakistani 13-digit format. The
+        // previous `< 5` check let 12-digit (truncated) CNICs through, which
+        // made the same person look like two different people in dedup.
         const normalizedCnic = cnic.replace(/\D/g, '');
-        if (normalizedCnic.length < 5) throw new Error("Invalid CNIC format");
+        if (normalizedCnic.length !== 13) {
+            throw new Error("CNIC must be 13 digits (format: XXXXX-XXXXXXX-X).");
+        }
+        const normalizedEmail = email.trim().toLowerCase();
 
-        // --- Reapplication Logic Based on CNIC ---
-        // 1. Check if there's any previous application with this (normalized) CNIC
-        // We use a broader check to find matches even if we previously stored them with dashes
+        // --- Reapplication Logic — dedup on CNIC OR email ---
+        // Email is the most reliable identifier; CNIC catches the edge case
+        // where someone changes email addresses between applications. We use
+        // ilike for email so existing rows stored with mixed casing still
+        // match, and check both the normalized and as-typed CNIC so legacy
+        // rows stored with dashes still match too.
         const { data: pastApps, error: pastAppError } = await supabaseAdmin
             .from('candidates')
-            .select('id, status, created_at, updated_at, cnic')
-            .or(`cnic.eq."${cnic}",cnic.eq."${normalizedCnic}"`) // Try both raw and normalized
+            .select('id, status, created_at, updated_at, cnic, email')
+            .or(`cnic.eq.${normalizedCnic},cnic.eq.${cnic},email.ilike.${normalizedEmail}`)
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -446,7 +455,7 @@ export async function submitApplication(formData: FormData) {
             .from("candidates")
             .insert({
                 name,
-                email,
+                email: normalizedEmail,
                 phone,
                 location,
                 education_status,
