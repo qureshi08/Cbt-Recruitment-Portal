@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight, Search, ArrowDown, ArrowUp } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
 import { withLoading } from "@/lib/loading";
 import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting, generateAndLockInterview, getInterviewerAvailability } from "@/app/actions";
+
+type StatusFilter = 'All' | 'Awaiting' | 'Recommended' | 'Not Recommended' | 'L2 Required';
+type TimeFilter = 'All' | 'Today' | 'Upcoming' | 'Past';
+type SortDirection = 'desc' | 'asc';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -301,6 +305,68 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<StructuredFeedback>(emptyFeedback());
 
+    // Filter / sort state — purely client-side, the full list is fetched once.
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>('All');
+    const [search, setSearch] = useState('');
+    const [sortDir, setSortDir] = useState<SortDirection>('desc');
+
+    const visibleInterviews = useMemo(() => {
+        const now = Date.now();
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const startOfTomorrow = new Date(startOfToday);
+        startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+        const matches = interviews.filter(i => {
+            // Status
+            if (statusFilter === 'Awaiting' && i.decision) return false;
+            if (statusFilter === 'Recommended' && i.decision !== 'Recommended') return false;
+            if (statusFilter === 'Not Recommended' && i.decision !== 'Not Recommended') return false;
+            if (statusFilter === 'L2 Required' && i.decision !== 'L2 Interview Required') return false;
+
+            // Time scope (based on scheduled_at)
+            const ts = new Date(i.scheduled_at).getTime();
+            if (timeFilter === 'Today' && (ts < startOfToday.getTime() || ts >= startOfTomorrow.getTime())) return false;
+            if (timeFilter === 'Upcoming' && ts < now) return false;
+            if (timeFilter === 'Past' && ts >= now) return false;
+
+            // Search by candidate name (case-insensitive)
+            if (search.trim()) {
+                const needle = search.trim().toLowerCase();
+                const name = i.candidates?.name?.toLowerCase() ?? '';
+                if (!name.includes(needle)) return false;
+            }
+
+            return true;
+        });
+
+        const sorted = [...matches].sort((a, b) => {
+            const at = new Date(a.scheduled_at).getTime();
+            const bt = new Date(b.scheduled_at).getTime();
+            return sortDir === 'desc' ? bt - at : at - bt;
+        });
+
+        return sorted;
+    }, [interviews, statusFilter, timeFilter, search, sortDir]);
+
+    // Counts for the status pills (over ALL interviews, not the filtered set,
+    // so the counts don't shift as the user toggles filters).
+    const statusCounts = useMemo(() => ({
+        All: interviews.length,
+        Awaiting: interviews.filter(i => !i.decision).length,
+        Recommended: interviews.filter(i => i.decision === 'Recommended').length,
+        'Not Recommended': interviews.filter(i => i.decision === 'Not Recommended').length,
+        'L2 Required': interviews.filter(i => i.decision === 'L2 Interview Required').length,
+    }), [interviews]);
+
+    const resetFilters = () => {
+        setStatusFilter('All');
+        setTimeFilter('All');
+        setSearch('');
+    };
+    const hasActiveFilters = statusFilter !== 'All' || timeFilter !== 'All' || search.trim() !== '';
+
     const isL2Round = !!selectedInterview?.decision && selectedInterview.decision === 'L2 Interview Required';
 
     const openModal = (interview: Interview) => {
@@ -379,8 +445,109 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
         }));
     };
 
+    const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+        { key: 'All', label: 'All' },
+        { key: 'Awaiting', label: 'Awaiting Decision' },
+        { key: 'Recommended', label: 'Recommended' },
+        { key: 'L2 Required', label: 'L2 Required' },
+        { key: 'Not Recommended', label: 'Not Recommended' },
+    ];
+    const TIME_TABS: { key: TimeFilter; label: string }[] = [
+        { key: 'All', label: 'All Time' },
+        { key: 'Upcoming', label: 'Upcoming' },
+        { key: 'Today', label: 'Today' },
+        { key: 'Past', label: 'Past' },
+    ];
+
     return (
         <div className="bg-white border border-border rounded-sm shadow-soft overflow-hidden">
+            {/* Filter / search bar */}
+            <div className="p-4 border-b border-border bg-surface space-y-3">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                    {/* Search */}
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search by candidate name…"
+                            className="w-full pl-9 pr-3 py-2 text-[12px] bg-white border border-border rounded-sm focus:border-primary outline-none"
+                        />
+                    </div>
+
+                    {/* Sort direction toggle */}
+                    <button
+                        type="button"
+                        onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                        className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-heading bg-white border border-border rounded-sm hover:border-primary/50 transition-colors"
+                        title={sortDir === 'desc' ? 'Latest first — click to flip' : 'Oldest first — click to flip'}
+                    >
+                        {sortDir === 'desc' ? <ArrowDown className="w-3 h-3" strokeWidth={1.5} /> : <ArrowUp className="w-3 h-3" strokeWidth={1.5} />}
+                        <span>{sortDir === 'desc' ? 'Latest first' : 'Oldest first'}</span>
+                    </button>
+
+                    {hasActiveFilters && (
+                        <button
+                            type="button"
+                            onClick={resetFilters}
+                            className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-rose-600 hover:bg-rose-50 rounded-sm transition-colors"
+                        >
+                            <X className="w-3 h-3" strokeWidth={1.5} />
+                            Clear filters
+                        </button>
+                    )}
+
+                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest lg:ml-auto">
+                        Showing {visibleInterviews.length} of {interviews.length}
+                    </span>
+                </div>
+
+                {/* Status pills */}
+                <div className="flex flex-wrap gap-1.5">
+                    {STATUS_TABS.map(tab => (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setStatusFilter(tab.key)}
+                            className={cn(
+                                "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all",
+                                statusFilter === tab.key
+                                    ? "bg-primary text-white border-primary shadow-sm"
+                                    : "bg-white text-muted border-border hover:border-primary/50 hover:text-heading"
+                            )}
+                        >
+                            {tab.label}
+                            <span className={cn(
+                                "ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black",
+                                statusFilter === tab.key ? "bg-white/20 text-white" : "bg-surface text-muted"
+                            )}>
+                                {statusCounts[tab.key]}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Time scope pills */}
+                <div className="flex flex-wrap gap-1.5">
+                    {TIME_TABS.map(tab => (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setTimeFilter(tab.key)}
+                            className={cn(
+                                "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all",
+                                timeFilter === tab.key
+                                    ? "bg-heading text-white border-heading"
+                                    : "bg-white text-muted border-border hover:border-heading/50 hover:text-heading"
+                            )}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse table-fixed" style={{ minWidth: '900px' }}>
                     <thead>
@@ -393,7 +560,16 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border)]/50">
-                        {interviews.map((interview) => {
+                        {visibleInterviews.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="px-6 py-12 text-center text-muted text-[12px] font-medium">
+                                    {hasActiveFilters
+                                        ? 'No interviews match your filters. Try clearing them.'
+                                        : 'No interviews yet.'}
+                                </td>
+                            </tr>
+                        )}
+                        {visibleInterviews.map((interview) => {
                             const isAwaitingL2 = interview.decision === 'L2 Interview Required';
                             const isFinal = interview.decision === 'Recommended' || interview.decision === 'Not Recommended';
                             const canAct = !isFinal && (userRoles.includes('L1_Interviewer') || userRoles.includes('L2_Interviewer') || userRoles.includes('Master'));

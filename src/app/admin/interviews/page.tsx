@@ -6,6 +6,8 @@ export default async function InterviewsPage() {
     const user = await getCurrentUser();
     const roles = user?.roles || [];
 
+    // Default to newest-first so today's interviews and the most recently
+    // added ones appear at the top of the table without having to scroll.
     const { data: interviews, error } = await supabase
         .from("interviews")
         .select(`
@@ -17,7 +19,7 @@ export default async function InterviewsPage() {
         assessment_score_url
       )
     `)
-        .order("scheduled_at", { ascending: true });
+        .order("scheduled_at", { ascending: false });
 
     if (error) {
         return <div>Error loading interviews: {error.message}</div>;
