@@ -18,10 +18,19 @@ export default function ApplicationForm() {
     };
 
     const handleCnicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 5) value = value.substring(0, 5) + '-' + value.substring(5);
-        if (value.length > 13) value = value.substring(0, 13) + '-' + value.substring(13, 14);
-        e.target.value = value;
+        // Strip everything that isn't a digit, cap at 13 (Pakistani CNIC
+        // length), then reformat as XXXXX-XXXXXXX-X. The previous version
+        // only added the second dash when the formatted value was already
+        // 14+ chars long, which silently allowed 12-digit (truncated) CNICs
+        // through and broke duplicate detection later.
+        const digits = e.target.value.replace(/\D/g, '').slice(0, 13);
+        let formatted = digits;
+        if (digits.length > 12) {
+            formatted = `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+        } else if (digits.length > 5) {
+            formatted = `${digits.slice(0, 5)}-${digits.slice(5)}`;
+        }
+        e.target.value = formatted;
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,7 +128,17 @@ export default function ApplicationForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-border">
                 <div>
                     <Label>CNIC</Label>
-                    <input type="text" name="cnic" required className="input-field !py-2" placeholder="XXXXX-XXXXXXX-X" onChange={handleCnicChange} maxLength={15} />
+                    <input
+                        type="text"
+                        name="cnic"
+                        required
+                        className="input-field !py-2"
+                        placeholder="XXXXX-XXXXXXX-X"
+                        onChange={handleCnicChange}
+                        maxLength={15}
+                        pattern="^\d{5}-\d{7}-\d{1}$"
+                        title="Enter your CNIC as 13 digits in the format 12345-1234567-1."
+                    />
                 </div>
                 <div>
                     <Label>Institution</Label>
