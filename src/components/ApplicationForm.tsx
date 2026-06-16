@@ -34,11 +34,18 @@ export default function ApplicationForm() {
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value;
-        const hasPlus = value.startsWith('+');
-        value = value.replace(/\D/g, '');
-        if (hasPlus) value = '+' + value;
-        e.target.value = value;
+        // Pakistani local mobile format only: 03XXXXXXXXX (11 digits starting
+        // with 03). Strip everything that isn't a digit. If the user pastes
+        // an international number like +923001234567 or 00923001234567, drop
+        // the leading 92 country code and prepend 0 so it becomes 0300…
+        let digits = e.target.value.replace(/\D/g, '');
+        if (digits.startsWith('92')) {
+            digits = '0' + digits.slice(2);
+        } else if (digits.startsWith('0092')) {
+            digits = '0' + digits.slice(4);
+        }
+        // Cap at 11 digits.
+        e.target.value = digits.slice(0, 11);
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -117,7 +124,17 @@ export default function ApplicationForm() {
                 </div>
                 <div>
                     <Label>Mobile</Label>
-                    <input type="tel" name="phone" required className="input-field !py-2" placeholder="+92 XXX XXXXXXX" onChange={handlePhoneChange} />
+                    <input
+                        type="tel"
+                        name="phone"
+                        required
+                        className="input-field !py-2"
+                        placeholder="03XXXXXXXXX"
+                        onChange={handlePhoneChange}
+                        maxLength={11}
+                        pattern="^03\d{9}$"
+                        title="Enter your Pakistani mobile number in the format 03XXXXXXXXX (11 digits)."
+                    />
                 </div>
                 <div>
                     <Label>City</Label>

@@ -355,6 +355,7 @@ export async function submitApplication(formData: FormData) {
         if (!resume || resume.size === 0) throw new Error("Resume is required");
         if (!cnic) throw new Error("CNIC Number is required");
         if (!email) throw new Error("Email is required");
+        if (!phone) throw new Error("Phone number is required");
 
         // Normalize CNIC and enforce strict Pakistani 13-digit format. The
         // previous `< 5` check let 12-digit (truncated) CNICs through, which
@@ -364,6 +365,18 @@ export async function submitApplication(formData: FormData) {
             throw new Error("CNIC must be 13 digits (format: XXXXX-XXXXXXX-X).");
         }
         const normalizedEmail = email.trim().toLowerCase();
+
+        // Phone: Pakistani local mobile only (03XXXXXXXXX, 11 digits). Accept
+        // common variants (+92…, 0092…) and rewrite to the canonical 03 form.
+        let normalizedPhone = phone.replace(/\D/g, '');
+        if (normalizedPhone.startsWith('0092')) {
+            normalizedPhone = '0' + normalizedPhone.slice(4);
+        } else if (normalizedPhone.startsWith('92')) {
+            normalizedPhone = '0' + normalizedPhone.slice(2);
+        }
+        if (!/^03\d{9}$/.test(normalizedPhone)) {
+            throw new Error("Phone must be a Pakistani mobile number in the format 03XXXXXXXXX (11 digits).");
+        }
 
         // --- Reapplication Logic — dedup on CNIC OR email ---
         // Email is the most reliable identifier; CNIC catches the edge case
@@ -456,7 +469,7 @@ export async function submitApplication(formData: FormData) {
             .insert({
                 name,
                 email: normalizedEmail,
-                phone,
+                phone: normalizedPhone,
                 location,
                 education_status,
                 graduation_year,
