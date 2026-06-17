@@ -38,21 +38,21 @@ export default function GlobalLoadingBar() {
         };
     }, [pathname, searchParams]);
 
-    // Show the centered overlay only after 300ms of continuous loading.
+    // Show the centered overlay instantly — no delay. The user complained
+    // that loading 'appeared after 1-2 seconds and content appeared in
+    // milliseconds', i.e. they got no signal that their click registered.
+    // Instagram-style feel = tap → instant visible feedback, no waiting.
     useEffect(() => {
         if (!isLoading) {
             setShowOverlay(false);
             setLongRunning(false);
             return;
         }
-        const overlayTimer = setTimeout(() => setShowOverlay(true), 300);
+        setShowOverlay(true);
         // After 6 seconds, swap in a 'still working' hint so users know
         // the request hasn't been forgotten about.
         const longTimer = setTimeout(() => setLongRunning(true), 6000);
-        return () => {
-            clearTimeout(overlayTimer);
-            clearTimeout(longTimer);
-        };
+        return () => clearTimeout(longTimer);
     }, [isLoading]);
 
     return (
