@@ -1031,15 +1031,44 @@ export async function rescheduleAssessment(candidateId: string) {
 
 export async function completeAssessment(candidateId: string) {
     try {
-        // 1. Create interview entry
         const now = new Date();
-        const { data: candidate } = await supabase
-            .from("candidates")
-            .select("name")
-            .eq("id", candidateId)
-            .single();
+        const actingUser = await getCurrentUser();
+        const userName = actingUser?.full_name || 'System User';
 
-        const { error: interviewError } = await supabase
+        // 1. ATOMIC status guard — flip the candidate from 'Assessment
+        //    Scheduled' to 'To Be Interviewed' in a single UPDATE…WHERE.
+        //    Only one concurrent caller can match, so a rapid double-click
+        //    fires this twice but only the FIRST call actually changes a row.
+        //    The second one sees no rows updated and returns idempotently
+        //    without creating a duplicate interview entry.
+        const { data: flipped, error: flipError } = await supabaseAdmin
+            .from('candidates')
+            .update({
+                status: 'To Be Interviewed',
+                last_action_by: userName,
+                updated_at: now.toISOString(),
+            })
+            .eq('id', candidateId)
+            .eq('status', 'Assessment Scheduled')
+            .select('id, name, status');
+
+        if (flipError) throw new Error(`Failed to update candidate status: ${flipError.message}`);
+
+        if (!flipped || flipped.length === 0) {
+            // Either already complete, or candidate is in a non-eligible
+            // status. Idempotent success: don't create a duplicate row.
+            return { success: true, alreadyCompleted: true };
+        }
+        const candidate = flipped[0];
+
+        // Audit the status flip (logAction is null-safe for unauthenticated
+        // callers, but the slot flow is always invoked by an authenticated HR
+        // user, so this records who clicked the button).
+        await logAction('STATUS_UPDATE', candidateId, 'candidate', { new_status: 'To Be Interviewed' });
+
+        // 2. Create the interview row. Now that we know we 'won' the status
+        //    flip, only this caller will reach here for this candidate.
+        const { error: interviewError } = await supabaseAdmin
             .from("interviews")
             .insert({
                 candidate_id: candidateId,
@@ -1048,9 +1077,6 @@ export async function completeAssessment(candidateId: string) {
             });
 
         if (interviewError) throw new Error(`Failed to create interview: ${interviewError.message}`);
-
-        // 2. Update candidate status
-        await updateCandidateStatus(candidateId, "To Be Interviewed");
 
         // 3. Create notification
         await supabase.from('notifications').insert({
