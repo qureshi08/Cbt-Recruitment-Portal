@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight, Search, ArrowDown, ArrowUp } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
 import { withLoading } from "@/lib/loading";
@@ -299,6 +300,7 @@ function MeetingScheduler({ interview, onConfirm, onCancel, isSubmitting, candid
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function InterviewList({ initialInterviews, userRoles }: InterviewListProps) {
+    const router = useRouter();
     const [interviews, setInterviews] = useState(initialInterviews);
     const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
     const [meetingModalInterview, setMeetingModalInterview] = useState<Interview | null>(null);
@@ -422,7 +424,7 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             );
             if (result.error) throw new Error(result.error);
             alert("Meeting generated successfully!");
-            window.location.reload();
+            router.refresh();
             setMeetingModalInterview(null);
         } catch (err: any) {
             alert(err.message);

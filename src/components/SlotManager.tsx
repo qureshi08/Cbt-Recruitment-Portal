@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2, UserX, AlertTriangle, RotateCcw } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime, pktDateKey } from "@/lib/utils";
 import { withLoading } from "@/lib/loading";
@@ -31,6 +32,7 @@ interface SlotManagerProps {
 }
 
 export default function SlotManager({ initialSlots }: SlotManagerProps) {
+    const router = useRouter();
     const [slots, setSlots] = useState<Slot[]>(initialSlots);
     const [filterView, setFilterView] = useState<'All' | 'Today' | 'Upcoming' | 'Pending' | 'Absentees' | 'Open'>('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -156,7 +158,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
             const result = await withLoading(() => completeAssessment(candidateId));
             if (result.success) {
                 alert("Assessment marked as completed!");
-                window.location.reload();
+                router.refresh();
             } else {
                 alert(result.error);
             }
@@ -177,7 +179,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
             const result = await withLoading(() => updateCandidateStatus(candidateId, "Absent"));
             if (result.success) {
                 alert("Candidate marked as absent.");
-                window.location.reload();
+                router.refresh();
             } else {
                 alert(result.error || "Failed to update status.");
             }
@@ -196,7 +198,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
             const result = await withLoading(() => rescheduleAssessment(candidateId));
             if (result.success) {
                 alert("Slot freed. Candidate can now reschedule via their booking link.");
-                window.location.reload();
+                router.refresh();
             } else {
                 alert(result.error || "Failed to allow reschedule.");
             }
