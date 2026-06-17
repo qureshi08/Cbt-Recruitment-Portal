@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     LayoutDashboard,
@@ -9,7 +8,6 @@ import {
     Settings,
     LogOut,
     ClipboardList,
-    ChevronRight,
     Menu,
     X,
     Shield
@@ -17,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
+import SidebarNavItem from "@/components/SidebarNavItem";
 import { UserRole, logout } from "@/app/actions";
 import { useState } from "react";
 
@@ -80,34 +79,16 @@ export default function Sidebar({ userRoles }: SidebarProps) {
                             Portal Navigation
                         </p>
                         <nav className="space-y-0.5">
-                            {allowedItems.map((item) => {
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        href={item.href}
-                                        onClick={() => setIsOpen(false)}
-                                        className={cn(
-                                            "flex items-center justify-between px-2.5 py-2 rounded-md transition-all group",
-                                            isActive
-                                                ? "bg-primary text-white font-semibold"
-                                                : "text-body hover:bg-primary-muted hover:text-primary"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <item.icon
-                                                className={cn(
-                                                    "w-3.5 h-3.5 shrink-0 transition-colors",
-                                                    isActive ? "text-white" : "text-muted group-hover:text-primary"
-                                                )}
-                                                strokeWidth={1.5}
-                                            />
-                                            <span className="text-[12.5px] tracking-tight">{item.name}</span>
-                                        </div>
-                                        {isActive && <ChevronRight className="w-3 h-3 opacity-70" strokeWidth={1.5} />}
-                                    </Link>
-                                );
-                            })}
+                            {allowedItems.map((item) => (
+                                <SidebarNavItem
+                                    key={item.name}
+                                    href={item.href}
+                                    label={item.name}
+                                    Icon={item.icon}
+                                    isActive={pathname === item.href}
+                                    onClick={() => setIsOpen(false)}
+                                />
+                            ))}
                         </nav>
                     </div>
 
