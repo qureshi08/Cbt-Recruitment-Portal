@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Plus, Calendar as CalendarIcon, Clock, Lock, Unlock, X, CheckCircle, Info, Trash2, UserX, AlertTriangle, RotateCcw } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime, pktDateKey } from "@/lib/utils";
 import { withLoading } from "@/lib/loading";
@@ -140,9 +140,17 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         setIsSubmitting(false);
     };
 
+    // Synchronous in-flight guard. setIsSubmitting + disabled={isSubmitting}
+    // alone isn't enough: a rapid double-click can fire both handlers BEFORE
+    // React re-renders and disables the button. The ref check rejects the
+    // second call instantly, before any server work begins.
+    const inFlightCandidatesRef = useRef<Set<string>>(new Set());
+
     const markCompleted = async (slotId: string, candidateId: string) => {
+        if (inFlightCandidatesRef.current.has(candidateId)) return;
         if (!window.confirm("Mark this assessment as completed? Candidate will move to 'To Be Interviewed'.")) return;
 
+        inFlightCandidatesRef.current.add(candidateId);
         setIsSubmitting(true);
         try {
             const result = await withLoading(() => completeAssessment(candidateId));
@@ -155,6 +163,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         } catch (err: any) {
             alert(err.message);
         } finally {
+            inFlightCandidatesRef.current.delete(candidateId);
             setIsSubmitting(false);
         }
     };
