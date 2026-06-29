@@ -5,6 +5,7 @@ import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus, InterviewFeedbackJson } from "@/types/database";
 import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail } from "@/app/actions";
 import { withLoading } from "@/lib/loading";
+import { exportCandidatesToExcel } from "@/lib/excelExport";
 import {
     ExternalLink,
     CheckCircle,
@@ -442,6 +443,20 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             ))}
                         </select>
                     </div>
+                    <button
+                        type="button"
+                        onClick={() => exportCandidatesToExcel(filteredCandidates)}
+                        disabled={filteredCandidates.length === 0}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={
+                            filteredCandidates.length === 0
+                                ? 'No candidates match the current filters'
+                                : `Download ${filteredCandidates.length} candidate${filteredCandidates.length !== 1 ? 's' : ''} (with interview scores) as Excel`
+                        }
+                    >
+                        <Download className="w-3 h-3" strokeWidth={2} />
+                        <span>Export Excel ({filteredCandidates.length})</span>
+                    </button>
                 </div>
             </div>
 
