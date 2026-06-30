@@ -10,6 +10,7 @@ import { cookies } from "next/headers";
 import { after } from 'next/server';
 import {
     sendAssessmentEmail,
+    sendCustomCandidateEmail,
     sendRecommendedEmail,
     sendNotRecommendedEmail,
     sendSelectedEmail,
@@ -2728,6 +2729,135 @@ export async function removeQueuedNotification(itemId: string) {
         return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };
+    }
+}
+
+// =============================================================================
+// Custom broadcast — recruitment team writes a one-off email to a list of
+// candidates picked from the database (announcements, postponements, etc.)
+// =============================================================================
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function sendCustomBroadcastToCandidates(params: {
+    candidateIds: string[];
+    subject: string;
+    bodyPlain: string;
+    cc?: string[];
+    personalize?: boolean;
+}) {
+    try {
+        const actingUser = await getCurrentUser();
+        if (!actingUser) return { error: 'You must be signed in.' };
+        const roles = actingUser.roles ?? [];
+        if (!roles.includes('Master') && !roles.includes('HR')) {
+            return { error: 'Only HR or Master can send custom emails.' };
+        }
+
+        const subject = (params.subject ?? '').trim();
+        const bodyPlain = (params.bodyPlain ?? '').trim();
+        const candidateIds = Array.from(new Set(params.candidateIds ?? []));
+        const personalize = params.personalize !== false; // default true
+
+        if (!candidateIds.length) return { error: 'Pick at least one recipient.' };
+        if (candidateIds.length > 500) return { error: 'Maximum 500 recipients per send.' };
+        if (!subject) return { error: 'Subject is required.' };
+        if (!bodyPlain) return { error: 'Body is required.' };
+
+        const ccList = (params.cc ?? [])
+            .map(e => (e ?? '').trim())
+            .filter(Boolean);
+        const invalidCc = ccList.filter(e => !EMAIL_REGEX.test(e));
+        if (invalidCc.length) {
+            return { error: `Invalid CC address(es): ${invalidCc.join(', ')}` };
+        }
+        if (ccList.length > 10) {
+            return { error: 'Maximum 10 CC addresses.' };
+        }
+
+        // Fetch the candidates we're actually sending to.
+        const { data: candidates, error: fetchErr } = await supabaseAdmin
+            .from('candidates')
+            .select('id, name, email, status')
+            .in('id', candidateIds);
+        if (fetchErr) throw fetchErr;
+        const recipients = (candidates ?? []).filter(c => c.email && EMAIL_REGEX.test(c.email));
+        if (recipients.length === 0) return { error: 'None of the selected candidates have a valid email.' };
+
+        // Audit the broadcast intent BEFORE the emails fire, so even if a
+        // background send dies we have a record of who initiated what.
+        await logAction('CUSTOM_BROADCAST', 'batch', 'email', {
+            recipient_count: recipients.length,
+            subject,
+            cc: ccList,
+            personalized: personalize,
+            sent_by: actingUser.full_name,
+            candidate_ids: recipients.map(r => r.id),
+        });
+
+        // Fire the actual SMTP loop in the background so the click returns
+        // immediately. Office 365 SMTP pool will queue them; the existing
+        // transporter is configured with maxConnections: 3 so we don't trip
+        // the throttle.
+        after(async () => {
+            let success = 0;
+            let failed = 0;
+            for (const candidate of recipients) {
+                try {
+                    const firstName = (candidate.name ?? '').trim().split(/\s+/)[0] || candidate.name || 'Applicant';
+                    const personalizedBody = personalize
+                        ? bodyPlain
+                            .replace(/\{\{\s*name\s*\}\}/gi, candidate.name ?? 'Applicant')
+                            .replace(/\{\{\s*firstName\s*\}\}/gi, firstName)
+                        : bodyPlain;
+                    await sendCustomCandidateEmail({
+                        to: candidate.email,
+                        cc: ccList,
+                        subject,
+                        bodyPlain: personalizedBody,
+                        senderName: actingUser.full_name,
+                    });
+                    success++;
+                } catch (err: any) {
+                    failed++;
+                    console.error(`[CustomBroadcast] Failed for ${candidate.email}:`, err?.message ?? err);
+                }
+            }
+            console.log(`[CustomBroadcast] Done. success=${success} failed=${failed} subject="${subject}"`);
+        });
+
+        return {
+            success: true,
+            queued: recipients.length,
+            skipped: candidateIds.length - recipients.length,
+        };
+    } catch (error: any) {
+        console.error('sendCustomBroadcastToCandidates error:', error);
+        return { error: error.message ?? 'Failed to queue broadcast.' };
+    }
+}
+
+// Fetches a thin slice of candidate rows for the composer's recipient picker.
+// Same data the Candidate Pipeline page already exposes, but trimmed to what
+// the picker actually needs (id, name, email, status, batch, position) and
+// only candidates that have a deliverable email.
+export async function getCandidatesForBroadcast() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'Not signed in.' };
+        const roles = user.roles ?? [];
+        if (!roles.includes('Master') && !roles.includes('HR')) {
+            return { error: 'Not authorized.' };
+        }
+        const { data, error } = await supabaseAdmin
+            .from('candidates')
+            .select('id, name, email, status, batch_number, position')
+            .not('email', 'is', null)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return { success: true, data: data ?? [] };
+    } catch (error: any) {
+        return { error: error.message };
     }
 }
 

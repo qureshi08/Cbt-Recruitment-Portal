@@ -217,6 +217,51 @@ export const sendTeamNotification = async (recipients: string[], subject: string
 };
 
 
+// Converts a plain-text body (with line breaks) into HTML paragraphs so the
+// recruitment team can write naturally in the composer without having to
+// know HTML. Empty lines become paragraph breaks; single line breaks become
+// <br>. Also auto-links bare URLs.
+function bodyToHtml(plain: string): string {
+    const escaped = plain
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    const withLinks = escaped.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#009245;text-decoration:underline;">$1</a>');
+    const paragraphs = withLinks.split(/\n{2,}/).map(p => `<p style="margin:0 0 14px 0;">${p.replace(/\n/g, '<br>')}</p>`);
+    return paragraphs.join('');
+}
+
+// Recruitment-team-authored custom email. Sent to a single candidate at a
+// time so each recipient sees only their own address in the To field.
+// Optional CC is applied per-message. Returns nodemailer's info object on
+// success or throws on failure.
+export const sendCustomCandidateEmail = async (params: {
+    to: string;
+    cc?: string[];
+    subject: string;
+    bodyPlain: string;
+    senderName?: string;
+}) => {
+    const { to, cc, subject, bodyPlain, senderName } = params;
+    const mailOptions: any = {
+        from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html: `
+        <div style="font-family: sans-serif; max-width: 620px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7; color: #1f2937;">
+          ${bodyToHtml(bodyPlain)}
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+          <p style="font-size: 12px; color: #666; margin: 0;">
+            ${senderName ? `${senderName} &middot; ` : ''}Recruitment Team<br>
+            Convergent Business Technologies
+          </p>
+        </div>
+        `,
+    };
+    if (cc && cc.length > 0) mailOptions.cc = cc.join(', ');
+    return transporter.sendMail(mailOptions);
+};
+
 export const notifyRole = async (emails: string[], subject: string, title: string, body: string, attachments?: any[]) => {
   if (!emails || emails.length === 0) return null;
 
