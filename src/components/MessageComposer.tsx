@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search, Send, Users, X, CheckSquare, Square, Info, Plus } from "lucide-react";
+import { Loader2, Search, Send, Users, X, CheckSquare, Square, Info, Plus, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withLoading } from "@/lib/loading";
-import { getCandidatesForBroadcast, sendCustomBroadcastToCandidates } from "@/app/actions";
+import { getCandidatesForBroadcast, getInternalTeamMembersForBroadcast, sendCustomBroadcastToCandidates } from "@/app/actions";
 
 interface BroadcastCandidate {
     id: string;
@@ -15,9 +15,25 @@ interface BroadcastCandidate {
     position?: string | null;
 }
 
+interface InternalTeamMember {
+    id: string;
+    email: string;
+    category: string;
+}
+
 interface MessageComposerProps {
     senderName: string;
 }
+
+const TEAM_CATEGORY_LABELS: Record<string, string> = {
+    recruitment_team: 'Recruitment Team',
+    approver: 'Approvers',
+    l1_interviewer: 'L1 Interviewers',
+    l2_interviewer: 'L2 Interviewers',
+};
+
+const formatCategoryLabel = (cat: string) =>
+    TEAM_CATEGORY_LABELS[cat] ?? cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 const STATUS_GROUPS: { label: string; statuses: string[] }[] = [
     { label: 'Approved', statuses: ['Approved'] },
@@ -31,13 +47,21 @@ const STATUS_GROUPS: { label: string; statuses: string[] }[] = [
 ];
 
 export default function MessageComposer({ senderName }: MessageComposerProps) {
+    const [recipientTab, setRecipientTab] = useState<'candidates' | 'team'>('candidates');
+
     const [candidates, setCandidates] = useState<BroadcastCandidate[]>([]);
     const [loadingCandidates, setLoadingCandidates] = useState(true);
+
+    const [teamMembers, setTeamMembers] = useState<InternalTeamMember[]>([]);
+    const [loadingTeam, setLoadingTeam] = useState(true);
 
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('All');
     const [batchFilter, setBatchFilter] = useState<string>('All');
+    const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>('All');
+
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [selectedTeamEmails, setSelectedTeamEmails] = useState<Set<string>>(new Set());
 
     const [subject, setSubject] = useState('');
     const [body, setBody] = useState('Dear {{firstName}},\n\n\n\nWarm regards,\nRecruitment Team\nConvergent Business Technologies');
@@ -56,7 +80,50 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
             else setResult({ ok: false, message: res.error || 'Failed to load candidates.' });
             setLoadingCandidates(false);
         })();
+        (async () => {
+            setLoadingTeam(true);
+            const res = await getInternalTeamMembersForBroadcast();
+            if (res.success) setTeamMembers(res.data || []);
+            setLoadingTeam(false);
+        })();
     }, []);
+
+    const teamCategories = useMemo(() => {
+        const set = new Set<string>();
+        for (const m of teamMembers) if (m.category) set.add(m.category);
+        return ['All', ...Array.from(set).sort()];
+    }, [teamMembers]);
+
+    const filteredTeam = useMemo(() => {
+        return teamMembers.filter(m => {
+            const needle = search.trim().toLowerCase();
+            const matchesSearch = !needle || m.email?.toLowerCase().includes(needle) || m.category?.toLowerCase().includes(needle);
+            const matchesCategory = teamCategoryFilter === 'All' || m.category === teamCategoryFilter;
+            return matchesSearch && matchesCategory;
+        });
+    }, [teamMembers, search, teamCategoryFilter]);
+
+    const allFilteredTeamSelected = filteredTeam.length > 0 && filteredTeam.every(m => selectedTeamEmails.has(m.email));
+
+    const toggleTeamEmail = (email: string) => {
+        setSelectedTeamEmails(prev => {
+            const next = new Set(prev);
+            if (next.has(email)) next.delete(email); else next.add(email);
+            return next;
+        });
+    };
+
+    const toggleAllFilteredTeam = () => {
+        setSelectedTeamEmails(prev => {
+            const next = new Set(prev);
+            if (allFilteredTeamSelected) {
+                filteredTeam.forEach(m => next.delete(m.email));
+            } else {
+                filteredTeam.forEach(m => next.add(m.email));
+            }
+            return next;
+        });
+    };
 
     const batches = useMemo(() => {
         const set = new Set<string>();
@@ -119,10 +186,11 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
     const removeCcEmail = (e: string) => setCcList(prev => prev.filter(x => x !== e));
 
     const selectedCandidates = candidates.filter(c => selectedIds.has(c.id));
+    const totalSelected = selectedIds.size + selectedTeamEmails.size;
 
     const handleSend = async () => {
         setResult(null);
-        if (selectedIds.size === 0) {
+        if (totalSelected === 0) {
             setResult({ ok: false, message: 'Pick at least one recipient first.' });
             return;
         }
@@ -135,9 +203,12 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
             return;
         }
 
-        const sampleName = selectedCandidates[0]?.name ?? 'first candidate';
+        const sampleName = selectedCandidates[0]?.name
+            ?? Array.from(selectedTeamEmails)[0]
+            ?? 'first recipient';
         const ok = window.confirm(
-            `Send this email to ${selectedIds.size} candidate(s)?\n\n` +
+            `Send this email to ${totalSelected} recipient(s)?\n\n` +
+            `${selectedIds.size} candidate(s) + ${selectedTeamEmails.size} internal team member(s)\n` +
             `First recipient: ${sampleName}\n` +
             `Subject: ${subject}\n` +
             (ccList.length ? `CC: ${ccList.join(', ')}\n` : '') +
@@ -148,6 +219,7 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
         setIsSending(true);
         const res = await withLoading(() => sendCustomBroadcastToCandidates({
             candidateIds: Array.from(selectedIds),
+            directEmails: Array.from(selectedTeamEmails),
             subject: subject.trim(),
             bodyPlain: body,
             cc: ccList,
@@ -161,6 +233,7 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
                 message: `Queued ${res.queued} email${res.queued !== 1 ? 's' : ''} for delivery${res.skipped ? ` (${res.skipped} skipped — missing or invalid email)` : ''}. They are being sent in the background.`,
             });
             setSelectedIds(new Set());
+            setSelectedTeamEmails(new Set());
         } else {
             setResult({ ok: false, message: res.error || 'Failed to send.' });
         }
@@ -179,108 +252,218 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
                 <div className="px-4 py-3 border-b border-border bg-surface">
                     <p className="text-[10px] font-bold text-muted uppercase tracking-[0.14em]">Recipients</p>
                     <p className="text-[11px] text-muted mt-0.5">
-                        <span className="font-bold text-heading">{selectedIds.size}</span> of {candidates.length} selected
+                        <span className="font-bold text-heading">{totalSelected}</span> selected
+                        {totalSelected > 0 && (
+                            <span className="text-muted">
+                                {' '}({selectedIds.size} candidate{selectedIds.size !== 1 ? 's' : ''}, {selectedTeamEmails.size} team)
+                            </span>
+                        )}
                     </p>
                 </div>
+
+                {/* Tab switcher */}
+                <div className="grid grid-cols-2 border-b border-border">
+                    <button
+                        type="button"
+                        onClick={() => { setRecipientTab('candidates'); setSearch(''); }}
+                        className={cn(
+                            "py-2.5 text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors",
+                            recipientTab === 'candidates'
+                                ? "bg-white text-primary border-b-2 border-primary -mb-px"
+                                : "bg-surface/60 text-muted hover:text-heading"
+                        )}
+                    >
+                        <Users className="w-3 h-3" strokeWidth={2} />
+                        Candidates ({candidates.length})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setRecipientTab('team'); setSearch(''); }}
+                        className={cn(
+                            "py-2.5 text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors",
+                            recipientTab === 'team'
+                                ? "bg-white text-primary border-b-2 border-primary -mb-px"
+                                : "bg-surface/60 text-muted hover:text-heading"
+                        )}
+                    >
+                        <Shield className="w-3 h-3" strokeWidth={2} />
+                        Internal Teams ({teamMembers.length})
+                    </button>
+                </div>
+
+                {/* Filters — context-specific to the active tab */}
                 <div className="px-3 pt-3 space-y-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" strokeWidth={1.5} />
                         <input
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder="Search name or email…"
+                            placeholder={recipientTab === 'candidates' ? 'Search name or email…' : 'Search email or category…'}
                             className="w-full pl-8 pr-2 py-1.5 text-[12px] bg-surface border border-border rounded-sm outline-none focus:border-primary"
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    {recipientTab === 'candidates' ? (
+                        <div className="grid grid-cols-2 gap-2">
+                            <select
+                                value={statusFilter}
+                                onChange={e => setStatusFilter(e.target.value)}
+                                className="bg-white border border-border rounded-sm px-2 py-1.5 text-[11px] font-semibold cursor-pointer outline-none"
+                            >
+                                <option value="All">All statuses</option>
+                                {STATUS_GROUPS.map(g => (
+                                    <option key={g.label} value={g.label}>{g.label}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={batchFilter}
+                                onChange={e => setBatchFilter(e.target.value)}
+                                className="bg-white border border-border rounded-sm px-2 py-1.5 text-[11px] font-semibold cursor-pointer outline-none"
+                            >
+                                {batches.map(b => (
+                                    <option key={b} value={b}>{b === 'All' ? 'All batches' : `Batch ${b}`}</option>
+                                ))}
+                            </select>
+                        </div>
+                    ) : (
                         <select
-                            value={statusFilter}
-                            onChange={e => setStatusFilter(e.target.value)}
-                            className="bg-white border border-border rounded-sm px-2 py-1.5 text-[11px] font-semibold cursor-pointer outline-none"
+                            value={teamCategoryFilter}
+                            onChange={e => setTeamCategoryFilter(e.target.value)}
+                            className="w-full bg-white border border-border rounded-sm px-2 py-1.5 text-[11px] font-semibold cursor-pointer outline-none"
                         >
-                            <option value="All">All statuses</option>
-                            {STATUS_GROUPS.map(g => (
-                                <option key={g.label} value={g.label}>{g.label}</option>
+                            {teamCategories.map(c => (
+                                <option key={c} value={c}>{c === 'All' ? 'All team roles' : formatCategoryLabel(c)}</option>
                             ))}
                         </select>
-                        <select
-                            value={batchFilter}
-                            onChange={e => setBatchFilter(e.target.value)}
-                            className="bg-white border border-border rounded-sm px-2 py-1.5 text-[11px] font-semibold cursor-pointer outline-none"
-                        >
-                            {batches.map(b => (
-                                <option key={b} value={b}>{b === 'All' ? 'All batches' : `Batch ${b}`}</option>
-                            ))}
-                        </select>
-                    </div>
+                    )}
+
                     <div className="flex items-center justify-between gap-2">
-                        <button
-                            type="button"
-                            onClick={toggleAllFiltered}
-                            disabled={filtered.length === 0}
-                            className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/5 rounded uppercase tracking-widest disabled:opacity-40"
-                        >
-                            {allFilteredSelected
-                                ? <CheckSquare className="w-3.5 h-3.5" strokeWidth={2} />
-                                : <Square className="w-3.5 h-3.5" strokeWidth={2} />}
-                            <span>{allFilteredSelected ? 'Deselect all' : `Select all (${filtered.length})`}</span>
-                        </button>
-                        {selectedIds.size > 0 && (
+                        {recipientTab === 'candidates' ? (
                             <button
                                 type="button"
-                                onClick={() => setSelectedIds(new Set())}
+                                onClick={toggleAllFiltered}
+                                disabled={filtered.length === 0}
+                                className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/5 rounded uppercase tracking-widest disabled:opacity-40"
+                            >
+                                {allFilteredSelected
+                                    ? <CheckSquare className="w-3.5 h-3.5" strokeWidth={2} />
+                                    : <Square className="w-3.5 h-3.5" strokeWidth={2} />}
+                                <span>{allFilteredSelected ? 'Deselect all' : `Select all (${filtered.length})`}</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={toggleAllFilteredTeam}
+                                disabled={filteredTeam.length === 0}
+                                className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/5 rounded uppercase tracking-widest disabled:opacity-40"
+                            >
+                                {allFilteredTeamSelected
+                                    ? <CheckSquare className="w-3.5 h-3.5" strokeWidth={2} />
+                                    : <Square className="w-3.5 h-3.5" strokeWidth={2} />}
+                                <span>{allFilteredTeamSelected ? 'Deselect all' : `Select all (${filteredTeam.length})`}</span>
+                            </button>
+                        )}
+                        {totalSelected > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => { setSelectedIds(new Set()); setSelectedTeamEmails(new Set()); }}
                                 className="text-[10px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded uppercase tracking-widest"
                             >
-                                Clear ({selectedIds.size})
+                                Clear ({totalSelected})
                             </button>
                         )}
                     </div>
                 </div>
+
+                {/* The list */}
                 <div className="flex-1 overflow-y-auto px-3 py-2 mt-1 border-t border-border/40">
-                    {loadingCandidates ? (
-                        <div className="h-full flex items-center justify-center text-muted text-[11px]">
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading candidates…
-                        </div>
-                    ) : filtered.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-muted text-[11px] text-center px-4">
-                            <Users className="w-5 h-5 mb-1 opacity-40" />
-                            No candidates match the current filters.
-                        </div>
-                    ) : (
-                        <ul className="space-y-0.5">
-                            {filtered.map(c => {
-                                const checked = selectedIds.has(c.id);
-                                return (
-                                    <li key={c.id}>
-                                        <button
-                                            type="button"
-                                            onClick={() => toggle(c.id)}
-                                            className={cn(
-                                                "w-full flex items-start gap-2 px-2 py-1.5 rounded-sm text-left transition-colors",
-                                                checked ? "bg-primary/5" : "hover:bg-surface"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors",
-                                                checked ? "bg-primary border-primary text-white" : "border-border bg-white"
-                                            )}>
-                                                {checked && <CheckSquare className="w-3 h-3" strokeWidth={2.5} />}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-[12px] font-semibold text-heading truncate leading-tight">{c.name}</p>
-                                                <p className="text-[10.5px] text-muted truncate leading-tight">{c.email}</p>
-                                                <div className="flex items-center gap-1.5 mt-1">
-                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted">{c.status}</span>
-                                                    {c.batch_number && (
-                                                        <span className="text-[9px] font-bold text-primary/80">· B{c.batch_number}</span>
-                                                    )}
+                    {recipientTab === 'candidates' ? (
+                        loadingCandidates ? (
+                            <div className="h-full flex items-center justify-center text-muted text-[11px]">
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading candidates…
+                            </div>
+                        ) : filtered.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-muted text-[11px] text-center px-4">
+                                <Users className="w-5 h-5 mb-1 opacity-40" />
+                                No candidates match the current filters.
+                            </div>
+                        ) : (
+                            <ul className="space-y-0.5">
+                                {filtered.map(c => {
+                                    const checked = selectedIds.has(c.id);
+                                    return (
+                                        <li key={c.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggle(c.id)}
+                                                className={cn(
+                                                    "w-full flex items-start gap-2 px-2 py-1.5 rounded-sm text-left transition-colors",
+                                                    checked ? "bg-primary/5" : "hover:bg-surface"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors",
+                                                    checked ? "bg-primary border-primary text-white" : "border-border bg-white"
+                                                )}>
+                                                    {checked && <CheckSquare className="w-3 h-3" strokeWidth={2.5} />}
                                                 </div>
-                                            </div>
-                                        </button>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[12px] font-semibold text-heading truncate leading-tight">{c.name}</p>
+                                                    <p className="text-[10.5px] text-muted truncate leading-tight">{c.email}</p>
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted">{c.status}</span>
+                                                        {c.batch_number && (
+                                                            <span className="text-[9px] font-bold text-primary/80">· B{c.batch_number}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )
+                    ) : (
+                        loadingTeam ? (
+                            <div className="h-full flex items-center justify-center text-muted text-[11px]">
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading internal teams…
+                            </div>
+                        ) : filteredTeam.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-muted text-[11px] text-center px-4">
+                                <Shield className="w-5 h-5 mb-1 opacity-40" />
+                                No internal team members match.
+                            </div>
+                        ) : (
+                            <ul className="space-y-0.5">
+                                {filteredTeam.map(m => {
+                                    const checked = selectedTeamEmails.has(m.email);
+                                    return (
+                                        <li key={m.id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleTeamEmail(m.email)}
+                                                className={cn(
+                                                    "w-full flex items-start gap-2 px-2 py-1.5 rounded-sm text-left transition-colors",
+                                                    checked ? "bg-primary/5" : "hover:bg-surface"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors",
+                                                    checked ? "bg-primary border-primary text-white" : "border-border bg-white"
+                                                )}>
+                                                    {checked && <CheckSquare className="w-3 h-3" strokeWidth={2.5} />}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[12px] font-semibold text-heading truncate leading-tight">{m.email}</p>
+                                                    <p className="text-[10px] font-bold text-primary/80 uppercase tracking-widest mt-0.5">
+                                                        {formatCategoryLabel(m.category)}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )
                     )}
                 </div>
             </div>
@@ -392,18 +575,18 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
 
                 <div className="px-5 py-4 border-t border-border bg-surface flex items-center justify-between gap-3">
                     <span className="text-[11px] text-muted">
-                        {selectedIds.size > 0
-                            ? <>Ready to send to <strong className="text-heading">{selectedIds.size}</strong> recipient{selectedIds.size !== 1 ? 's' : ''}{ccList.length > 0 && <> · CC: {ccList.length}</>}</>
+                        {totalSelected > 0
+                            ? <>Ready to send to <strong className="text-heading">{totalSelected}</strong> recipient{totalSelected !== 1 ? 's' : ''}{ccList.length > 0 && <> · CC: {ccList.length}</>}</>
                             : 'Pick recipients on the left to enable Send.'}
                     </span>
                     <button
                         type="button"
                         onClick={handleSend}
-                        disabled={isSending || selectedIds.size === 0 || !subject.trim() || !body.trim()}
+                        disabled={isSending || totalSelected === 0 || !subject.trim() || !body.trim()}
                         className="bg-primary text-white px-5 py-2 rounded-sm text-[11.5px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {isSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                        {isSending ? 'Sending…' : `Send${selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}`}
+                        {isSending ? 'Sending…' : `Send${totalSelected > 0 ? ` (${totalSelected})` : ''}`}
                     </button>
                 </div>
             </div>
