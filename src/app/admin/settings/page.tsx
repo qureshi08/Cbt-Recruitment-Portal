@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipients, getChatbotPrompt, CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT } from "@/app/actions";
+import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipients, getChatbotPrompt } from "@/app/actions";
+import { CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT } from "@/lib/chatbot-prompt";
 import UserManager from "@/components/UserManager";
 import AiCriteriaManager from "@/components/AiCriteriaManager";
 import TeamEmailManager from "@/components/TeamEmailManager";
