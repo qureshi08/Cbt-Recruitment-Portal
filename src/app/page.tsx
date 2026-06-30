@@ -2,8 +2,13 @@ import ApplicationForm from "@/components/ApplicationForm";
 import Logo from "@/components/Logo";
 import CandidateChatBot from "@/components/CandidateChatBot";
 import Image from "next/image";
+import { getApplicationsOpenSetting } from "@/app/actions";
+import { Lock } from "lucide-react";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+    const { open: applicationsOpen } = await getApplicationsOpenSetting();
     return (
         <div className="min-h-screen bg-white selection:bg-primary/10 flex flex-col overflow-y-auto">
             {/* Compact Header — 56px */}
@@ -48,11 +53,42 @@ export default function Home() {
                         </p>
                     </div>
 
-                    {/* Right: Form card */}
+                    {/* Right: Form card OR closed-state notice */}
                     <div className="lg:col-span-12 xl:col-span-7 flex flex-col justify-center">
-                        <div className="bg-white p-4 md:p-6 lg:p-8 border border-border rounded-[12px] shadow-soft mx-auto w-full max-w-2xl lg:max-w-none">
-                            <ApplicationForm />
-                        </div>
+                        {applicationsOpen ? (
+                            <div className="bg-white p-4 md:p-6 lg:p-8 border border-border rounded-[12px] shadow-soft mx-auto w-full max-w-2xl lg:max-w-none">
+                                <ApplicationForm />
+                            </div>
+                        ) : (
+                            <div className="bg-white p-8 md:p-10 border border-red-200 rounded-[12px] shadow-soft mx-auto w-full max-w-2xl lg:max-w-none text-center space-y-5 animate-in fade-in duration-500">
+                                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
+                                    <Lock className="w-6 h-6 text-red-600" strokeWidth={1.5} />
+                                </div>
+                                <div className="space-y-2">
+                                    <h2
+                                        className="text-heading font-bold"
+                                        style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', letterSpacing: '-0.02em' }}
+                                    >
+                                        Applications are currently <span className="text-red-600 italic">closed</span>
+                                    </h2>
+                                    <p className="text-[13px] text-red-600 font-semibold leading-relaxed max-w-md mx-auto">
+                                        We are not accepting new CGAP applications at this time. Please check back later for the next intake.
+                                    </p>
+                                    <p className="text-[12px] text-muted leading-relaxed max-w-md mx-auto pt-1">
+                                        For any queries, feel free to reach out via the chat assistant on this page, or email us at <span className="font-semibold text-heading">careers@convergentbt.com</span>.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    title="Applications are closed"
+                                    className="w-full max-w-sm mx-auto py-3 rounded-md bg-gray-100 text-gray-400 text-[12.5px] font-bold uppercase tracking-[0.12em] cursor-not-allowed border border-gray-200"
+                                >
+                                    Submit Application (Unavailable)
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipients, getChatbotPrompt } from "@/app/actions";
+import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipients, getChatbotPrompt, getApplicationsOpenSetting } from "@/app/actions";
 import { CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT } from "@/lib/chatbot-prompt";
+import ApplicationsIntakeToggle from "@/components/ApplicationsIntakeToggle";
 import UserManager from "@/components/UserManager";
 import AiCriteriaManager from "@/components/AiCriteriaManager";
 import TeamEmailManager from "@/components/TeamEmailManager";
@@ -36,12 +37,13 @@ export default async function SettingsPage() {
         );
     }
 
-    const [users, roles, aiCriteria, notificationRecipients, chatbotPromptResult] = await Promise.all([
+    const [users, roles, aiCriteria, notificationRecipients, chatbotPromptResult, intakeState] = await Promise.all([
         isMaster ? fetchAllUsers() : Promise.resolve([]),
         isMaster ? getAllRoles() : Promise.resolve([]),
         getAiCriteria(),
         isMaster ? getTeamNotificationRecipients() : Promise.resolve([]),
         isMaster ? getChatbotPrompt() : Promise.resolve({ prompt: '', isDefault: true }),
+        isMaster ? getApplicationsOpenSetting() : Promise.resolve({ open: true }),
     ]);
 
     return (
@@ -63,6 +65,8 @@ export default async function SettingsPage() {
                     Configure core behaviors and manage administrative access.
                 </p>
             </div>
+
+            {isMaster && <ApplicationsIntakeToggle initialOpen={intakeState.open} />}
 
             <AiCriteriaManager initialCriteria={aiCriteria} />
 
