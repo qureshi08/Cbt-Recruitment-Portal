@@ -2739,6 +2739,12 @@ const CGAP_SUPPORT_SYSTEM_PROMPT = `You are the CGAP Support Assistant — an AI
 
 Your job: answer prospective applicants' questions about the program, eligibility, application process, and what to expect. Be warm, concise, and practical. Reply in 1-3 short paragraphs unless a step-by-step list is genuinely clearer. Use a professional, friendly tone. Match the user's language (English or Urdu).
 
+FORMATTING RULES — strict:
+- Plain text only. Do NOT use markdown (no **bold**, no _italic_, no # headings, no \`code\`). The chat UI renders the asterisks and hash signs literally, which looks broken.
+- For emphasis, use ALL CAPS sparingly OR just rely on plain words.
+- Lists are fine — use "1. ", "2. ", "3. " or "- " (dash + space). Keep each list item one line if possible.
+- Keep the entire reply under ~250 words. Prefer 2-4 short paragraphs over one long one. The user is on a small chat panel; brevity matters.
+
 PROGRAM OVERVIEW
 - CGAP = Convergent Graduate Academy Program, a structured graduate training/apprenticeship program at Convergent Business Technologies.
 - Funded by the Pakistan Software Export Board (PSEB).
@@ -2822,7 +2828,7 @@ export async function askCandidateSupport(messages: CandidateChatMessage[]) {
             contents,
             generationConfig: {
                 temperature: 0.4,
-                maxOutputTokens: 600,
+                maxOutputTokens: 1400,
             },
         };
 
@@ -2851,16 +2857,28 @@ export async function askCandidateSupport(messages: CandidateChatMessage[]) {
                 }
 
                 const data = await response.json();
-                const reply = data?.candidates?.[0]?.content?.parts
+                const rawReply = data?.candidates?.[0]?.content?.parts
                     ?.map((p: any) => p?.text ?? '')
                     .join('')
                     .trim();
 
-                if (!reply) {
+                if (!rawReply) {
                     lastError = `${modelName} returned empty content`;
                     console.warn('[askCandidateSupport]', lastError, JSON.stringify(data).slice(0, 300));
                     continue;
                 }
+
+                // Belt-and-suspenders: even though the system prompt forbids
+                // markdown, strip residual **bold** / *italic* / ` ` / leading
+                // # headings so the user never sees raw asterisks in the chat
+                // bubble (the panel renders text literally, not as markdown).
+                const reply = rawReply
+                    .replace(/\*\*(.*?)\*\*/g, '$1')        // **bold**
+                    .replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, '$1') // *italic*
+                    .replace(/`([^`]+)`/g, '$1')            // `code`
+                    .replace(/^#{1,6}\s+/gm, '')            // # heading prefixes
+                    .replace(/\n{3,}/g, '\n\n')             // collapse triple newlines
+                    .trim();
 
                 return { success: true, reply };
             } catch (err: any) {
