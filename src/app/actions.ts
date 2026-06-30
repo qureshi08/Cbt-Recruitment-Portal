@@ -2714,3 +2714,20 @@ export async function clearQueuedNotifications() {
     }
 }
 
+// Remove a single entry from the daily-summary queue. Used by the per-row
+// X button on the Portal Settings queue panel so the recruitment team can
+// drop a specific stale/test event without nuking everything else.
+export async function removeQueuedNotification(itemId: string) {
+    try {
+        if (!itemId) return { success: false, error: 'Missing notification id.' };
+        const { error } = await supabaseAdmin
+            .from('notification_queue')
+            .delete()
+            .eq('id', itemId);
+        if (error) throw error;
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+

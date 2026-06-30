@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MailCheck, Loader2, Info, RefreshCw, AlertCircle, Inbox, UserCheck, UserX, FileText, Trash2 } from 'lucide-react';
-import { sendDailySummaryNotifications, getQueuedNotifications, clearQueuedNotifications } from '@/app/actions';
+import { MailCheck, Loader2, Info, RefreshCw, AlertCircle, Inbox, UserCheck, UserX, FileText, Trash2, X } from 'lucide-react';
+import { sendDailySummaryNotifications, getQueuedNotifications, clearQueuedNotifications, removeQueuedNotification } from '@/app/actions';
 
 interface QueuedItem {
     id: string;
@@ -18,6 +18,32 @@ export default function DailySummaryManager() {
     const [isLoadingQueue, setIsLoadingQueue] = useState(true);
     const [queuedItems, setQueuedItems] = useState<QueuedItem[]>([]);
     const [resultMessage, setResultMessage] = useState<string | null>(null);
+    const [removingId, setRemovingId] = useState<string | null>(null);
+
+    const handleRemoveOne = async (item: QueuedItem) => {
+        // Pull a friendly label for the confirm dialog. Candidate decisions
+        // show the name; team digest events fall back to the event type.
+        const friendly = item.category === 'candidate_decision'
+            ? (item.details?.name || item.details?.email || 'this candidate decision')
+            : (item.event_type || 'this event').replace(/_/g, ' ');
+
+        if (!window.confirm(`Remove '${friendly}' from the queue without sending it?\n\nThis is permanent.`)) {
+            return;
+        }
+
+        setRemovingId(item.id);
+        // Optimistic UI — drop the item locally first so the click feels instant.
+        const prevItems = queuedItems;
+        setQueuedItems(prev => prev.filter(q => q.id !== item.id));
+
+        const res = await removeQueuedNotification(item.id);
+        setRemovingId(null);
+
+        if (!res.success) {
+            setQueuedItems(prevItems); // rollback
+            alert(`Failed to remove from queue: ${res.error || 'Unknown error'}`);
+        }
+    };
 
     const loadQueue = async () => {
         setIsLoadingQueue(true);
@@ -167,23 +193,37 @@ export default function DailySummaryManager() {
                                 {candidateEmails.map((item) => {
                                     const isRec = item.event_type === 'CANDIDATE_RECOMMENDED';
                                     const { name, email } = item.details || {};
+                                    const isRemovingThis = removingId === item.id;
                                     return (
-                                        <div key={item.id} className="bg-white border border-border p-2 rounded-sm flex items-start justify-between gap-2">
-                                            <div>
-                                                <p className="text-[11px] font-bold text-heading leading-tight">{name}</p>
-                                                <p className="text-[10px] text-muted leading-none mt-0.5">{email}</p>
+                                        <div key={item.id} className="group relative bg-white border border-border p-2 rounded-sm flex items-start justify-between gap-2">
+                                            <div className="min-w-0 pr-7">
+                                                <p className="text-[11px] font-bold text-heading leading-tight truncate">{name}</p>
+                                                <p className="text-[10px] text-muted leading-none mt-0.5 truncate">{email}</p>
                                                 <p className="text-[9px] text-slate-400 mt-1">
                                                     Queued: {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
                                             <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded flex items-center gap-1 shrink-0 ${
-                                                isRec 
-                                                    ? 'bg-green-50 text-green-700 border border-green-150' 
+                                                isRec
+                                                    ? 'bg-green-50 text-green-700 border border-green-150'
                                                     : 'bg-red-50 text-red-750 border border-red-150'
                                             }`}>
                                                 {isRec ? <UserCheck className="w-2.5 h-2.5" /> : <UserX className="w-2.5 h-2.5" />}
                                                 {isRec ? 'Recommended' : 'Rejected'}
                                             </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveOne(item)}
+                                                disabled={isRemovingThis}
+                                                title="Remove this entry from the queue (won't be sent)"
+                                                className="absolute top-1 right-1 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-colors disabled:opacity-40"
+                                            >
+                                                {isRemovingThis ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <X className="w-3 h-3" strokeWidth={2.5} />
+                                                )}
+                                            </button>
                                         </div>
                                     );
                                 })}
@@ -214,26 +254,42 @@ export default function DailySummaryManager() {
                             </div>
                         ) : (
                             <div className="flex-1 overflow-y-auto max-h-[160px] space-y-2 pr-1">
-                                {teamNotifications.map((item) => (
-                                    <div key={item.id} className="bg-white border border-border p-2 rounded-sm">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">
-                                                {item.event_type.replace(/_/g, ' ')}
-                                            </span>
-                                            <span className="text-[8px] text-slate-400">
-                                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                {teamNotifications.map((item) => {
+                                    const isRemovingThis = removingId === item.id;
+                                    return (
+                                        <div key={item.id} className="group relative bg-white border border-border p-2 rounded-sm pr-7">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">
+                                                    {item.event_type.replace(/_/g, ' ')}
+                                                </span>
+                                                <span className="text-[8px] text-slate-400 pr-4">
+                                                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <p className="text-[10px] text-muted mt-1 leading-normal">
+                                                {item.event_type === 'NEW_APPLICATION' && `New intake application: ${item.details?.name} (${item.details?.position})`}
+                                                {item.event_type === 'APPROVED_PENDING_SLOTS' && `Approved awaiting slots: ${item.details?.name}`}
+                                                {item.event_type === 'INVITE_SENT' && `Invite sent to: ${item.details?.name}`}
+                                                {item.event_type === 'SLOT_BOOKED_INTERNAL' && `Slot booked by: ${item.details?.name}`}
+                                                {item.event_type === 'DECISION' && `Decision logged for ${item.details?.name}: ${item.details?.status}`}
+                                                {item.event_type === 'AVAILABILITY_RESPONSE' && `Availability response from interviewer for ${item.details?.candidateName}`}
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveOne(item)}
+                                                disabled={isRemovingThis}
+                                                title="Remove this entry from the queue (won't be sent)"
+                                                className="absolute top-1 right-1 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-colors disabled:opacity-40"
+                                            >
+                                                {isRemovingThis ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <X className="w-3 h-3" strokeWidth={2.5} />
+                                                )}
+                                            </button>
                                         </div>
-                                        <p className="text-[10px] text-muted mt-1 leading-normal">
-                                            {item.event_type === 'NEW_APPLICATION' && `New intake application: ${item.details?.name} (${item.details?.position})`}
-                                            {item.event_type === 'APPROVED_PENDING_SLOTS' && `Approved awaiting slots: ${item.details?.name}`}
-                                            {item.event_type === 'INVITE_SENT' && `Invite sent to: ${item.details?.name}`}
-                                            {item.event_type === 'SLOT_BOOKED_INTERNAL' && `Slot booked by: ${item.details?.name}`}
-                                            {item.event_type === 'DECISION' && `Decision logged for ${item.details?.name}: ${item.details?.status}`}
-                                            {item.event_type === 'AVAILABILITY_RESPONSE' && `Availability response from interviewer for ${item.details?.candidateName}`}
-                                        </p>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
