@@ -2800,10 +2800,26 @@ export async function sendCustomBroadcastToCandidates(params: {
                 .map(c => ({ id: c.id, name: c.name, email: c.email }));
         }
 
-        // Direct (internal team) recipients — no candidate row, so we have no
-        // name. Personalize tokens fall back to a neutral 'Team' so the body
-        // still reads cleanly.
-        const directRecipients = directEmails.map(email => ({ name: 'Team', email }));
+        // Direct (internal team) recipients — try to recover a proper name
+        // from public.users first, then derive it from the email local-part
+        // (firstName.lastName@…) so personalize tokens read 'Dear Ghasif,'
+        // instead of the previous 'Dear Team,' fallback. Names land back in
+        // the same {name, email} shape candidate recipients use.
+        let directRecipients: { name: string; email: string }[] = [];
+        if (directEmails.length > 0) {
+            const { data: userRows } = await supabaseAdmin
+                .from('users')
+                .select('email, full_name')
+                .in('email', directEmails);
+            const nameByEmail = new Map<string, string>();
+            for (const u of userRows ?? []) {
+                if (u.email && u.full_name) nameByEmail.set(u.email.toLowerCase(), u.full_name);
+            }
+            directRecipients = directEmails.map(email => ({
+                email,
+                name: nameByEmail.get(email.toLowerCase()) || deriveNameFromEmail(email),
+            }));
+        }
 
         const allRecipients = [...candidateRecipients, ...directRecipients];
         if (allRecipients.length === 0) {
@@ -2888,9 +2904,27 @@ export async function getCandidatesForBroadcast() {
     }
 }
 
+// Best-effort name derivation from an email address. Used when we can't
+// find the team member in public.users (they may not have logged in yet).
+// Pattern is firstName.lastName.middleName@... so we split the local part
+// on .  _ -, title-case the tokens, and rejoin.
+function deriveNameFromEmail(email: string): string {
+    const local = (email.split('@')[0] || '').trim();
+    if (!local) return 'Team';
+    const tokens = local.split(/[._-]+/).filter(Boolean);
+    if (tokens.length === 0) return 'Team';
+    return tokens
+        .map(t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase())
+        .join(' ');
+}
+
 // Fetches the internal team members from the team_notifications table so the
 // composer can target the recruitment team / approvers / interviewers as
 // recipients (useful for announcements and for testing the composer itself).
+// De-duplicates by email — the same person can be registered under multiple
+// categories (e.g. recruitment_team + l1_interviewer), but the picker should
+// show them once, with all their categories. Joins to public.users for the
+// real display name; falls back to deriving from the email local-part.
 export async function getInternalTeamMembersForBroadcast() {
     try {
         const user = await getCurrentUser();
@@ -2899,12 +2933,46 @@ export async function getInternalTeamMembersForBroadcast() {
         if (!roles.includes('Master') && !roles.includes('HR')) {
             return { error: 'Not authorized.' };
         }
-        const { data, error } = await supabaseAdmin
+
+        const { data: notifs, error } = await supabaseAdmin
             .from('team_notifications')
-            .select('id, email, category, created_at')
-            .order('category', { ascending: true });
+            .select('email, category')
+            .order('email', { ascending: true });
         if (error) throw error;
-        return { success: true, data: data ?? [] };
+
+        const emails = Array.from(new Set((notifs ?? []).map(n => (n.email ?? '').toLowerCase()).filter(Boolean)));
+        if (emails.length === 0) return { success: true, data: [] };
+
+        // Pull display names from public.users for anyone who has logged in.
+        const { data: userRows } = await supabaseAdmin
+            .from('users')
+            .select('email, full_name')
+            .in('email', emails);
+        const nameByEmail = new Map<string, string>();
+        for (const u of userRows ?? []) {
+            if (u.email && u.full_name) nameByEmail.set(u.email.toLowerCase(), u.full_name);
+        }
+
+        // Group categories per email + assemble the display name.
+        const byEmail = new Map<string, { email: string; name: string; categories: string[] }>();
+        for (const n of notifs ?? []) {
+            const email = (n.email ?? '').toLowerCase();
+            if (!email) continue;
+            let row = byEmail.get(email);
+            if (!row) {
+                row = {
+                    email,
+                    name: nameByEmail.get(email) || deriveNameFromEmail(email),
+                    categories: [],
+                };
+                byEmail.set(email, row);
+            }
+            if (n.category && !row.categories.includes(n.category)) {
+                row.categories.push(n.category);
+            }
+        }
+
+        return { success: true, data: Array.from(byEmail.values()) };
     } catch (error: any) {
         return { error: error.message };
     }
