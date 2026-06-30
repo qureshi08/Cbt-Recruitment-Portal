@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, Fragment } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus, InterviewFeedbackJson } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail, setCandidateStatusManually } from "@/app/actions";
 import { withLoading } from "@/lib/loading";
 import { exportCandidatesToExcel } from "@/lib/excelExport";
 import {
@@ -18,6 +18,8 @@ import {
     Trash2,
     Upload,
     Edit2,
+    Shuffle,
+    AlertTriangle,
     X,
     MoreHorizontal,
     Sparkles,
@@ -204,6 +206,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [openActionId, setOpenActionId] = useState<string | null>(null);
     const [sendingInviteId, setSendingInviteId] = useState<string | null>(null);
     const [sendingSelectionId, setSendingSelectionId] = useState<string | null>(null);
+    const [statusChangeCandidate, setStatusChangeCandidate] = useState<Candidate | null>(null);
+    const [newManualStatus, setNewManualStatus] = useState<string>('');
+    const [manualStatusReason, setManualStatusReason] = useState<string>('');
+    const [isChangingStatus, setIsChangingStatus] = useState(false);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -268,6 +274,44 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             setCandidates(prev => prev.filter(c => c.id !== id));
         } else {
             alert("Failed to delete application: " + result.error);
+        }
+    };
+
+    const openStatusChangeModal = (candidate: Candidate) => {
+        setStatusChangeCandidate(candidate);
+        setNewManualStatus(candidate.status);
+        setManualStatusReason('');
+    };
+
+    const closeStatusChangeModal = () => {
+        setStatusChangeCandidate(null);
+        setNewManualStatus('');
+        setManualStatusReason('');
+        setIsChangingStatus(false);
+    };
+
+    const submitManualStatusChange = async () => {
+        if (!statusChangeCandidate) return;
+        if (!newManualStatus || newManualStatus === statusChangeCandidate.status) {
+            closeStatusChangeModal();
+            return;
+        }
+        setIsChangingStatus(true);
+        const result = await withLoading(() =>
+            setCandidateStatusManually(statusChangeCandidate.id, newManualStatus, manualStatusReason || undefined)
+        );
+        setIsChangingStatus(false);
+        if (result.success) {
+            setCandidates(prev =>
+                prev.map(c =>
+                    c.id === statusChangeCandidate.id
+                        ? { ...c, status: newManualStatus as CandidateStatus, last_action_by: result.last_action_by ?? c.last_action_by }
+                        : c
+                )
+            );
+            closeStatusChangeModal();
+        } else {
+            alert('Failed to change status: ' + (result.error || 'Unknown error'));
         }
     };
 
@@ -840,6 +884,20 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                         </button>
                                                     )}
 
+                                                    {(isMaster || isHR) && (
+                                                        <button
+                                                            onClick={() => {
+                                                                openStatusChangeModal(candidate);
+                                                                setOpenActionId(null);
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-border text-amber-700 text-[11px] font-bold rounded-sm shadow-soft hover:border-amber-300 transition-colors"
+                                                            title="Manually change the candidate's pipeline status (use when an assessment / interview happened off-system)"
+                                                        >
+                                                            <Shuffle className="w-3.5 h-3.5" />
+                                                            <span>Change Status</span>
+                                                        </button>
+                                                    )}
+
                                                     {canDelete && (
                                                         <button
                                                             onClick={() => {
@@ -913,6 +971,92 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     </div>
                 )
             }
+            {/* Manual Status Change Modal */}
+            {statusChangeCandidate && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-heading/60 backdrop-blur-sm" onClick={closeStatusChangeModal} />
+                    <div className="bg-white rounded-md shadow-premium w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-300 overflow-hidden">
+                        <div className="p-5 border-b border-border bg-surface">
+                            <h3 className="font-bold text-heading text-lg italic">Change Pipeline Status</h3>
+                            <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-0.5">
+                                {statusChangeCandidate.name} — {statusChangeCandidate.email}
+                            </p>
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                            <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-sm">
+                                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" strokeWidth={1.6} />
+                                <p className="text-[11px] text-amber-800 leading-relaxed">
+                                    Use this only when the candidate's workflow happened off-system. The normal workflow buttons (Approve, Send Invite, Mark Complete, etc.) handle status transitions automatically.
+                                </p>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-muted uppercase tracking-[0.14em]">Current Status</label>
+                                <div className="text-[12px] font-semibold text-heading bg-surface border border-border rounded-sm px-3 py-2">
+                                    {statusChangeCandidate.status}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-muted uppercase tracking-[0.14em]">New Status</label>
+                                <select
+                                    value={newManualStatus}
+                                    onChange={(e) => setNewManualStatus(e.target.value)}
+                                    className="w-full bg-white border border-border rounded-sm px-3 py-2 text-[12px] font-semibold focus:border-primary outline-none cursor-pointer"
+                                >
+                                    {(['Applied', 'Approved', 'Invite Sent', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Not Recommended', 'Selected', 'Absent', 'Rejected'] as const).map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
+                                {(newManualStatus === 'To Be Interviewed' || newManualStatus === 'Interview Scheduled' || newManualStatus === 'L2 Interview Required') && (
+                                    <p className="text-[10.5px] text-primary font-semibold leading-relaxed mt-1">
+                                        An interview row will be auto-created so the candidate appears in the Evaluation Center ready for scoring.
+                                    </p>
+                                )}
+                                {(newManualStatus === 'Recommended' || newManualStatus === 'Not Recommended' || newManualStatus === 'Rejected') && (
+                                    <p className="text-[10.5px] text-muted font-medium leading-relaxed mt-1">
+                                        The candidate decision email will be queued for the next 6 PM PKT daily digest.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-muted uppercase tracking-[0.14em]">Reason (Optional)</label>
+                                <textarea
+                                    value={manualStatusReason}
+                                    onChange={(e) => setManualStatusReason(e.target.value)}
+                                    placeholder="e.g. 'Interview held over phone on Jun 15 — moving to evaluation manually'"
+                                    rows={2}
+                                    className="w-full bg-white border border-border rounded-sm px-3 py-2 text-[11.5px] focus:border-primary outline-none resize-none"
+                                />
+                                <p className="text-[10px] text-muted font-medium">
+                                    Saved to the audit log alongside who made the change.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-border bg-surface flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={closeStatusChangeModal}
+                                className="px-4 py-2 text-[11px] font-bold text-muted hover:text-heading uppercase tracking-widest"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={submitManualStatusChange}
+                                disabled={isChangingStatus || newManualStatus === statusChangeCandidate.status}
+                                className="px-5 py-2 text-[11px] font-bold uppercase tracking-widest bg-primary text-white rounded-sm hover:bg-primary/90 transition-colors disabled:opacity-40"
+                            >
+                                {isChangingStatus ? 'Updating…' : 'Confirm Change'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* AI Reasoning Modal */}
             {selectedAiReasoning && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">

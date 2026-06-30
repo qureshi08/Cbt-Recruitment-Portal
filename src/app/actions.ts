@@ -612,6 +612,86 @@ export async function updateCandidateStatus(candidateId: string, status: string)
 }
 
 /**
+ * Manual override for the recruitment team to jump a candidate into a
+ * specific pipeline status without going through the normal workflow buttons.
+ * Useful when an assessment / interview happened off-system (e.g. on the
+ * phone) and the team just needs to record the outcome.
+ *
+ * In addition to the standard status flip (delegated to
+ * updateCandidateStatus so emails/queues still fire correctly), this also:
+ *  - Creates an interview row when transitioning to 'To Be Interviewed' or
+ *    'Interview Scheduled' so the candidate shows up in the Evaluation
+ *    Center ready for the interviewer to add scores. Idempotent — won't
+ *    create a duplicate if one already exists for this candidate.
+ *  - Logs a MANUAL_STATUS_CHANGE audit entry separate from the regular
+ *    STATUS_UPDATE so manual overrides are auditable.
+ */
+export async function setCandidateStatusManually(
+    candidateId: string,
+    newStatus: string,
+    reason?: string,
+) {
+    try {
+        const actingUser = await getCurrentUser();
+        if (!actingUser) {
+            return { error: 'You must be signed in to change a candidate status.' };
+        }
+
+        // Use the existing updateCandidateStatus so all the side-effect logic
+        // (Approved -> notify recruitment, Recommended/Rejected -> queue
+        // candidate email + notify team) keeps firing for those statuses.
+        const statusResult = await updateCandidateStatus(candidateId, newStatus);
+        if (!statusResult.success) {
+            return { error: statusResult.error || 'Failed to update status.' };
+        }
+
+        // For statuses that imply 'an interview is happening', ensure a row
+        // exists in the interviews table so the Evaluation Center renders
+        // the candidate with an Add Evaluation button.
+        const INTERVIEW_REQUIRING_STATUSES = ['To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'];
+        if (INTERVIEW_REQUIRING_STATUSES.includes(newStatus)) {
+            const { data: existing } = await supabaseAdmin
+                .from('interviews')
+                .select('id, decision')
+                .eq('candidate_id', candidateId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            const latest = existing?.[0];
+            const needsNewRow = !latest || (latest.decision === 'Recommended' || latest.decision === 'Not Recommended');
+
+            if (needsNewRow) {
+                const { error: insertError } = await supabaseAdmin
+                    .from('interviews')
+                    .insert({
+                        candidate_id: candidateId,
+                        scheduled_at: new Date().toISOString(),
+                        decision: null,
+                        is_locked: false,
+                    });
+                if (insertError) {
+                    console.error('setCandidateStatusManually: failed to create interview row', insertError);
+                }
+            }
+        }
+
+        await logAction('MANUAL_STATUS_CHANGE', candidateId, 'candidate', {
+            new_status: newStatus,
+            reason: reason || null,
+            changed_by: actingUser.full_name,
+        });
+
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin/interviews');
+        revalidatePath('/admin');
+        return { success: true, last_action_by: actingUser.full_name };
+    } catch (error: any) {
+        console.error('setCandidateStatusManually error:', error);
+        return { error: error.message };
+    }
+}
+
+/**
  * Step 2 of the approval flow (HR action):
  * Sends the assessment booking link email to the candidate.
  * This is called AFTER the recruitment team has made slots available.
@@ -1304,6 +1384,48 @@ export async function requestL2Interview(interviewId: string, candidateId: strin
         revalidatePath("/admin/applications");
         return { success: true };
     } catch (error: any) {
+        return { error: error.message };
+    }
+}
+
+// Re-fires the INTERVIEW_L2 invitation email to all configured L2
+// interviewer recipients for a candidate that's already in 'L2 Interview
+// Required'. Used when the first invitation didn't land (SMTP glitch, spam,
+// or the recipient list was empty at the time of the original request).
+// Returns a meaningful error (not silent) if no L2 recipients are configured.
+export async function resendL2Invitation(candidateId: string) {
+    try {
+        const { data: candidate, error: cErr } = await supabaseAdmin
+            .from('candidates')
+            .select('id, name, status')
+            .eq('id', candidateId)
+            .single();
+
+        if (cErr || !candidate) throw new Error('Candidate not found.');
+        if (candidate.status !== 'L2 Interview Required') {
+            return { error: `Candidate is not awaiting L2 (current status: ${candidate.status}).` };
+        }
+
+        const recipients = await getRecipientsByRoles(['l2_interviewer']);
+        if (recipients.length === 0) {
+            return {
+                error: 'No L2 interviewer recipients are configured. Add one under Portal Settings → Team Emails → L2 Interviewers, then try again.',
+            };
+        }
+
+        await notifyWorkflowStage('INTERVIEW_L2', recipients, {
+            name: candidate.name || 'A candidate',
+            candidateId: candidateId,
+        });
+
+        await logAction('L2_INVITATION_RESENT', candidateId, 'candidate', {
+            recipient_count: recipients.length,
+            recipients,
+        });
+
+        return { success: true, recipientCount: recipients.length };
+    } catch (error: any) {
+        console.error('resendL2Invitation error:', error);
         return { error: error.message };
     }
 }
