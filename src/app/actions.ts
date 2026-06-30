@@ -354,6 +354,15 @@ export async function submitApplication(formData: FormData) {
     const position = formData.get("position") as string || "General Application";
 
     try {
+        // Master kill-switch — if applications are closed, reject the submit
+        // server-side regardless of what the client sent. The button on the
+        // landing page is also disabled, but this guard means a direct POST
+        // (curl, replayed request, etc.) can't bypass the closure.
+        const intake = await getApplicationsOpenSetting();
+        if (!intake.open) {
+            return { error: "Applications are currently closed. Please check back later for the next intake." };
+        }
+
         if (!resume || resume.size === 0) throw new Error("Resume is required");
         if (!cnic) throw new Error("CNIC Number is required");
         if (!email) throw new Error("Email is required");
@@ -2987,6 +2996,59 @@ export async function getInternalTeamMembersForBroadcast() {
 // (a non-"use server" module). server-action files can only export async
 // functions, so the const + sentinel have to live outside this file.
 
+// =============================================================================
+// Applications open / closed master switch — controls whether the public
+// landing page accepts new applications.
+// =============================================================================
+
+const APPLICATIONS_OPEN_KEY = 'applications_open';
+
+// Returns the current intake state. Defaults to "open" if the setting has
+// never been written — so existing deploys keep working without any DB
+// migration step.
+export async function getApplicationsOpenSetting(): Promise<{ open: boolean }> {
+    try {
+        const { data } = await supabaseAdmin
+            .from('settings')
+            .select('value')
+            .eq('key', APPLICATIONS_OPEN_KEY)
+            .single();
+        // Anything other than the literal string "false" is treated as open,
+        // including a missing row.
+        return { open: data?.value !== 'false' };
+    } catch {
+        return { open: true };
+    }
+}
+
+export async function setApplicationsOpenSetting(open: boolean) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'You must be signed in.' };
+        if (!user.roles?.includes('Master')) {
+            return { error: 'Only Master users can change the applications intake setting.' };
+        }
+        const { error } = await supabaseAdmin
+            .from('settings')
+            .upsert(
+                { key: APPLICATIONS_OPEN_KEY, value: open ? 'true' : 'false' },
+                { onConflict: 'key' }
+            );
+        if (error) return { error: error.message };
+
+        await logAction('APPLICATIONS_INTAKE_TOGGLED', APPLICATIONS_OPEN_KEY, 'config', {
+            new_state: open ? 'open' : 'closed',
+            changed_by: user.full_name,
+        });
+
+        revalidatePath('/');
+        revalidatePath('/admin/settings');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message ?? 'Failed to update setting.' };
+    }
+}
+
 // Returns the current system prompt for the candidate support chatbot —
 // either the one Master has saved in the DB, or the hardcoded default if no
 // override exists. Anyone authenticated can read it (the bot itself calls
@@ -3107,9 +3169,17 @@ export async function askCandidateSupport(messages: CandidateChatMessage[]) {
 
         // Pull the live system prompt — Master can override it via Portal Settings.
         const { prompt: livePrompt } = await getChatbotPrompt();
+        // Append the current intake state so the bot's tone matches reality
+        // without Master having to remember to rewrite the prompt every time
+        // the toggle flips.
+        const intakeState = await getApplicationsOpenSetting();
+        const intakeAddendum = intakeState.open
+            ? "\n\n[INTAKE STATUS — LIVE]\nApplications are currently OPEN. The application form on the landing page is active. Encourage qualified candidates to apply."
+            : "\n\n[INTAKE STATUS — LIVE]\nApplications are currently CLOSED. Politely inform any user who asks about applying that we are not accepting new applications at this time. Do not promise a reopening date. Suggest they email careers@convergentbt.com if they want to be notified when the next intake opens, or check back on the portal later. You can still answer general questions about the program, eligibility, and what to expect — just don't direct them to apply.";
+        const finalSystemPrompt = livePrompt + intakeAddendum;
 
         const payload = {
-            systemInstruction: { parts: [{ text: livePrompt }] },
+            systemInstruction: { parts: [{ text: finalSystemPrompt }] },
             contents,
             generationConfig: {
                 temperature: 0.4,
