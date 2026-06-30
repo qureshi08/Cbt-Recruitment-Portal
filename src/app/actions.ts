@@ -2807,29 +2807,72 @@ export async function askCandidateSupport(messages: CandidateChatMessage[]) {
             return { error: 'AI assistant is not configured. Please contact us via email or phone instead.' };
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
-            systemInstruction: CGAP_SUPPORT_SYSTEM_PROMPT,
+        // Build the Gemini REST payload. Mirror the same v1beta REST pattern
+        // the AI screener uses (the SDK's getGenerativeModel can fail to find
+        // newer models depending on what apiVersion it defaults to — going
+        // straight to v1beta avoids that). System prompt rides on the
+        // top-level systemInstruction field; the chat history fills `contents`.
+        const contents = trimmed.map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }],
+        }));
+
+        const payload = {
+            systemInstruction: { parts: [{ text: CGAP_SUPPORT_SYSTEM_PROMPT }] },
+            contents,
             generationConfig: {
                 temperature: 0.4,
                 maxOutputTokens: 600,
             },
-        });
+        };
 
-        // Map our chat shape to Gemini's content shape. The system prompt is
-        // already attached via systemInstruction above.
-        const history = trimmed.slice(0, -1).map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }],
-        }));
-        const latestUserMessage = trimmed[trimmed.length - 1].content;
+        const modelsToTry = [
+            'gemini-2.0-flash',
+            'gemini-flash-latest',
+            'gemini-2.0-flash-001',
+            'gemini-2.5-flash',
+        ];
 
-        const chat = model.startChat({ history });
-        const result = await chat.sendMessage(latestUserMessage);
-        const reply = result.response.text().trim();
+        let lastError: string | null = null;
+        for (const modelName of modelsToTry) {
+            try {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
 
-        return { success: true, reply };
+                if (!response.ok) {
+                    const errText = await response.text();
+                    lastError = `${modelName} returned ${response.status}: ${errText.slice(0, 200)}`;
+                    console.warn('[askCandidateSupport]', lastError);
+                    continue;
+                }
+
+                const data = await response.json();
+                const reply = data?.candidates?.[0]?.content?.parts
+                    ?.map((p: any) => p?.text ?? '')
+                    .join('')
+                    .trim();
+
+                if (!reply) {
+                    lastError = `${modelName} returned empty content`;
+                    console.warn('[askCandidateSupport]', lastError, JSON.stringify(data).slice(0, 300));
+                    continue;
+                }
+
+                return { success: true, reply };
+            } catch (err: any) {
+                lastError = `${modelName} threw: ${err?.message ?? err}`;
+                console.warn('[askCandidateSupport]', lastError);
+            }
+        }
+
+        console.error('[askCandidateSupport] all models failed:', lastError);
+        return {
+            error: 'I had trouble answering that. Please try again, or email us at careers@convergentbt.com if the problem continues.',
+        };
     } catch (error: any) {
         console.error('askCandidateSupport error:', error);
         return {
