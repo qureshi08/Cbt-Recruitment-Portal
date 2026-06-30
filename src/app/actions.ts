@@ -3009,7 +3009,7 @@ const APPLICATIONS_OPEN_KEY = 'applications_open';
 export async function getApplicationsOpenSetting(): Promise<{ open: boolean }> {
     try {
         const { data } = await supabaseAdmin
-            .from('settings')
+            .from('portal_settings')
             .select('value')
             .eq('key', APPLICATIONS_OPEN_KEY)
             .single();
@@ -3029,7 +3029,7 @@ export async function setApplicationsOpenSetting(open: boolean) {
             return { error: 'Only Master users can change the applications intake setting.' };
         }
         const { error } = await supabaseAdmin
-            .from('settings')
+            .from('portal_settings')
             .upsert(
                 { key: APPLICATIONS_OPEN_KEY, value: open ? 'true' : 'false' },
                 { onConflict: 'key' }
