@@ -2982,7 +2982,12 @@ export async function getInternalTeamMembersForBroadcast() {
 // Candidate-facing AI support chatbot (used by the floating widget on /)
 // =============================================================================
 
-const CGAP_SUPPORT_SYSTEM_PROMPT = `You are the CGAP Support Assistant — an AI helper for candidates applying to the Convergent Graduate Academy Program (CGAP) at Convergent Business Technologies (CBT).
+// Sentinel name used to store the chatbot system prompt in the `roles`
+// table — same pattern AI screening criteria already uses. Centralised so
+// the getter / setter / restore-default flows all reference one key.
+const CHATBOT_PROMPT_KEY = '_SYSTEM_CHATBOT_PROMPT_';
+
+export const CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT = `You are the CGAP Support Assistant — an AI helper for candidates applying to the Convergent Graduate Academy Program (CGAP) at Convergent Business Technologies (CBT).
 
 Your job: answer prospective applicants' questions about the program, eligibility, application process, and what to expect. Be warm, concise, and practical. Reply in 1-3 short paragraphs unless a step-by-step list is genuinely clearer. Use a professional, friendly tone. Match the user's language (English or Urdu).
 
@@ -3028,6 +3033,82 @@ WHAT YOU SHOULD AND SHOULD NOT DO
 
 Now answer the user's question.`;
 
+// Returns the current system prompt for the candidate support chatbot —
+// either the one Master has saved in the DB, or the hardcoded default if no
+// override exists. Anyone authenticated can read it (the bot itself calls
+// this on every message), but only Master can change it via updateChatbotPrompt.
+export async function getChatbotPrompt(): Promise<{ prompt: string; isDefault: boolean }> {
+    try {
+        const { data } = await supabaseAdmin
+            .from('roles')
+            .select('description')
+            .eq('name', CHATBOT_PROMPT_KEY)
+            .single();
+        const stored = data?.description?.trim();
+        if (stored) return { prompt: stored, isDefault: false };
+    } catch {
+        // Row doesn't exist yet — fine, fall through to the default.
+    }
+    return { prompt: CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT, isDefault: true };
+}
+
+export async function updateChatbotPrompt(newPrompt: string) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'You must be signed in.' };
+        if (!user.roles?.includes('Master')) {
+            return { error: 'Only Master users can change the chatbot system prompt.' };
+        }
+        const trimmed = (newPrompt ?? '').trim();
+        if (!trimmed) return { error: 'Prompt cannot be empty.' };
+        if (trimmed.length > 20000) {
+            return { error: 'Prompt is too long (max 20,000 characters).' };
+        }
+
+        const { error } = await supabaseAdmin
+            .from('roles')
+            .upsert(
+                { name: CHATBOT_PROMPT_KEY, description: trimmed },
+                { onConflict: 'name' }
+            );
+        if (error) return { error: error.message };
+
+        await logAction('CHATBOT_PROMPT_UPDATED', CHATBOT_PROMPT_KEY, 'config', {
+            length: trimmed.length,
+            updated_by: user.full_name,
+        });
+
+        revalidatePath('/admin/settings');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message ?? 'Failed to update chatbot prompt.' };
+    }
+}
+
+export async function restoreChatbotPromptToDefault() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'You must be signed in.' };
+        if (!user.roles?.includes('Master')) {
+            return { error: 'Only Master users can change the chatbot system prompt.' };
+        }
+        // Delete the override row so getChatbotPrompt falls back to the hardcoded default.
+        await supabaseAdmin
+            .from('roles')
+            .delete()
+            .eq('name', CHATBOT_PROMPT_KEY);
+
+        await logAction('CHATBOT_PROMPT_RESTORED', CHATBOT_PROMPT_KEY, 'config', {
+            restored_by: user.full_name,
+        });
+
+        revalidatePath('/admin/settings');
+        return { success: true };
+    } catch (error: any) {
+        return { error: error.message ?? 'Failed to restore default prompt.' };
+    }
+}
+
 interface CandidateChatMessage {
     role: 'user' | 'assistant';
     content: string;
@@ -3070,8 +3151,11 @@ export async function askCandidateSupport(messages: CandidateChatMessage[]) {
             parts: [{ text: m.content }],
         }));
 
+        // Pull the live system prompt — Master can override it via Portal Settings.
+        const { prompt: livePrompt } = await getChatbotPrompt();
+
         const payload = {
-            systemInstruction: { parts: [{ text: CGAP_SUPPORT_SYSTEM_PROMPT }] },
+            systemInstruction: { parts: [{ text: livePrompt }] },
             contents,
             generationConfig: {
                 temperature: 0.4,

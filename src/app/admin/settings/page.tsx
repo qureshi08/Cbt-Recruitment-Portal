@@ -1,11 +1,12 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipients } from "@/app/actions";
+import { fetchAllUsers, getAllRoles, getAiCriteria, getTeamNotificationRecipients, getChatbotPrompt, CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT } from "@/app/actions";
 import UserManager from "@/components/UserManager";
 import AiCriteriaManager from "@/components/AiCriteriaManager";
 import TeamEmailManager from "@/components/TeamEmailManager";
 import MicrosoftTeamsManager from "@/components/MicrosoftTeamsManager";
 import BatchManager from "@/components/BatchManager";
 import DailySummaryManager from "@/components/DailySummaryManager";
+import ChatbotPromptManager from "@/components/ChatbotPromptManager";
 import { ShieldAlert } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -34,11 +35,12 @@ export default async function SettingsPage() {
         );
     }
 
-    const [users, roles, aiCriteria, notificationRecipients] = await Promise.all([
+    const [users, roles, aiCriteria, notificationRecipients, chatbotPromptResult] = await Promise.all([
         isMaster ? fetchAllUsers() : Promise.resolve([]),
         isMaster ? getAllRoles() : Promise.resolve([]),
         getAiCriteria(),
-        isMaster ? getTeamNotificationRecipients() : Promise.resolve([])
+        isMaster ? getTeamNotificationRecipients() : Promise.resolve([]),
+        isMaster ? getChatbotPrompt() : Promise.resolve({ prompt: '', isDefault: true }),
     ]);
 
     return (
@@ -79,6 +81,14 @@ export default async function SettingsPage() {
                     </h3>
                     <TeamEmailManager initialRecipients={notificationRecipients} />
                 </section>
+            )}
+
+            {isMaster && (
+                <ChatbotPromptManager
+                    initialPrompt={chatbotPromptResult.prompt}
+                    initialIsDefault={chatbotPromptResult.isDefault}
+                    defaultPrompt={CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT}
+                />
             )}
 
             {isMaster && (
