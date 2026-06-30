@@ -9,6 +9,7 @@ import {
     LogOut,
     ClipboardList,
     Menu,
+    Mail,
     X,
     Shield
 } from "lucide-react";
@@ -28,6 +29,7 @@ const menuItems = [
     { name: "Candidate Pipeline", href: "/admin/applications", icon: Users, roles: ["Master", "Approver", "HR"] },
     { name: "Assessment Slots", href: "/admin/slots", icon: Calendar, roles: ["Master", "HR"] },
     { name: "Interviews", href: "/admin/interviews", icon: ClipboardList, roles: ["Master", "HR", "L1_Interviewer", "L2_Interviewer"] },
+    { name: "Compose Email", href: "/admin/messages", icon: Mail, roles: ["Master", "HR"] },
     { name: "Portal Settings", href: "/admin/settings", icon: Settings, roles: ["Master"] },
 ];
 
