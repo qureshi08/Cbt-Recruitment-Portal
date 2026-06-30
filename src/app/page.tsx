@@ -1,5 +1,6 @@
 import ApplicationForm from "@/components/ApplicationForm";
 import Logo from "@/components/Logo";
+import CandidateChatBot from "@/components/CandidateChatBot";
 import Image from "next/image";
 
 export default function Home() {
@@ -65,6 +66,9 @@ export default function Home() {
                     </p>
                 </div>
             </footer>
+
+            {/* Floating AI support assistant — answers CGAP / application FAQs */}
+            <CandidateChatBot />
         </div>
     );
 }
