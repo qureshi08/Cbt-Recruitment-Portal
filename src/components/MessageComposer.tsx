@@ -16,9 +16,9 @@ interface BroadcastCandidate {
 }
 
 interface InternalTeamMember {
-    id: string;
     email: string;
-    category: string;
+    name: string;
+    categories: string[];
 }
 
 interface MessageComposerProps {
@@ -90,15 +90,18 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
 
     const teamCategories = useMemo(() => {
         const set = new Set<string>();
-        for (const m of teamMembers) if (m.category) set.add(m.category);
+        for (const m of teamMembers) for (const c of (m.categories ?? [])) set.add(c);
         return ['All', ...Array.from(set).sort()];
     }, [teamMembers]);
 
     const filteredTeam = useMemo(() => {
         return teamMembers.filter(m => {
             const needle = search.trim().toLowerCase();
-            const matchesSearch = !needle || m.email?.toLowerCase().includes(needle) || m.category?.toLowerCase().includes(needle);
-            const matchesCategory = teamCategoryFilter === 'All' || m.category === teamCategoryFilter;
+            const matchesSearch = !needle
+                || m.email?.toLowerCase().includes(needle)
+                || m.name?.toLowerCase().includes(needle)
+                || (m.categories ?? []).some(c => c.toLowerCase().includes(needle));
+            const matchesCategory = teamCategoryFilter === 'All' || (m.categories ?? []).includes(teamCategoryFilter);
             return matchesSearch && matchesCategory;
         });
     }, [teamMembers, search, teamCategoryFilter]);
@@ -437,7 +440,7 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
                                 {filteredTeam.map(m => {
                                     const checked = selectedTeamEmails.has(m.email);
                                     return (
-                                        <li key={m.id}>
+                                        <li key={m.email}>
                                             <button
                                                 type="button"
                                                 onClick={() => toggleTeamEmail(m.email)}
@@ -453,9 +456,10 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
                                                     {checked && <CheckSquare className="w-3 h-3" strokeWidth={2.5} />}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-[12px] font-semibold text-heading truncate leading-tight">{m.email}</p>
-                                                    <p className="text-[10px] font-bold text-primary/80 uppercase tracking-widest mt-0.5">
-                                                        {formatCategoryLabel(m.category)}
+                                                    <p className="text-[12px] font-semibold text-heading truncate leading-tight">{m.name}</p>
+                                                    <p className="text-[10.5px] text-muted truncate leading-tight">{m.email}</p>
+                                                    <p className="text-[9px] font-bold text-primary/80 uppercase tracking-widest mt-0.5 truncate">
+                                                        {(m.categories ?? []).map(formatCategoryLabel).join(' · ')}
                                                     </p>
                                                 </div>
                                             </button>
