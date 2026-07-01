@@ -3173,9 +3173,15 @@ export async function askCandidateSupport(messages: CandidateChatMessage[]) {
         // without Master having to remember to rewrite the prompt every time
         // the toggle flips.
         const intakeState = await getApplicationsOpenSetting();
+        // Runtime state note only — no behavioural rules here. The Master-
+        // edited prompt above (Portal Settings) is the source of truth for
+        // tone, reopening dates, and what to tell candidates. This addendum
+        // just tells the model whether the form on the landing page is
+        // currently accepting submissions so it doesn't send someone to a
+        // disabled button.
         const intakeAddendum = intakeState.open
-            ? "\n\n[INTAKE STATUS — LIVE]\nApplications are currently OPEN. The application form on the landing page is active. Encourage qualified candidates to apply."
-            : "\n\n[INTAKE STATUS — LIVE]\nApplications are currently CLOSED. Politely inform any user who asks about applying that we are not accepting new applications at this time. Do not promise a reopening date. Suggest they email careers@convergentbt.com if they want to be notified when the next intake opens, or check back on the portal later. You can still answer general questions about the program, eligibility, and what to expect — just don't direct them to apply.";
+            ? "\n\n[INTAKE STATUS — LIVE] Applications are currently OPEN. The application form on the landing page is active. If a qualified candidate asks how to apply, tell them the form is right there on the landing page."
+            : "\n\n[INTAKE STATUS — LIVE] Applications are currently CLOSED. The application form on the landing page is disabled — do not tell candidates to submit an application right now. If the instructions above mention a reopening date or waitlist process, use that; otherwise honestly acknowledge the closure without inventing details.";
         const finalSystemPrompt = livePrompt + intakeAddendum;
 
         const payload = {
