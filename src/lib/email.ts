@@ -157,7 +157,7 @@ export const sendSelectedEmail = async (candidateEmail: string, candidateName: s
 
         <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 14px 16px; margin: 16px 0; border-radius: 4px;">
           <p style="margin: 0; color: #991b1b; font-weight: bold; font-size: 13px; line-height: 1.6;">
-            &#9888; Deadline: Please ensure all of the above is completed and your reply with the documents reaches us no later than <strong>Wednesday, 2 July 2026, 2:00 PM PKT</strong>. Submissions received after this time may not be accepted, which could affect your enrolment.
+            &#9888; Deadline: Please ensure all of the above is completed and your reply with the documents reaches us no later than <strong>Thursday, 2 July 2026, 2:00 PM PKT</strong>.
           </p>
         </div>
 
