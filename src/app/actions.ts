@@ -2919,17 +2919,41 @@ export async function sendCustomBroadcastToCandidates(params: {
             return { error: 'No valid recipient emails found.' };
         }
 
-        // Audit the broadcast intent BEFORE the emails fire so even if a
-        // background send dies we have a record of who initiated what.
-        await logAction('CUSTOM_BROADCAST', 'batch', 'email', {
-            recipient_count: allRecipients.length,
-            subject,
-            cc: ccList,
-            personalized: personalize,
-            sent_by: actingUser.full_name,
-            candidate_ids: candidateRecipients.map(r => r.id).filter(Boolean),
-            direct_emails: directEmails,
-        });
+        // Record the full broadcast — subject, body TEMPLATE, cc, and the
+        // resolved recipient list (name + email + source) — BEFORE the
+        // emails fire, so there's a complete record even if the background
+        // send dies partway through. Storing the resolved recipient list
+        // (not just candidate_ids) means the history stays intact even if
+        // a candidate row is later deleted. Bypasses the shared logAction
+        // helper (used everywhere else) because we need the inserted row's
+        // id back to attach delivery results once sending completes below.
+        const { data: logRow, error: logErr } = await supabaseAdmin
+            .from('audit_logs')
+            .insert({
+                user_id: actingUser.id,
+                user_name: actingUser.full_name,
+                action: 'CUSTOM_BROADCAST',
+                entity_id: 'batch',
+                entity_type: 'email',
+                details: {
+                    subject,
+                    body: bodyPlain,
+                    cc: ccList,
+                    personalize,
+                    sent_by: actingUser.full_name,
+                    recipients: allRecipients.map(r => ({
+                        name: r.name,
+                        email: r.email,
+                        source: (r as { id?: string }).id ? 'candidate' : 'team',
+                    })),
+                    recipient_count: allRecipients.length,
+                    status: 'sending',
+                },
+            })
+            .select('id')
+            .single();
+        if (logErr) console.error('CUSTOM_BROADCAST audit insert failed:', logErr.message);
+        const logRowId = logRow?.id ?? null;
 
         // Fire the actual SMTP loop in the background so the click returns
         // immediately. Office 365 SMTP pool will queue them; the existing
@@ -2938,6 +2962,7 @@ export async function sendCustomBroadcastToCandidates(params: {
         after(async () => {
             let success = 0;
             let failed = 0;
+            const deliveryResults: { email: string; ok: boolean; error?: string }[] = [];
             for (const recipient of allRecipients) {
                 try {
                     const firstName = (recipient.name ?? '').trim().split(/\s+/)[0] || recipient.name || 'Team';
@@ -2954,12 +2979,42 @@ export async function sendCustomBroadcastToCandidates(params: {
                         senderName: actingUser.full_name,
                     });
                     success++;
+                    deliveryResults.push({ email: recipient.email, ok: true });
                 } catch (err: any) {
                     failed++;
-                    console.error(`[CustomBroadcast] Failed for ${recipient.email}:`, err?.message ?? err);
+                    const errMessage = err?.message ?? String(err);
+                    deliveryResults.push({ email: recipient.email, ok: false, error: errMessage });
+                    console.error(`[CustomBroadcast] Failed for ${recipient.email}:`, errMessage);
                 }
             }
             console.log(`[CustomBroadcast] Done. success=${success} failed=${failed} subject="${subject}"`);
+
+            // Attach final delivery results to the same audit row so the
+            // history view shows exactly what happened, not just what was
+            // attempted.
+            if (logRowId) {
+                try {
+                    const { data: current } = await supabaseAdmin
+                        .from('audit_logs')
+                        .select('details')
+                        .eq('id', logRowId)
+                        .single();
+                    await supabaseAdmin
+                        .from('audit_logs')
+                        .update({
+                            details: {
+                                ...(current?.details ?? {}),
+                                status: 'completed',
+                                success_count: success,
+                                failed_count: failed,
+                                delivery_results: deliveryResults,
+                            },
+                        })
+                        .eq('id', logRowId);
+                } catch (updateErr) {
+                    console.error('Failed to record CUSTOM_BROADCAST delivery results:', updateErr);
+                }
+            }
         });
 
         return {
@@ -2970,6 +3025,49 @@ export async function sendCustomBroadcastToCandidates(params: {
     } catch (error: any) {
         console.error('sendCustomBroadcastToCandidates error:', error);
         return { error: error.message ?? 'Failed to queue broadcast.' };
+    }
+}
+
+// Read-side for the email history view — returns past custom broadcasts
+// with everything the recruitment team might need to audit what was sent:
+// subject, body, cc, resolved recipient list, and per-recipient delivery
+// outcome once the background send has finished.
+export async function getEmailBroadcastHistory(limit = 100) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'Not signed in.' };
+        const roles = user.roles ?? [];
+        if (!roles.includes('Master') && !roles.includes('HR')) {
+            return { error: 'Not authorized.' };
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('audit_logs')
+            .select('id, user_name, created_at, details')
+            .eq('action', 'CUSTOM_BROADCAST')
+            .order('created_at', { ascending: false })
+            .limit(Math.min(limit, 500));
+        if (error) throw error;
+
+        const history = (data ?? []).map(row => ({
+            id: row.id,
+            sentAt: row.created_at,
+            sentBy: row.user_name ?? row.details?.sent_by ?? 'Unknown',
+            subject: row.details?.subject ?? '(no subject)',
+            body: row.details?.body ?? '',
+            cc: row.details?.cc ?? [],
+            recipients: row.details?.recipients ?? [],
+            recipientCount: row.details?.recipient_count ?? (row.details?.recipients ?? []).length,
+            personalize: row.details?.personalize ?? false,
+            status: row.details?.status ?? 'unknown',
+            successCount: row.details?.success_count ?? null,
+            failedCount: row.details?.failed_count ?? null,
+            deliveryResults: row.details?.delivery_results ?? [],
+        }));
+
+        return { success: true, data: history };
+    } catch (error: any) {
+        return { error: error.message ?? 'Failed to load email history.' };
     }
 }
 

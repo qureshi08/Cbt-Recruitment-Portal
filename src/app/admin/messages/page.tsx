@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
-import MessageComposer from "@/components/MessageComposer";
+import MessagingCenter from "@/components/MessagingCenter";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +38,11 @@ export default async function MessagesPage() {
                     Custom <span className="italic-accent">Broadcast</span>
                 </h1>
                 <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
-                    Pick candidates from the database, write a subject and a body, send. Use this for announcements, postponements, schedule changes, or any other one-off update that doesn't have a built-in template.
+                    Pick candidates from the database, write a subject and a body, send. Use this for announcements, postponements, schedule changes, or any other one-off update that doesn't have a built-in template. Every send is recorded under History — who, what, to whom, and whether it delivered.
                 </p>
             </div>
 
-            <MessageComposer senderName={user.full_name} />
+            <MessagingCenter senderName={user.full_name} />
         </div>
     );
 }
