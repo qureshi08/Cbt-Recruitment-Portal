@@ -3049,21 +3049,34 @@ export async function getEmailBroadcastHistory(limit = 100) {
             .limit(Math.min(limit, 500));
         if (error) throw error;
 
-        const history = (data ?? []).map(row => ({
-            id: row.id,
-            sentAt: row.created_at,
-            sentBy: row.user_name ?? row.details?.sent_by ?? 'Unknown',
-            subject: row.details?.subject ?? '(no subject)',
-            body: row.details?.body ?? '',
-            cc: row.details?.cc ?? [],
-            recipients: row.details?.recipients ?? [],
-            recipientCount: row.details?.recipient_count ?? (row.details?.recipients ?? []).length,
-            personalize: row.details?.personalize ?? false,
-            status: row.details?.status ?? 'unknown',
-            successCount: row.details?.success_count ?? null,
-            failedCount: row.details?.failed_count ?? null,
-            deliveryResults: row.details?.delivery_results ?? [],
-        }));
+        const history = (data ?? []).map(row => {
+            // Broadcasts sent before this history feature existed were
+            // logged with an older, thinner schema (just recipient_count /
+            // candidate_ids / direct_emails — no body text and no resolved
+            // name+email recipient list). Surface that distinction instead
+            // of silently rendering an empty body/recipients section that
+            // looks like a bug. Detected by the presence of the `recipients`
+            // array key, which every row written by the current code always
+            // has (a real send can't complete with zero recipients).
+            const hasFullDetails = Array.isArray(row.details?.recipients);
+
+            return {
+                id: row.id,
+                sentAt: row.created_at,
+                sentBy: row.user_name ?? row.details?.sent_by ?? 'Unknown',
+                subject: row.details?.subject ?? '(no subject)',
+                body: row.details?.body ?? '',
+                cc: row.details?.cc ?? [],
+                recipients: row.details?.recipients ?? [],
+                recipientCount: row.details?.recipient_count ?? (row.details?.recipients ?? []).length,
+                personalize: row.details?.personalize ?? false,
+                status: row.details?.status ?? 'unknown',
+                successCount: row.details?.success_count ?? null,
+                failedCount: row.details?.failed_count ?? null,
+                deliveryResults: row.details?.delivery_results ?? [],
+                hasFullDetails,
+            };
+        });
 
         return { success: true, data: history };
     } catch (error: any) {
