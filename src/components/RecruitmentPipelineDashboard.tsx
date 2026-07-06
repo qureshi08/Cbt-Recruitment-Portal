@@ -12,7 +12,11 @@ import {
     ChevronRight,
     ArrowUpRight,
     Target,
-    Activity
+    Activity,
+    XCircle,
+    UserX,
+    FileX,
+    Ban
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -163,10 +167,19 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         const interviewDecided = notRecommended + recommended + selected;
         const recommendedOrBeyond = recommended + selected;
 
+        // Reconciliation check — every bucket above (minus the informational
+        // `total`/`pending` overlap) should sum to exactly `total`. Rendered
+        // on screen as visible proof that nobody is double-counted or
+        // dropped, rather than asking anyone to trust the percentages.
+        const activeSum = pending + testParticipants + activeInterviews + recommended + selected;
+        const exitedSum = rejectedScreening + noShow + assessmentFailed + notRecommended;
+        const reconciles = activeSum + exitedSum === total;
+
         return {
             total, pending, testParticipants, activeInterviews, recommended, selected,
             notRecommended, rejectedScreening, noShow, assessmentFailed,
             assessmentAppeared, assessmentPassed, interviewDecided, recommendedOrBeyond,
+            activeSum, exitedSum, reconciles,
         };
     }, [filteredCandidates]);
 
@@ -264,14 +277,54 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                 </div>
             </div>
 
-            {/* Pipeline */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <PipelineStage title="Applications" count={stats.total} subtitle="Gross intake" icon={Users} color="bg-heading" />
-                <PipelineStage title="Pending" count={stats.pending} subtitle="Awaiting screening" icon={Clock} color="bg-muted" />
-                <PipelineStage title="Assessment" count={stats.testParticipants} subtitle="In technical testing" icon={FileText} color="bg-primary/80" />
-                <PipelineStage title="Interviewing" count={stats.activeInterviews} subtitle="Technical interviews" icon={MessageSquare} color="bg-primary" />
-                <PipelineStage title="Recommended" count={stats.recommended} subtitle="Awaiting offer" icon={CheckCircle} color="bg-primary-dark" />
-                <PipelineStage title="Selected" count={stats.selected} subtitle="Joined the program" icon={Award} color="bg-heading" />
+            {/* Pipeline — currently active / still progressing */}
+            <div>
+                <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.2em] mb-2 px-1">
+                    Active Pipeline — Still In Progress
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <PipelineStage title="Applications" count={stats.total} subtitle="Gross intake" icon={Users} color="bg-heading" />
+                    <PipelineStage title="Pending" count={stats.pending} subtitle="Awaiting screening" icon={Clock} color="bg-muted" />
+                    <PipelineStage title="Assessment" count={stats.testParticipants} subtitle="Booked, outcome pending" icon={FileText} color="bg-primary/80" />
+                    <PipelineStage title="Interviewing" count={stats.activeInterviews} subtitle="Technical interviews" icon={MessageSquare} color="bg-primary" />
+                    <PipelineStage title="Recommended" count={stats.recommended} subtitle="Awaiting offer" icon={CheckCircle} color="bg-primary-dark" />
+                    <PipelineStage title="Selected" count={stats.selected} subtitle="Joined the program" icon={Award} color="bg-heading" />
+                </div>
+            </div>
+
+            {/* Attrition — every candidate who exited the pipeline at some
+                stage. These counts are already baked into the percentages
+                below (Screening Yield, Assessment Attendance, etc.) but were
+                previously invisible as raw numbers — showing them here means
+                every one of the "Applications" total is accounted for
+                somewhere on this page, with nothing hidden inside a ratio. */}
+            <div>
+                <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.2em] mb-2 px-1">
+                    Attrition — Exited The Pipeline
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <PipelineStage title="Rejected" count={stats.rejectedScreening} subtitle="Did not pass screening" icon={XCircle} color="bg-slate-500" />
+                    <PipelineStage title="Absent" count={stats.noShow} subtitle="Booked, did not appear" icon={UserX} color="bg-orange-500" />
+                    <PipelineStage title="Assessment Failed" count={stats.assessmentFailed} subtitle="Appeared, scored too low" icon={FileX} color="bg-red-500" />
+                    <PipelineStage title="Not Recommended" count={stats.notRecommended} subtitle="Interviewed, declined" icon={Ban} color="bg-rose-600" />
+                </div>
+            </div>
+
+            {/* Reconciliation proof — every candidate is accounted for in
+                exactly one of the two rows above, and the two totals sum
+                back to the grand total. Shown explicitly rather than left
+                for the reader to verify by hand. */}
+            <div className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-md border text-[11px] font-semibold",
+                stats.reconciles
+                    ? "bg-primary/5 border-primary/20 text-primary"
+                    : "bg-amber-50 border-amber-200 text-amber-700"
+            )}>
+                <span>{stats.reconciles ? "✓" : "⚠"}</span>
+                <span>
+                    {stats.total} total applications = {stats.activeSum} still active + {stats.exitedSum} exited the pipeline
+                    {!stats.reconciles && " — numbers do not reconcile, please report this."}
+                </span>
             </div>
 
             {/* Conversion Metrics — grouped into two funnel stages so the
