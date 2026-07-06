@@ -125,8 +125,10 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         ];
         const assessmentPassed = filteredCandidates.filter(c => PASSED_STATUSES.includes(c.status)).length;
 
+        const notRecommended = filteredCandidates.filter(c => c.status === 'Not Recommended').length;
+
         return {
-            total, pending, testParticipants, activeInterviews, recommended, selected,
+            total, pending, testParticipants, activeInterviews, recommended, selected, notRecommended,
             assessmentAppeared, assessmentAbsent, assessmentFailed, assessmentPassed,
         };
     }, [filteredCandidates]);
@@ -148,6 +150,12 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         // Recommended-or-beyond denominator for the Selection Conversion tile.
         const totalRecommendedOrBeyond = stats.recommended + stats.selected;
 
+        // Interview pass rate — recommended / (recommended + not recommended)
+        const interviewPassDenom = stats.recommended + stats.notRecommended;
+        const interviewPassRate = interviewPassDenom > 0
+            ? Math.round((stats.recommended / interviewPassDenom) * 100)
+            : 0;
+
         return {
             // Screening Yield — cleared resume screening.
             testRate: stats.total ? Math.round((screeningPassed / stats.total) * 100) : 0,
@@ -164,12 +172,16 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
 
             // Assessment Pass Rate — of candidates who actually appeared,
             // how many cleared the threshold and moved into interview stage.
-            // Absent no-shows are excluded on the user's request.
             interviewRate: stats.assessmentAppeared > 0
                 ? Math.round((stats.assessmentPassed / stats.assessmentAppeared) * 100)
                 : 0,
             interviewNumerator: stats.assessmentPassed,
             interviewDenominator: stats.assessmentAppeared,
+
+            // Interview Pass Rate
+            interviewPassRate,
+            interviewPassNumerator: stats.recommended,
+            interviewPassDenominator: interviewPassDenom,
 
             selectionRate: totalRecommendedOrBeyond ? Math.round((stats.selected / totalRecommendedOrBeyond) * 100) : 0,
             selectionNumerator: stats.selected,
@@ -226,7 +238,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             </div>
 
             {/* Conversion Metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <MetricBox
                     label="Screening Yield"
                     value={efficiency.testRate}
@@ -251,6 +263,14 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     description="Of candidates who appeared for the assessment, how many cleared the threshold and moved to interviews."
                     icon={Activity}
                 />
+                <MetricBox
+                    label="Interview Pass Rate"
+                    value={efficiency.interviewPassRate}
+                    numerator={efficiency.interviewPassNumerator}
+                    denominator={efficiency.interviewPassDenominator}
+                    description="Of candidates who completed interviews, how many were recommended."
+                    icon={Target}
+                />
                 <div className="relative bg-dark p-5 rounded-[12px] overflow-hidden flex flex-col justify-center border border-heading">
                     <div className="absolute inset-x-0 top-0 h-[3px] bg-primary" />
                     <div
@@ -259,7 +279,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     />
 
                     <div className="flex items-center justify-between mb-3 relative z-10">
-                        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.16em]">Selection Conversion</span>
+                        <span className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.16em]">Selection Rate</span>
                         <div className="px-2 py-0.5 bg-white/10 rounded-full text-white text-[10px] font-semibold border border-white/10">
                             {efficiency.selectionNumerator} / {efficiency.selectionDenominator}
                         </div>
