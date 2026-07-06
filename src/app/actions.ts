@@ -1441,6 +1441,89 @@ export async function resendL2Invitation(candidateId: string) {
     }
 }
 
+// One-click reject for candidates who scored too low on the technical
+// assessment to warrant a scheduled interview. Skips the whole evaluation
+// modal — HR just clicks the button on the candidate's Evaluation Center
+// row and it flips their status to 'Assessment Failed', stamps the
+// interview record with an explanatory feedback line, and queues the
+// standard candidate rejection email.
+export async function rejectForLowAssessmentScore(interviewId: string, candidateId: string) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'You must be signed in.' };
+        const userName = user.full_name || 'System User';
+
+        // 1. Stamp the interview record with a clear reason. Uses supabaseAdmin
+        //    to avoid RLS variance the same way the other interview writes do.
+        const { error: updateError } = await supabaseAdmin
+            .from('interviews')
+            .update({
+                decision: 'Assessment Failed',
+                feedback: 'Rejected due to low assessment score. No interview conducted.',
+                l1_interviewer_name: userName,
+            } as any)
+            .eq('id', interviewId);
+        if (updateError) throw updateError;
+
+        // 2. Flip candidate status to the new 'Assessment Failed' bucket so
+        //    the Recruitment Intelligence dashboard can distinguish these
+        //    from interview-phase rejections.
+        const { error: candErr } = await supabaseAdmin
+            .from('candidates')
+            .update({
+                status: 'Assessment Failed',
+                last_action_by: userName,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', candidateId);
+        if (candErr) throw candErr;
+
+        // 3. Queue the standard candidate rejection email so it goes out with
+        //    the 6 PM daily digest — same channel updateCandidateStatus uses
+        //    for Not Recommended / Rejected. Grab their contact info first.
+        try {
+            const { data: candidate } = await supabaseAdmin
+                .from('candidates')
+                .select('name, email')
+                .eq('id', candidateId)
+                .single();
+            if (candidate?.email) {
+                await supabaseAdmin
+                    .from('notification_queue')
+                    .insert({
+                        category: 'candidate_decision',
+                        event_type: 'CANDIDATE_REJECTED',
+                        details: { email: candidate.email, name: candidate.name },
+                    });
+            }
+            // Also let the recruitment team know internally.
+            const recipients = await getRecipientsByRoles(['recruitment_team']);
+            if (recipients.length > 0) {
+                await notifyWorkflowStage('DECISION', recipients, {
+                    name: candidate?.name ?? 'Candidate',
+                    status: 'Assessment Failed',
+                    interviewer: userName,
+                });
+            }
+        } catch (notifyErr) {
+            console.error('rejectForLowAssessmentScore notify failed:', notifyErr);
+        }
+
+        await logAction('ASSESSMENT_LOW_SCORE_REJECT', candidateId, 'candidate', {
+            interview_id: interviewId,
+            rejected_by: userName,
+        });
+
+        revalidatePath('/admin/interviews');
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error: any) {
+        console.error('rejectForLowAssessmentScore error:', error);
+        return { error: error.message ?? 'Failed to reject for low assessment score.' };
+    }
+}
+
 export async function submitFinalInterviewFeedback(
     interviewId: string,
     candidateId: string,

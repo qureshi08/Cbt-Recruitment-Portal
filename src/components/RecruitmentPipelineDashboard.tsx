@@ -99,7 +99,36 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         const recommended = filteredCandidates.filter(c => c.status === 'Recommended').length;
         const selected = filteredCandidates.filter(c => c.status === 'Selected').length;
 
-        return { total, pending, testParticipants, activeInterviews, recommended, selected };
+        // Assessment attendance / outcomes — anyone whose status implies they
+        // took (or were reviewed as if they took) the assessment.
+        const APPEARED_STATUSES = [
+            'Assessment Completed',
+            'To Be Interviewed',
+            'Interview Scheduled',
+            'L2 Interview Required',
+            'Recommended',
+            'Not Recommended',
+            'Assessment Failed',
+            'Selected',
+        ];
+        const assessmentAppeared = filteredCandidates.filter(c => APPEARED_STATUSES.includes(c.status)).length;
+        const assessmentAbsent = filteredCandidates.filter(c => c.status === 'Absent').length;
+        const assessmentFailed = filteredCandidates.filter(c => c.status === 'Assessment Failed').length;
+        // Passed the assessment — appeared AND moved to interview stage or beyond.
+        const PASSED_STATUSES = [
+            'To Be Interviewed',
+            'Interview Scheduled',
+            'L2 Interview Required',
+            'Recommended',
+            'Not Recommended',
+            'Selected',
+        ];
+        const assessmentPassed = filteredCandidates.filter(c => PASSED_STATUSES.includes(c.status)).length;
+
+        return {
+            total, pending, testParticipants, activeInterviews, recommended, selected,
+            assessmentAppeared, assessmentAbsent, assessmentFailed, assessmentPassed,
+        };
     }, [filteredCandidates]);
 
     const batches = useMemo(() => {
@@ -108,21 +137,39 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
     }, [initialCandidates]);
 
     const efficiency = useMemo(() => {
-        const totalAfterScreening = stats.testParticipants + stats.activeInterviews + stats.recommended + stats.selected;
-        const totalAfterTest = stats.activeInterviews + stats.recommended + stats.selected;
-        // Total who ever reached the Recommended bucket — currently Recommended
-        // plus anyone moved beyond it (Selected). Used as the denominator for
-        // the Recommended -> Selected conversion KPI.
+        // Screening Yield denominator base — everyone who is currently past
+        // screening OR ever was past screening:
+        //   testParticipants (scheduled / awaiting / completed)
+        //   + activeInterviews (moved past assessment)
+        //   + recommended + selected
+        //   + assessmentFailed (took assessment, rejected on scores)
+        //   + assessmentAbsent (was invited, didn't appear)
+        const screeningPassed = stats.testParticipants + stats.activeInterviews + stats.recommended + stats.selected + stats.assessmentFailed + stats.assessmentAbsent;
+        // Recommended-or-beyond denominator for the Selection Conversion tile.
         const totalRecommendedOrBeyond = stats.recommended + stats.selected;
 
         return {
-            testRate: stats.total ? Math.round((totalAfterScreening / stats.total) * 100) : 0,
-            testNumerator: totalAfterScreening,
+            // Screening Yield — cleared resume screening.
+            testRate: stats.total ? Math.round((screeningPassed / stats.total) * 100) : 0,
+            testNumerator: screeningPassed,
             testDenominator: stats.total,
 
-            interviewRate: totalAfterScreening ? Math.round((totalAfterTest / totalAfterScreening) * 100) : 0,
-            interviewNumerator: totalAfterTest,
-            interviewDenominator: totalAfterScreening,
+            // Attendance — of everyone invited to the assessment, how many
+            // actually appeared. Denominator = appeared + absent.
+            attendanceRate: (stats.assessmentAppeared + stats.assessmentAbsent) > 0
+                ? Math.round((stats.assessmentAppeared / (stats.assessmentAppeared + stats.assessmentAbsent)) * 100)
+                : 0,
+            attendanceNumerator: stats.assessmentAppeared,
+            attendanceDenominator: stats.assessmentAppeared + stats.assessmentAbsent,
+
+            // Assessment Pass Rate — of candidates who actually appeared,
+            // how many cleared the threshold and moved into interview stage.
+            // Absent no-shows are excluded on the user's request.
+            interviewRate: stats.assessmentAppeared > 0
+                ? Math.round((stats.assessmentPassed / stats.assessmentAppeared) * 100)
+                : 0,
+            interviewNumerator: stats.assessmentPassed,
+            interviewDenominator: stats.assessmentAppeared,
 
             selectionRate: totalRecommendedOrBeyond ? Math.round((stats.selected / totalRecommendedOrBeyond) * 100) : 0,
             selectionNumerator: stats.selected,
@@ -179,7 +226,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             </div>
 
             {/* Conversion Metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
                 <MetricBox
                     label="Screening Yield"
                     value={efficiency.testRate}
@@ -189,11 +236,19 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                     icon={Target}
                 />
                 <MetricBox
+                    label="Assessment Attendance"
+                    value={efficiency.attendanceRate}
+                    numerator={efficiency.attendanceNumerator}
+                    denominator={efficiency.attendanceDenominator}
+                    description="Of everyone invited to the assessment, how many actually appeared (excluding absentees)."
+                    icon={Activity}
+                />
+                <MetricBox
                     label="Assessment Pass Rate"
                     value={efficiency.interviewRate}
                     numerator={efficiency.interviewNumerator}
                     denominator={efficiency.interviewDenominator}
-                    description="Percentage of test participants who qualify for the interview round."
+                    description="Of candidates who appeared for the assessment, how many cleared the threshold and moved to interviews."
                     icon={Activity}
                 />
                 <div className="relative bg-dark p-5 rounded-[12px] overflow-hidden flex flex-col justify-center border border-heading">
