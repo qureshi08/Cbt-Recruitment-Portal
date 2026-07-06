@@ -101,60 +101,72 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         });
     }, [initialCandidates, filterBatch]);
 
+    // ─────────────────────────────────────────────────────────────────────
+    // Every CandidateStatus maps to exactly ONE bucket below, and the
+    // buckets are mutually exclusive + exhaustive (they always sum to
+    // `total`). That's what makes the funnel numbers trustworthy instead
+    // of feeling arbitrary: nobody is silently dropped or double-counted.
+    //
+    // Buckets are derived from `status` ALONE — no heuristics on fields
+    // like assessment_score_url / assessment_slot. Those aren't reliably
+    // populated (assessment_slot in particular isn't even fetched on this
+    // page's query) and using them as a filter previously caused genuinely
+    // tested candidates to be silently excluded whenever HR hadn't
+    // uploaded a score screenshot yet — status is the one field every
+    // server action in this app actually keeps in sync, so it's the only
+    // trustworthy signal.
+    //
+    // Candidates manually inserted directly into a later status (e.g. a
+    // historical batch re-add) are counted at face value based on that
+    // status, same as the rest of the app already treats status as the
+    // single source of truth for what buttons show, what emails send, etc.
+    // ─────────────────────────────────────────────────────────────────────
     const stats = useMemo(() => {
         const total = filteredCandidates.length;
+
         const pending = filteredCandidates.filter(c => c.status === 'Applied').length;
+        const rejectedScreening = filteredCandidates.filter(c => c.status === 'Rejected').length;
+
+        // Approved / invited / booked — outcome not yet resolved.
         const testParticipants = filteredCandidates.filter(c =>
             ['Approved', 'Invite Sent', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed'].includes(c.status)
         ).length;
+
+        // Booked an assessment slot but did not show up.
+        const noShow = filteredCandidates.filter(c => c.status === 'Absent' || c.status === 'Not Coming').length;
+
+        // Appeared, scored below the threshold, rejected before any interview.
+        const assessmentFailed = filteredCandidates.filter(c => c.status === 'Assessment Failed').length;
+
+        // Appeared, cleared the assessment, interview decision still pending.
         const activeInterviews = filteredCandidates.filter(c =>
             ['To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required'].includes(c.status)
         ).length;
-        const recommended = filteredCandidates.filter(c => c.status === 'Recommended').length;
-        const selected = filteredCandidates.filter(c => c.status === 'Selected').length;
+
+        // Interview process concluded negatively.
         const notRecommended = filteredCandidates.filter(c => c.status === 'Not Recommended').length;
 
-        // Helper to check if candidate actually went through the assessment flow
-        const hasAssessmentRecord = (c: Candidate) => 
-            c.status === 'Assessment Failed' || 
-            c.status === 'Assessment Completed' || 
-            !!c.assessment_score_url || 
-            !!c.assessment_slot;
+        // Interview process concluded positively, awaiting the selection email.
+        const recommended = filteredCandidates.filter(c => c.status === 'Recommended').length;
 
-        // Assessment attendance / outcomes — anyone whose status implies they took the test.
-        const APPEARED_STATUSES = [
-            'Assessment Completed',
-            'To Be Interviewed',
-            'Interview Scheduled',
-            'L2 Interview Required',
-            'Recommended',
-            'Not Recommended',
-            'Assessment Failed',
-            'Selected',
-        ];
-        const assessmentAppeared = filteredCandidates.filter(c => 
-            APPEARED_STATUSES.includes(c.status) && hasAssessmentRecord(c)
-        ).length;
+        // Final positive outcome — selection email sent, joined the program.
+        const selected = filteredCandidates.filter(c => c.status === 'Selected').length;
 
-        const assessmentAbsent = filteredCandidates.filter(c => c.status === 'Absent').length;
-        const assessmentFailed = filteredCandidates.filter(c => c.status === 'Assessment Failed').length;
-
-        // Passed the assessment — appeared AND moved to interview stage or beyond.
-        const PASSED_STATUSES = [
-            'To Be Interviewed',
-            'Interview Scheduled',
-            'L2 Interview Required',
-            'Recommended',
-            'Not Recommended',
-            'Selected',
-        ];
-        const assessmentPassed = filteredCandidates.filter(c => 
-            PASSED_STATUSES.includes(c.status) && hasAssessmentRecord(c)
-        ).length;
+        // ── Cumulative "reached at least this stage" rollups ──────────
+        // These statuses can ONLY be reached after the prior stage
+        // actually happened (e.g. 'Assessment Failed' is only set by the
+        // one-click low-score reject AFTER appearing; 'To Be Interviewed'
+        // is only set when HR clicks "Mark Evaluation Complete"). That's
+        // a guarantee from the server actions, not a guess.
+        const assessmentAppeared = assessmentFailed + activeInterviews + notRecommended + recommended + selected;
+        const assessmentPassed = activeInterviews + notRecommended + recommended + selected;
+        const interviewDecided = notRecommended + recommended + selected;
+        const recommendedOrBeyond = recommended + selected;
 
         return {
-            total, pending, testParticipants, activeInterviews, recommended, selected, notRecommended,
-            assessmentAppeared, assessmentAbsent, assessmentFailed, assessmentPassed,
+            total, pending, testParticipants, activeInterviews, recommended, selected,
+            notRecommended, rejectedScreening, noShow, assessmentFailed,
+            assessmentAppeared, assessmentPassed, interviewDecided, recommendedOrBeyond,
         };
     }, [filteredCandidates]);
 
@@ -164,48 +176,53 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
     }, [initialCandidates]);
 
     const efficiency = useMemo(() => {
-        // Screening Yield denominator base — everyone who is currently past
-        // screening OR ever was past screening.
-        const screeningPassed = stats.testParticipants + stats.activeInterviews + stats.recommended + stats.selected + stats.assessmentFailed + stats.assessmentAbsent;
-        
-        // Recommended-or-beyond denominator for Selection Conversion.
-        const totalRecommendedOrBeyond = stats.recommended + stats.selected;
-
-        // Interview pass rate — recommended + selected / (recommended + selected + not recommended)
-        const interviewPassNumerator = stats.recommended + stats.selected;
-        const interviewPassDenom = stats.recommended + stats.selected + stats.notRecommended;
-        const interviewPassRate = interviewPassDenom > 0
-            ? Math.round((interviewPassNumerator / interviewPassDenom) * 100)
-            : 0;
+        // Cleared screening = everyone except still-pending (Applied) and
+        // screened-out (Rejected). Computed by subtraction from `total` so
+        // it's structurally impossible to forget a bucket (the previous
+        // version manually summed buckets and silently omitted
+        // 'Not Recommended', understating this rate).
+        const screeningPassed = stats.total - stats.pending - stats.rejectedScreening;
 
         return {
-            // Screening Yield — cleared resume screening.
+            // Screening Yield — of everyone who applied, % who cleared resume screening.
             testRate: stats.total ? Math.round((screeningPassed / stats.total) * 100) : 0,
             testNumerator: screeningPassed,
             testDenominator: stats.total,
 
-            // Attendance — of everyone invited to the assessment, how many actually appeared.
-            attendanceRate: (stats.assessmentAppeared + stats.assessmentAbsent) > 0
-                ? Math.round((stats.assessmentAppeared / (stats.assessmentAppeared + stats.assessmentAbsent)) * 100)
+            // Assessment Attendance — of candidates whose assessment outcome is
+            // resolved (appeared, or marked absent), % who actually appeared.
+            // Anyone still just scheduled/awaiting the assessment date is
+            // excluded from both sides — their outcome isn't known yet.
+            attendanceRate: (stats.assessmentAppeared + stats.noShow) > 0
+                ? Math.round((stats.assessmentAppeared / (stats.assessmentAppeared + stats.noShow)) * 100)
                 : 0,
             attendanceNumerator: stats.assessmentAppeared,
-            attendanceDenominator: stats.assessmentAppeared + stats.assessmentAbsent,
+            attendanceDenominator: stats.assessmentAppeared + stats.noShow,
 
-            // Assessment Pass Rate — of candidates who actually appeared, how many cleared the threshold.
+            // Assessment Pass Rate — of candidates who appeared, % who cleared
+            // the score threshold and moved on to interviews.
             interviewRate: stats.assessmentAppeared > 0
                 ? Math.round((stats.assessmentPassed / stats.assessmentAppeared) * 100)
                 : 0,
             interviewNumerator: stats.assessmentPassed,
             interviewDenominator: stats.assessmentAppeared,
 
-            // Interview Pass Rate
-            interviewPassRate,
-            interviewPassNumerator,
-            interviewPassDenominator: interviewPassDenom,
+            // Interview Pass Rate — of candidates whose interview process has
+            // concluded (Recommended, Selected, or Not Recommended), % who
+            // were recommended. Still-in-progress interviews are excluded.
+            interviewPassRate: stats.interviewDecided > 0
+                ? Math.round((stats.recommendedOrBeyond / stats.interviewDecided) * 100)
+                : 0,
+            interviewPassNumerator: stats.recommendedOrBeyond,
+            interviewPassDenominator: stats.interviewDecided,
 
-            selectionRate: totalRecommendedOrBeyond ? Math.round((stats.selected / totalRecommendedOrBeyond) * 100) : 0,
+            // Selection Rate — of candidates ever recommended, % who were sent
+            // the final selection email and joined the program.
+            selectionRate: stats.recommendedOrBeyond > 0
+                ? Math.round((stats.selected / stats.recommendedOrBeyond) * 100)
+                : 0,
             selectionNumerator: stats.selected,
-            selectionDenominator: totalRecommendedOrBeyond,
+            selectionDenominator: stats.recommendedOrBeyond,
         };
     }, [stats]);
 
@@ -257,49 +274,66 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                 <PipelineStage title="Selected" count={stats.selected} subtitle="Joined the program" icon={Award} color="bg-heading" />
             </div>
 
-            {/* Conversion Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <MetricBox
-                    label="Screening Yield"
-                    value={efficiency.testRate}
-                    numerator={efficiency.testNumerator}
-                    denominator={efficiency.testDenominator}
-                    description="Percentage of applicants who pass the initial resume screening phase."
-                    icon={Target}
-                />
-                <MetricBox
-                    label="Assessment Attendance"
-                    value={efficiency.attendanceRate}
-                    numerator={efficiency.attendanceNumerator}
-                    denominator={efficiency.attendanceDenominator}
-                    description="Of everyone invited to the assessment, how many actually appeared (excluding absentees)."
-                    icon={Activity}
-                />
-                <MetricBox
-                    label="Assessment Pass Rate"
-                    value={efficiency.interviewRate}
-                    numerator={efficiency.interviewNumerator}
-                    denominator={efficiency.interviewDenominator}
-                    description="Of candidates who appeared for the assessment, how many cleared the threshold and moved to interviews."
-                    icon={Activity}
-                />
-                <MetricBox
-                    label="Interview Pass Rate"
-                    value={efficiency.interviewPassRate}
-                    numerator={efficiency.interviewPassNumerator}
-                    denominator={efficiency.interviewPassDenominator}
-                    description="Of candidates who completed interviews, how many were recommended."
-                    icon={Target}
-                />
-                <MetricBox
-                    label="Selection Rate"
-                    value={efficiency.selectionRate}
-                    numerator={efficiency.selectionNumerator}
-                    denominator={efficiency.selectionDenominator}
-                    description="Recommended candidates who received and accepted the final program offer."
-                    icon={Award}
-                    highlight={true}
-                />
+            {/* Conversion Metrics — grouped into two funnel stages so the
+                numbers read top-to-bottom as an actual pipeline instead of
+                five disconnected tiles. */}
+            <div className="space-y-3">
+                <div>
+                    <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.2em] mb-2 px-1">
+                        Stage 1 — Screening &amp; Assessment
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <MetricBox
+                            label="Screening Yield"
+                            value={efficiency.testRate}
+                            numerator={efficiency.testNumerator}
+                            denominator={efficiency.testDenominator}
+                            description="Of everyone who applied, the percentage who cleared initial resume screening (i.e. moved beyond Applied/Rejected)."
+                            icon={Target}
+                        />
+                        <MetricBox
+                            label="Assessment Attendance"
+                            value={efficiency.attendanceRate}
+                            numerator={efficiency.attendanceNumerator}
+                            denominator={efficiency.attendanceDenominator}
+                            description="Of candidates whose assessment outcome is resolved (appeared or marked absent), the percentage who actually appeared."
+                            icon={Activity}
+                        />
+                        <MetricBox
+                            label="Assessment Pass Rate"
+                            value={efficiency.interviewRate}
+                            numerator={efficiency.interviewNumerator}
+                            denominator={efficiency.interviewDenominator}
+                            description="Of candidates who appeared for the assessment, the percentage who cleared the threshold and moved to interviews."
+                            icon={Activity}
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.2em] mb-2 px-1">
+                        Stage 2 — Interview &amp; Offer
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <MetricBox
+                            label="Interview Pass Rate"
+                            value={efficiency.interviewPassRate}
+                            numerator={efficiency.interviewPassNumerator}
+                            denominator={efficiency.interviewPassDenominator}
+                            description="Of candidates whose interview process has concluded (Recommended, Selected, or Not Recommended), the percentage who were recommended."
+                            icon={Target}
+                        />
+                        <MetricBox
+                            label="Selection Rate"
+                            value={efficiency.selectionRate}
+                            numerator={efficiency.selectionNumerator}
+                            denominator={efficiency.selectionDenominator}
+                            description="Of candidates ever recommended, the percentage who were sent the final selection email and joined the program."
+                            icon={Award}
+                            highlight={true}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     );
