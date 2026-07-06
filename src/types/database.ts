@@ -27,6 +27,7 @@ export type CandidateStatus =
     | 'L2 Interview Required'
     | 'Recommended'
     | 'Not Recommended'
+    | 'Assessment Failed'
     | 'Selected'
     | 'Absent';
 

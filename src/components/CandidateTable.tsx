@@ -176,6 +176,7 @@ const statusColors: Record<CandidateStatus, string> = {
     "Interview Scheduled": "bg-heading/5 text-heading border-heading/20 font-bold",
     Recommended: "bg-primary text-white border-primary shadow-premium font-bold",
     "Not Recommended": "bg-red-600 text-white border-red-700 shadow-sm font-bold",
+    "Assessment Failed": "bg-red-600 text-white border-red-700 shadow-sm font-bold",
     "L2 Interview Required": "bg-heading text-white border-heading shadow-sm font-bold",
     Selected: "bg-emerald-700 text-white border-emerald-800 shadow-premium font-bold",
     Absent: "bg-red-50 text-red-700 border-red-200 font-bold",

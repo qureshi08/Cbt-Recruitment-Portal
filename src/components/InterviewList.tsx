@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight, Search, ArrowDown, ArrowUp } from "lucide-react";
+import { Clock, CheckCircle, XCircle, MessageSquare, X, Eye, Calendar, User, FileText, Star, Activity, Send, Shield, ChevronRight, Search, ArrowDown, ArrowUp, MailWarning } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
 import { withLoading } from "@/lib/loading";
-import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting, generateAndLockInterview, getInterviewerAvailability } from "@/app/actions";
+import { UserRole, requestL2Interview, submitFinalInterviewFeedback, lockInterviewMeeting, generateAndLockInterview, getInterviewerAvailability, resendL2Invitation, rejectForLowAssessmentScore } from "@/app/actions";
 
 type StatusFilter = 'All' | 'Awaiting' | 'Recommended' | 'Not Recommended' | 'L2 Required';
 type TimeFilter = 'All' | 'Today' | 'Upcoming' | 'Past';
@@ -376,6 +376,23 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
         setSelectedInterview(interview);
     };
 
+    const handleResendL2 = async (candidateId: string, candidateName: string) => {
+        if (!window.confirm(`Resend the L2 interview invitation email for ${candidateName}? This will email every configured L2 interviewer again.`)) return;
+        setIsSubmitting(true);
+        try {
+            const result = await withLoading(() => resendL2Invitation(candidateId));
+            if (result.success) {
+                alert(`L2 invitation re-sent to ${result.recipientCount} interviewer${result.recipientCount !== 1 ? 's' : ''}.`);
+            } else {
+                alert(result.error || 'Failed to resend L2 invitation.');
+            }
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleDecision = async (decision: 'Recommended' | 'Not Recommended' | 'L2 Interview Required') => {
         if (!selectedInterview) return;
 
@@ -426,6 +443,33 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
             alert("Meeting generated successfully!");
             router.refresh();
             setMeetingModalInterview(null);
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRejectLowAssessment = async (interview: Interview) => {
+        const name = interview.candidates?.name ?? 'this candidate';
+        if (!window.confirm(
+            `Reject ${name} due to a low assessment score?\n\n` +
+            `- Their status will be set to 'Assessment Failed'.\n` +
+            `- The candidate rejection email will be queued for the daily digest.\n` +
+            `- No interview will be scheduled or conducted.\n\n` +
+            `This is irreversible from the UI.`
+        )) return;
+
+        setIsSubmitting(true);
+        try {
+            const result = await withLoading(() => rejectForLowAssessmentScore(interview.id, interview.candidate_id));
+            if (result.error) throw new Error(result.error);
+            setInterviews(prev => prev.map(i =>
+                i.id === interview.id
+                    ? { ...i, decision: 'Assessment Failed', feedback: 'Rejected due to low assessment score. No interview conducted.' }
+                    : i
+            ));
+            router.refresh();
         } catch (err: any) {
             alert(err.message);
         } finally {
@@ -649,15 +693,36 @@ export default function InterviewList({ initialInterviews, userRoles }: Intervie
                                                         Lock Meeting Link
                                                     </button>
                                                 )}
+                                                {isAwaitingL2 && interview.candidates?.name && (userRoles.includes('HR') || userRoles.includes('Master')) && (
+                                                    <button
+                                                        onClick={() => handleResendL2(interview.candidate_id, interview.candidates!.name)}
+                                                        disabled={isSubmitting}
+                                                        className="inline-flex items-center gap-2 text-[10px] font-bold text-amber-700 border border-amber-300 px-3 py-1.5 rounded-sm hover:bg-amber-50 transition-all w-fit uppercase disabled:opacity-40"
+                                                        title="Re-send the L2 interview invitation email to all configured L2 interviewers."
+                                                    >
+                                                        <MailWarning className="w-3 h-3" />
+                                                        Resend L2 Invite
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </td>
                                     <td className="px-6 py-5 text-right align-top">
                                         {!interview.decision && canAct && (
-                                            <button onClick={() => openModal(interview)}
-                                                className="bg-primary text-white px-4 py-2 rounded-sm text-[11px] font-bold uppercase tracking-widest hover:bg-primary-hover transition-all w-full md:w-auto shadow-sm">
-                                                Add Evaluation
-                                            </button>
+                                            <div className="flex flex-col gap-1.5 items-end">
+                                                <button onClick={() => openModal(interview)}
+                                                    className="bg-primary text-white px-4 py-2 rounded-sm text-[11px] font-bold uppercase tracking-widest hover:bg-primary-hover transition-all w-full md:w-auto shadow-sm">
+                                                    Add Evaluation
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRejectLowAssessment(interview)}
+                                                    disabled={isSubmitting}
+                                                    title="Reject this candidate for low assessment scores — skip the interview entirely"
+                                                    className="bg-white text-red-600 border border-red-200 px-3 py-1 rounded-sm text-[9.5px] font-bold uppercase tracking-widest hover:bg-red-50 transition-all shadow-sm disabled:opacity-40"
+                                                >
+                                                    Reject (Low Score)
+                                                </button>
+                                            </div>
                                         )}
                                         {isAwaitingL2 && canActL2 && (
                                             <button onClick={() => openModal(interview)}
