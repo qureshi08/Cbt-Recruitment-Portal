@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
     Loader2, Search, ChevronDown, ChevronUp, Mail, Users, Shield,
-    CheckCircle2, XCircle, Clock, RefreshCw, Inbox
+    CheckCircle2, XCircle, Clock, RefreshCw, Inbox, Info
 } from "lucide-react";
 import { cn, formatSlotDate, formatSlotTime } from "@/lib/utils";
 import { getEmailBroadcastHistory } from "@/app/actions";
@@ -34,6 +34,7 @@ interface BroadcastRecord {
     successCount: number | null;
     failedCount: number | null;
     deliveryResults: DeliveryResult[];
+    hasFullDetails: boolean;
 }
 
 function StatusBadge({ record }: { record: BroadcastRecord }) {
@@ -95,12 +96,27 @@ function BroadcastCard({ record }: { record: BroadcastRecord }) {
 
             {expanded && (
                 <div className="border-t border-border px-4 py-4 space-y-4 bg-surface/40">
+                    {!record.hasFullDetails && (
+                        <div className="flex items-start gap-2 px-3 py-2.5 rounded-sm bg-amber-50 border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
+                            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span>
+                                This broadcast was sent before detailed history tracking was added, so its full body text and per-recipient list weren't recorded — only the summary above (recipient count, subject, sender, time) is available. Every broadcast sent from now on records the full body and recipient list.
+                            </span>
+                        </div>
+                    )}
+
                     {/* Body */}
                     <div className="space-y-1.5">
                         <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.14em]">Body {record.personalize && <span className="text-primary">· Personalized per recipient</span>}</p>
-                        <div className="bg-white border border-border rounded-sm px-3 py-2.5 text-[12px] text-heading whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto">
-                            {record.body}
-                        </div>
+                        {record.body ? (
+                            <div className="bg-white border border-border rounded-sm px-3 py-2.5 text-[12px] text-heading whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto">
+                                {record.body}
+                            </div>
+                        ) : (
+                            <div className="bg-white border border-dashed border-border rounded-sm px-3 py-2.5 text-[11.5px] text-muted italic">
+                                Not recorded for this broadcast.
+                            </div>
+                        )}
                     </div>
 
                     {/* CC */}
@@ -118,8 +134,13 @@ function BroadcastCard({ record }: { record: BroadcastRecord }) {
                     {/* Recipients */}
                     <div className="space-y-1.5">
                         <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.14em]">
-                            Recipients ({record.recipients.length})
+                            Recipients ({record.recipients.length}{!record.hasFullDetails && record.recipientCount > 0 ? ` of ${record.recipientCount} — list not recorded` : ''})
                         </p>
+                        {record.recipients.length === 0 && !record.hasFullDetails && record.recipientCount > 0 ? (
+                            <div className="bg-white border border-dashed border-border rounded-sm px-3 py-2.5 text-[11.5px] text-muted italic">
+                                {record.recipientCount} candidate{record.recipientCount !== 1 ? 's' : ''} received this email, but the individual name/email list wasn't recorded for this legacy broadcast.
+                            </div>
+                        ) : (
                         <div className="bg-white border border-border rounded-sm max-h-64 overflow-y-auto divide-y divide-border/60">
                             {record.recipients.map(r => {
                                 const delivery = deliveryByEmail.get(r.email.toLowerCase());
@@ -147,6 +168,7 @@ function BroadcastCard({ record }: { record: BroadcastRecord }) {
                                 );
                             })}
                         </div>
+                        )}
                     </div>
                 </div>
             )}
