@@ -2963,13 +2963,17 @@ export async function sendCustomBroadcastToCandidates(params: {
             let success = 0;
             let failed = 0;
             const deliveryResults: { email: string; ok: boolean; error?: string }[] = [];
+            const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://cbt-recruitment-portal.vercel.app';
             for (const recipient of allRecipients) {
                 try {
                     const firstName = (recipient.name ?? '').trim().split(/\s+/)[0] || recipient.name || 'Team';
+                    const candidateId = (recipient as { id?: string }).id;
+                    const bookingLink = candidateId ? `${origin}/book-slot/${candidateId}` : '';
                     const personalizedBody = personalize
                         ? bodyPlain
                             .replace(/\{\{\s*name\s*\}\}/gi, recipient.name ?? 'Team')
                             .replace(/\{\{\s*firstName\s*\}\}/gi, firstName)
+                            .replace(/\{\{\s*bookingLink\s*\}\}/gi, bookingLink)
                         : bodyPlain;
                     await sendCustomCandidateEmail({
                         to: recipient.email,
