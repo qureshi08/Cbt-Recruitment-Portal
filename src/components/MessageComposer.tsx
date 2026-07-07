@@ -246,6 +246,7 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
         ? body
             .replace(/\{\{\s*name\s*\}\}/gi, selectedCandidates[0].name ?? 'Applicant')
             .replace(/\{\{\s*firstName\s*\}\}/gi, (selectedCandidates[0].name ?? 'Applicant').split(/\s+/)[0])
+            .replace(/\{\{\s*bookingLink\s*\}\}/gi, `${typeof window !== 'undefined' ? window.location.origin : ''}/book-slot/${selectedCandidates[0].id}`)
         : body;
 
     return (
@@ -538,7 +539,7 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
                                     onChange={e => setPersonalize(e.target.checked)}
                                     className="w-3.5 h-3.5 accent-primary cursor-pointer"
                                 />
-                                Personalize (replace <code className="bg-surface px-1 rounded">{'{{firstName}}'}</code> &amp; <code className="bg-surface px-1 rounded">{'{{name}}'}</code>)
+                                Personalize (replace <code className="bg-surface px-1 rounded">{'{{firstName}}'}</code>, <code className="bg-surface px-1 rounded">{'{{name}}'}</code> &amp; <code className="bg-surface px-1 rounded">{'{{bookingLink}}'}</code>)
                             </label>
                         </div>
                         <textarea
@@ -549,7 +550,7 @@ export default function MessageComposer({ senderName }: MessageComposerProps) {
                         />
                         <div className="flex items-start gap-2 text-[10.5px] text-muted">
                             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" strokeWidth={1.6} />
-                            <span>Write in plain text — blank lines become paragraph breaks. Links auto-format. Personalize tokens are replaced per-recipient before sending.</span>
+                            <span>Write in plain text — blank lines become paragraph breaks. Links auto-format. Personalize tokens are replaced per-recipient before sending. <code className="bg-surface px-1 rounded">{'{{bookingLink}}'}</code> resolves to each candidate&apos;s own booking page (candidates only — blank for team recipients).</span>
                         </div>
                     </div>
 
