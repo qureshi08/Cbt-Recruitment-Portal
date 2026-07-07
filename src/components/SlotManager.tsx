@@ -7,7 +7,11 @@ import { cn, formatSlotDate, formatSlotTime, pktDateKey } from "@/lib/utils";
 import { withLoading } from "@/lib/loading";
 import { createAssessmentSlot, createAssessmentSlotsBulk, completeAssessment, deleteAssessmentSlot, updateCandidateStatus, rescheduleAssessment } from "@/app/actions";
 
-const STANDARD_DAY_START_TIMES = ["10:30", "10:45", "11:00", "11:15"];
+const STANDARD_DAY_START_TIMES = ["10:30", "10:45", "11:00"];
+// Assessments only run Monday–Thursday; the date-range quick-add filters to
+// these weekdays automatically. Single-date add stays unrestricted so an
+// admin can still add a one-off exception day if ever needed.
+const ASSESSMENT_WEEKDAYS = [1, 2, 3, 4]; // Mon=1 .. Thu=4 (JS Date#getDay())
 const SLOT_DURATION_MS = 2 * 60 * 60 * 1000;
 // Pakistan is fixed at UTC+5 year-round (no DST). Anchoring slot times to this
 // offset means an admin booking "10:30 on June 15" produces the same UTC
@@ -73,6 +77,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         }
         const dates: string[] = [];
         for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+            if (!ASSESSMENT_WEEKDAYS.includes(d.getDay())) continue; // skip Fri/Sat/Sun
             const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             dates.push(iso);
         }
@@ -552,7 +557,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                             : "text-muted hover:text-heading"
                                     )}
                                 >
-                                    Standard Day · 4 Slots
+                                    Standard Day · 3 Slots
                                 </button>
                                 <button
                                     type="button"
@@ -616,13 +621,16 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                                 + Range
                                             </button>
                                         </div>
+                                        <p className="text-[10px] text-muted font-semibold pl-1">
+                                            Automatically limited to Mon–Thu (Fri/Sat/Sun are skipped). Use &quot;Add Single Date&quot; above for one-off exceptions.
+                                        </p>
                                     </div>
 
                                     {selectedDates.length > 0 && (
                                         <div className="space-y-2 bg-surface p-4 rounded-sm border border-border">
                                             <div className="flex items-center justify-between">
                                                 <p className="text-[10px] font-bold text-muted uppercase tracking-widest">
-                                                    {selectedDates.length} day{selectedDates.length !== 1 ? 's' : ''} selected · {selectedDates.length * 4} slots total
+                                                    {selectedDates.length} day{selectedDates.length !== 1 ? 's' : ''} selected · {selectedDates.length * STANDARD_DAY_START_TIMES.length} slots total
                                                 </p>
                                                 <button
                                                     type="button"
@@ -658,7 +666,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                         <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                                         <div className="space-y-1.5">
                                             <p className="text-[10px] text-body font-bold leading-relaxed uppercase tracking-tight">
-                                                Each selected day creates 4 standard slots:
+                                                Each selected day creates {STANDARD_DAY_START_TIMES.length} standard slots:
                                             </p>
                                             <ul className="text-[11px] font-bold text-heading space-y-0.5">
                                                 {STANDARD_DAY_START_TIMES.map(time => {
@@ -714,7 +722,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
                                     ) : creationMode === 'standard' ? (
                                         selectedDates.length === 0
                                             ? "ADD A DATE TO CONTINUE"
-                                            : `GENERATE ${selectedDates.length * 4} SLOTS · ${selectedDates.length} DAY${selectedDates.length !== 1 ? 'S' : ''}`
+                                            : `GENERATE ${selectedDates.length * STANDARD_DAY_START_TIMES.length} SLOTS · ${selectedDates.length} DAY${selectedDates.length !== 1 ? 'S' : ''}`
                                     ) : (
                                         "GENERATE SLOT"
                                     )}
