@@ -7,6 +7,7 @@ import {
     FileText,
     MessageSquare,
     CheckCircle,
+    CheckCircle2,
     Award,
     Layers,
     ChevronRight,
@@ -16,7 +17,8 @@ import {
     XCircle,
     UserX,
     FileX,
-    Ban
+    Ban,
+    HelpCircle
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -156,6 +158,18 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
         // Final positive outcome — selection email sent, joined the program.
         const selected = filteredCandidates.filter(c => c.status === 'Selected').length;
 
+        // ── Joining Status — a sub-breakdown of `selected`, NOT a new
+        // pipeline stage. `status` stays 'Selected' regardless of whether
+        // the candidate actually joins (that's a deliberate choice — see
+        // Merit List feature notes), so these four counts partition
+        // `selected` itself rather than feeding into the active/exited
+        // reconciliation below.
+        const selectedCandidates = filteredCandidates.filter(c => c.status === 'Selected');
+        const joiningConfirmed = selectedCandidates.filter(c => c.joining_status === 'Confirmed').length;
+        const joiningDeclined = selectedCandidates.filter(c => c.joining_status === 'Declined').length;
+        const joiningNoResponse = selectedCandidates.filter(c => c.joining_status === 'No Response').length;
+        const joiningAwaiting = selected - joiningConfirmed - joiningDeclined - joiningNoResponse;
+
         // ── Cumulative "reached at least this stage" rollups ──────────
         // These statuses can ONLY be reached after the prior stage
         // actually happened (e.g. 'Assessment Failed' is only set by the
@@ -180,6 +194,7 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
             notRecommended, rejectedScreening, noShow, assessmentFailed,
             assessmentAppeared, assessmentPassed, interviewDecided, recommendedOrBeyond,
             activeSum, exitedSum, reconciles,
+            joiningConfirmed, joiningDeclined, joiningNoResponse, joiningAwaiting,
         };
     }, [filteredCandidates]);
 
@@ -236,6 +251,15 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                 : 0,
             selectionNumerator: stats.selected,
             selectionDenominator: stats.recommendedOrBeyond,
+
+            // Joining Confirmation Rate — of everyone Selected, % who have
+            // actually confirmed (by phone/WhatsApp follow-up) that they're
+            // joining, vs still awaiting contact, unresponsive, or declined.
+            joiningRate: stats.selected > 0
+                ? Math.round((stats.joiningConfirmed / stats.selected) * 100)
+                : 0,
+            joiningNumerator: stats.joiningConfirmed,
+            joiningDenominator: stats.selected,
         };
     }, [stats]);
 
@@ -327,6 +351,24 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                 </span>
             </div>
 
+            {/* Joining Status — a drill-down INTO the "Selected" tile above,
+                not a new pipeline stage. Status stays 'Selected' either way;
+                this just shows whether each selected candidate has actually
+                confirmed they're joining (tracked from the Merit List page). */}
+            {stats.selected > 0 && (
+                <div>
+                    <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.2em] mb-2 px-1">
+                        Selected — Joining Status
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <PipelineStage title="Confirmed" count={stats.joiningConfirmed} subtitle="Confirmed they're joining" icon={CheckCircle2} color="bg-emerald-700" />
+                        <PipelineStage title="Awaiting Contact" count={stats.joiningAwaiting} subtitle="Not yet followed up" icon={Clock} color="bg-muted" />
+                        <PipelineStage title="No Response" count={stats.joiningNoResponse} subtitle="Reached out, no reply" icon={HelpCircle} color="bg-amber-500" />
+                        <PipelineStage title="Declined" count={stats.joiningDeclined} subtitle="Confirmed not joining" icon={XCircle} color="bg-red-500" />
+                    </div>
+                </div>
+            )}
+
             {/* Conversion Metrics — grouped into two funnel stages so the
                 numbers read top-to-bottom as an actual pipeline instead of
                 five disconnected tiles. */}
@@ -387,6 +429,24 @@ export default function RecruitmentPipelineDashboard({ initialCandidates }: Recr
                         />
                     </div>
                 </div>
+
+                {stats.selected > 0 && (
+                    <div>
+                        <p className="text-[9.5px] font-bold text-muted uppercase tracking-[0.2em] mb-2 px-1">
+                            Stage 3 — Onboarding
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <MetricBox
+                                label="Joining Confirmation Rate"
+                                value={efficiency.joiningRate}
+                                numerator={efficiency.joiningNumerator}
+                                denominator={efficiency.joiningDenominator}
+                                description="Of everyone selected, the percentage who have actually confirmed — by phone or WhatsApp follow-up — that they're joining."
+                                icon={Target}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
