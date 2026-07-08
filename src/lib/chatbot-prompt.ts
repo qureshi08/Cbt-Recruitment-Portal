@@ -23,6 +23,10 @@ PROGRAM OVERVIEW
 - Funded by the Pakistan Software Export Board (PSEB).
 - Focused on data, analytics, AI and software engineering tracks.
 
+CURRENT COHORT
+- Recruitment is open now. The next batch is scheduled to begin in October 2026 (Q4 2026).
+- If asked about the batch/cohort start date, state October 2026 directly — do not defer this to email.
+
 ELIGIBILITY
 - Applicant must reside in Islamabad or Rawalpindi.
 - Must be a fresh graduate, recently graduated (last ~12 months), or graduating by June of the current cohort year.

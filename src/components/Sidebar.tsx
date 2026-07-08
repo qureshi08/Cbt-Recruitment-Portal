@@ -11,7 +11,8 @@ import {
     Menu,
     Mail,
     X,
-    Shield
+    Shield,
+    Award
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -29,6 +30,7 @@ const menuItems = [
     { name: "Candidate Pipeline", href: "/admin/applications", icon: Users, roles: ["Master", "Approver", "HR"] },
     { name: "Assessment Slots", href: "/admin/slots", icon: Calendar, roles: ["Master", "HR"] },
     { name: "Interviews", href: "/admin/interviews", icon: ClipboardList, roles: ["Master", "HR", "L1_Interviewer", "L2_Interviewer"] },
+    { name: "Merit List", href: "/admin/merit-list", icon: Award, roles: ["Master", "HR"] },
     { name: "Compose Email", href: "/admin/messages", icon: Mail, roles: ["Master", "HR"] },
     { name: "Portal Settings", href: "/admin/settings", icon: Settings, roles: ["Master"] },
 ];

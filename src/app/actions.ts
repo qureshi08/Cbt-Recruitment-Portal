@@ -826,6 +826,56 @@ export async function sendCandidateSelectionEmail(candidateId: string) {
     }
 }
 
+const JOINING_STATUS_VALUES = ['Confirmed', 'Declined', 'No Response'] as const;
+type JoiningStatus = typeof JOINING_STATUS_VALUES[number];
+
+/**
+ * Merit List feature: records whether a 'Selected' candidate actually
+ * confirmed they're joining, after HR follows up by phone/WhatsApp. This is
+ * purely an operational/logistics flag — it does NOT change `status`, so the
+ * historical record of "this candidate was selected" stays intact even if
+ * they ultimately decline. Pass `null` to reset back to "awaiting contact".
+ */
+export async function updateCandidateJoiningStatus(candidateId: string, joiningStatus: JoiningStatus | null) {
+    try {
+        const actingUser = await getCurrentUser();
+        if (!actingUser) return { error: 'You must be signed in.' };
+        if (!actingUser.roles?.includes('Master') && !actingUser.roles?.includes('HR')) {
+            return { error: 'Only HR or Master can update joining status.' };
+        }
+        if (joiningStatus !== null && !JOINING_STATUS_VALUES.includes(joiningStatus)) {
+            return { error: 'Invalid joining status.' };
+        }
+
+        const { data: candidate, error: fetchError } = await supabaseAdmin
+            .from('candidates')
+            .select('status, name')
+            .eq('id', candidateId)
+            .single();
+        if (fetchError || !candidate) throw new Error('Candidate not found.');
+        if (candidate.status !== 'Selected') {
+            throw new Error(`Cannot set joining status: candidate status is "${candidate.status}", expected "Selected".`);
+        }
+
+        const { error: updateError } = await supabaseAdmin
+            .from('candidates')
+            .update({ joining_status: joiningStatus, updated_at: new Date().toISOString() })
+            .eq('id', candidateId);
+        if (updateError) throw updateError;
+
+        await logAction('JOINING_STATUS_UPDATE', candidateId, 'candidate', {
+            joining_status: joiningStatus,
+            candidate_name: candidate.name,
+        });
+
+        revalidatePath('/admin/merit-list');
+        return { success: true };
+    } catch (error: any) {
+        console.error('updateCandidateJoiningStatus error:', error);
+        return { error: error.message };
+    }
+}
+
 export async function createAssessmentSlot(startTime: string, endTime: string) {
     try {
         const { data, error } = await supabase
