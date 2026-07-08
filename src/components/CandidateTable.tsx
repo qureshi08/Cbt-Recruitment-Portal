@@ -617,6 +617,17 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                 <span className={cn("status-badge whitespace-nowrap", statusColors[candidate.status])}>
                                                     {candidate.status}
                                                 </span>
+                                                {candidate.status === 'Selected' && (
+                                                    <span className={cn(
+                                                        "text-[9px] font-bold px-1.5 py-0.5 rounded-sm border uppercase tracking-wide whitespace-nowrap",
+                                                        candidate.joining_status === 'Confirmed' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                                            candidate.joining_status === 'Declined' ? "bg-red-50 text-red-700 border-red-200" :
+                                                                candidate.joining_status === 'No Response' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                                                    "bg-surface text-muted border-border"
+                                                    )}>
+                                                        {candidate.joining_status ?? 'Awaiting Contact'}
+                                                    </span>
+                                                )}
                                                 {candidate.last_action_by && candidate.status !== 'Applied' && (
                                                     <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
                                                         Updated by: {candidate.last_action_by}

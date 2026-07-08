@@ -84,6 +84,11 @@ const COLUMNS: ColumnDef[] = [
     { header: 'L2 Notes', accessor: c => c.interview_scores?.l2_feedback_json?.overall_notes ?? '', width: 45 },
 
     { header: 'Final Decision', accessor: c => c.interview_scores?.decision ?? '', width: 20 },
+
+    // Merit List (post-interview ranking/curation)
+    { header: 'Merit Rank', accessor: c => c.merit_rank ?? '', width: 10 },
+    { header: 'Remarks', accessor: c => c.remarks ?? '', width: 32 },
+    { header: 'Joining Status', accessor: c => c.status === 'Selected' ? (c.joining_status ?? 'Awaiting Contact') : '', width: 16 },
 ];
 
 export function exportCandidatesToExcel(candidates: Candidate[], filenameStem = 'CGAP_Candidates'): void {
