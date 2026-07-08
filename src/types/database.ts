@@ -82,6 +82,11 @@ export interface Candidate {
     created_at: string;
     updated_at: string;
     last_action_by?: string | null;
+    // Merit List (post-interview ranking/curation, only meaningful for
+    // 'Recommended'/'Selected' candidates)
+    remarks?: string | null;
+    merit_rank?: number | null;
+    joining_status?: 'Confirmed' | 'Declined' | 'No Response' | null;
     // Interview scores (joined from interviews table)
     interview_scores?: {
         decision?: string | null;
