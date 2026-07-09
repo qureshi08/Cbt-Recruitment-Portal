@@ -5,7 +5,7 @@ import { Candidate } from "@/types/database";
 import { UserRole, sendCandidateSelectionEmail, updateCandidate, updateCandidateJoiningStatus } from "@/app/actions";
 import { withLoading } from "@/lib/loading";
 import { cn } from "@/lib/utils";
-import { Send, CheckCircle2, XCircle, HelpCircle, RotateCcw, AlertTriangle } from "lucide-react";
+import { Send, CheckCircle2, XCircle, HelpCircle, RotateCcw, AlertTriangle, Search } from "lucide-react";
 import { calcAvg, ScoreBar, InterviewFeedbackModal } from "@/components/InterviewScorecard";
 
 type JoiningStatus = 'Confirmed' | 'Declined' | 'No Response';
@@ -41,23 +41,50 @@ const JOINING_STATUS_META: Record<JoiningStatus, { label: string; icon: typeof C
     "No Response": { label: "No Response", icon: HelpCircle, activeClass: "bg-amber-500 text-white border-amber-600" },
 };
 
+const JOINING_FILTER_OPTIONS = ["All", "Confirmed", "Declined", "No Response", "Awaiting Contact"] as const;
+
 export default function MeritList({ initialCandidates, userRoles }: MeritListProps) {
     const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
     const [sendingSelectionId, setSendingSelectionId] = useState<string | null>(null);
     const [selectedInterviewScores, setSelectedInterviewScores] = useState<Candidate | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [batchFilter, setBatchFilter] = useState('All');
+    const [joiningFilter, setJoiningFilter] = useState<typeof JOINING_FILTER_OPTIONS[number]>('All');
 
     const isMaster = userRoles.includes('Master');
     const isHR = userRoles.includes('HR');
     const canEdit = isMaster || isHR;
 
-    const recommended = useMemo(
-        () => candidates.filter(c => c.status === 'Recommended').sort(sortForMerit),
+    const batches = useMemo(
+        () => ["All", ...Array.from(new Set(candidates.map(c => c.batch_number).filter(Boolean))) as string[]],
         [candidates]
     );
+
+    const matchesFilters = (candidate: Candidate) => {
+        const q = searchQuery.trim().toLowerCase();
+        const matchesSearch = !q ||
+            candidate.name.toLowerCase().includes(q) ||
+            candidate.email.toLowerCase().includes(q) ||
+            (candidate.phone ?? '').includes(q);
+        const matchesBatch = batchFilter === 'All' || candidate.batch_number === batchFilter;
+        return matchesSearch && matchesBatch;
+    };
+
+    const recommended = useMemo(
+        () => candidates.filter(c => c.status === 'Recommended' && matchesFilters(c)).sort(sortForMerit),
+        [candidates, searchQuery, batchFilter]
+    );
     const selected = useMemo(
-        () => candidates.filter(c => c.status === 'Selected').sort(sortForMerit),
-        [candidates]
+        () => candidates
+            .filter(c => c.status === 'Selected' && matchesFilters(c))
+            .filter(c => {
+                if (joiningFilter === 'All') return true;
+                if (joiningFilter === 'Awaiting Contact') return !c.joining_status;
+                return c.joining_status === joiningFilter;
+            })
+            .sort(sortForMerit),
+        [candidates, searchQuery, batchFilter, joiningFilter]
     );
 
     const nextInLine = recommended[0] ?? null;
@@ -125,6 +152,46 @@ export default function MeritList({ initialCandidates, userRoles }: MeritListPro
                     <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900 font-bold shrink-0">Dismiss</button>
                 </div>
             )}
+
+            {/* Search and Filter Bar — same pattern as the Candidate Pipeline table */}
+            <div className="bg-white border border-border rounded-sm px-4 py-2 flex flex-col sm:flex-row gap-2.5 items-center shadow-soft">
+                <div className="relative flex-1 w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
+                    <input
+                        type="text"
+                        placeholder="Filter by name, email or mobile..."
+                        className="w-full bg-surface border border-border rounded-sm pl-9 pr-3 py-1.5 text-[11px] font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 placeholder:text-muted outline-none transition-all"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-black text-muted uppercase tracking-wider">Batch</span>
+                        <select
+                            className="border border-border bg-surface rounded-sm px-2 py-1 text-[10px] font-bold cursor-pointer hover:border-primary transition-colors outline-none text-heading"
+                            value={batchFilter}
+                            onChange={(e) => setBatchFilter(e.target.value)}
+                        >
+                            {batches.map(batch => (
+                                <option key={batch} value={batch}>{batch}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-black text-muted uppercase tracking-wider">Joining</span>
+                        <select
+                            className="border border-border bg-surface rounded-sm px-2 py-1 text-[10px] font-bold cursor-pointer hover:border-primary transition-colors outline-none text-heading"
+                            value={joiningFilter}
+                            onChange={(e) => setJoiningFilter(e.target.value as typeof JOINING_FILTER_OPTIONS[number])}
+                        >
+                            {JOINING_FILTER_OPTIONS.map(opt => (
+                                <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
 
             {/* ─── Merit List (Recommended) ─────────────────────────────── */}
             <div className="rounded-sm border border-border bg-white shadow-soft overflow-hidden">
