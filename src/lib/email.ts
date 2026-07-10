@@ -24,6 +24,23 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Every outbound email from this app must CC the shared recruitment mailbox,
+// regardless of which function sends it. Routing every send through this
+// wrapper (instead of calling transporter.sendMail directly) means new email
+// functions get this for free and nothing can accidentally skip it. Merges
+// with any cc the caller already set rather than clobbering it.
+const MANDATORY_CC = 'cgaprecruitment@NETORGFT5251991.onmicrosoft.com';
+
+function sendMail(mailOptions: Record<string, any>) {
+  const existingCc: string[] = !mailOptions.cc
+    ? []
+    : Array.isArray(mailOptions.cc)
+      ? mailOptions.cc
+      : String(mailOptions.cc).split(',').map((s: string) => s.trim()).filter(Boolean);
+  const cc = Array.from(new Set([...existingCc, MANDATORY_CC]));
+  return transporter.sendMail({ ...mailOptions, cc: cc.join(', ') });
+}
+
 function generateICS(title: string, start: Date, end: Date, location: string, description: string) {
   const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   // Escape special characters for ICS
@@ -75,7 +92,7 @@ export const sendAssessmentEmail = async (candidateEmail: string, candidateName:
     `,
   };
 
-  return transporter.sendMail(mailOptions);
+  return sendMail(mailOptions);
 };
 
 export const sendRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
@@ -96,7 +113,7 @@ export const sendRecommendedEmail = async (candidateEmail: string, candidateName
     `,
   };
 
-  return transporter.sendMail(mailOptions);
+  return sendMail(mailOptions);
 };
 
 export const sendSelectedEmail = async (candidateEmail: string, candidateName: string) => {
@@ -172,7 +189,7 @@ export const sendSelectedEmail = async (candidateEmail: string, candidateName: s
     attachments,
   };
 
-  return transporter.sendMail(mailOptions);
+  return sendMail(mailOptions);
 };
 
 export const sendNotRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
@@ -193,7 +210,7 @@ export const sendNotRecommendedEmail = async (candidateEmail: string, candidateN
     `,
   };
 
-  return transporter.sendMail(mailOptions);
+  return sendMail(mailOptions);
 };
 
 export const sendTeamNotification = async (recipients: string[], subject: string, html: string) => {
@@ -214,7 +231,7 @@ export const sendTeamNotification = async (recipients: string[], subject: string
         </div>
       `,
     };
-    results.push(transporter.sendMail(mailOptions));
+    results.push(sendMail(mailOptions));
   }
 
   return Promise.all(results);
@@ -263,7 +280,7 @@ export const sendCustomCandidateEmail = async (params: {
         `,
     };
     if (cc && cc.length > 0) mailOptions.cc = cc.join(', ');
-    return transporter.sendMail(mailOptions);
+    return sendMail(mailOptions);
 };
 
 export const notifyRole = async (emails: string[], subject: string, title: string, body: string, attachments?: any[]) => {
@@ -293,7 +310,7 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
 
     try {
       console.log(`[SMTP] Sending email to ${email}`);
-      const info = await transporter.sendMail(mailOptions);
+      const info = await sendMail(mailOptions);
       results.push(info);
     } catch (err) {
       console.error(`[SMTP ERROR] Failed to send email to ${email}:`, err);
