@@ -38,6 +38,11 @@ export default function MentorAssignment({ initialMentors, loadError, batches }:
             setError(result.error);
             return;
         }
+        if (result.dryRun) {
+            // Nothing was actually saved or emailed — don't reflect a fake assignment.
+            window.alert(result.message);
+            return;
+        }
         setMentors(prev => prev.map(m => m.id === mentor.id
             ? { ...m, batches: [...m.batches, batch?.batch_number ?? batchId] }
             : m
@@ -59,7 +64,10 @@ export default function MentorAssignment({ initialMentors, loadError, batches }:
                     </div>
                 ) : mentors.map(mentor => {
                     const atCapacity = mentor.batches.length >= CAPACITY;
-                    const assignableBatches = batches.filter(b => !mentor.batches.includes(b.batch_number));
+                    // Capacity is enforced server-side too (assignMentorToBatch)
+                    // — this just keeps the dropdown from offering something
+                    // the server would reject anyway.
+                    const assignableBatches = atCapacity ? [] : batches.filter(b => !mentor.batches.includes(b.batch_number));
                     return (
                         <div key={mentor.id} className="flex items-center justify-between gap-4 px-5 py-3.5 flex-wrap">
                             <div>
@@ -97,6 +105,9 @@ export default function MentorAssignment({ initialMentors, loadError, batches }:
                                         {assigningId === mentor.id ? "…" : "Assign"}
                                     </button>
                                 </div>
+                            )}
+                            {assignableBatches.length === 0 && atCapacity && (
+                                <span className="text-[10px] text-muted italic">At capacity — unassign a batch to free up a slot</span>
                             )}
                         </div>
                     );

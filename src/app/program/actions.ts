@@ -12,7 +12,9 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { logAction } from "@/app/actions";
 import { sendFellowCredentialsEmail, sendMentorAssignedEmail } from "@/lib/email";
-import { CHECKLIST_ITEMS, ChecklistItemKey, OnboardingDocType } from "@/types/academy";
+import { CHECKLIST_ITEMS, ChecklistItemKey, ONBOARDING_DOC_TYPES, OnboardingDocType } from "@/types/academy";
+
+const MENTOR_CAPACITY = 2;
 
 async function requireProgramAdmin() {
     const user = await getCurrentUser();
@@ -27,6 +29,17 @@ function generateTempPassword(): string {
     // Cryptographically random, url-safe — readable enough to type from an
     // email, unlike the shared default password used for internal accounts.
     return `Cgap@${crypto.randomBytes(9).toString("base64url")}`;
+}
+
+// Hard safeguard after a real candidate was accidentally provisioned and
+// emailed during testing. Defaults to dry-run (safe) whenever this env var
+// is unset — provisioning a Fellow or assigning a Mentor does NOT create a
+// real account, insert a real row, or send a real email unless someone
+// explicitly sets ACADEMY_DRY_RUN=false and redeploys. Requires a deliberate
+// second switch beyond ACADEMY_ENABLED before anything real-world-facing
+// can happen.
+function isDryRun(): boolean {
+    return process.env.ACADEMY_DRY_RUN !== "false";
 }
 
 // ─── Batches ────────────────────────────────────────────────────────────────
@@ -142,6 +155,21 @@ export async function assignMentorToBatch(mentorUserId: string, batchId: string)
             .single();
         if (mentorErr || !mentor) throw new Error("Mentor not found.");
 
+        // Capacity is shown as an informational tag in the UI, but was never
+        // actually enforced — a mentor could silently be assigned a 3rd, 4th
+        // batch. Enforcing it for real here.
+        const { count: currentLoad } = await supabaseAdmin
+            .from("mentor_assignments")
+            .select("id", { count: "exact", head: true })
+            .eq("mentor_user_id", mentorUserId);
+        if ((currentLoad ?? 0) >= MENTOR_CAPACITY) {
+            throw new Error(`${mentor.full_name} is already at capacity (${MENTOR_CAPACITY} batches).`);
+        }
+
+        if (isDryRun()) {
+            return { success: true, dryRun: true, message: `DRY RUN — would assign ${mentor.full_name} to Batch #${batch.batch_number} and email them. Nothing was actually saved or sent.` };
+        }
+
         const { error: insertErr } = await supabaseAdmin
             .from("mentor_assignments")
             .insert({ mentor_user_id: mentorUserId, batch_id: batchId });
@@ -186,6 +214,41 @@ export async function updateChecklistItem(batchId: string, itemKey: ChecklistIte
         return { success: true };
     } catch (error: any) {
         console.error("updateChecklistItem error:", error);
+        return { error: error.message };
+    }
+}
+
+// The checklist banner said a batch "can't move to Orientation until all
+// items are done" but nothing actually moved it — this is the missing
+// transition. Only callable once every checklist item is done.
+export async function launchBatch(batchId: string) {
+    try {
+        const user = await requireProgramAdmin();
+
+        const { data: checklist, error: checklistErr } = await supabaseAdmin
+            .from("pre_orientation_checklist")
+            .select("done_at")
+            .eq("batch_id", batchId);
+        if (checklistErr) throw checklistErr;
+
+        const allDone = (checklist ?? []).length === CHECKLIST_ITEMS.length && (checklist ?? []).every(c => c.done_at);
+        if (!allDone) {
+            return { error: "All checklist items must be complete before launching this batch." };
+        }
+
+        const { error } = await supabaseAdmin
+            .from("batches")
+            .update({ status: "Active" })
+            .eq("id", batchId);
+        if (error) throw error;
+
+        await logAction("BATCH_LAUNCHED", batchId, "batch", { launched_by: user.full_name });
+
+        revalidatePath(`/program/batches/${batchId}`);
+        revalidatePath("/program/batches");
+        return { success: true };
+    } catch (error: any) {
+        console.error("launchBatch error:", error);
         return { error: error.message };
     }
 }
@@ -240,6 +303,10 @@ export async function provisionFellowAccount(candidateId: string, batchId: strin
             .eq("id", batchId)
             .single();
         if (batchErr || !batch) throw new Error("Batch not found.");
+
+        if (isDryRun()) {
+            return { success: true, dryRun: true, message: `DRY RUN — would create a real login for ${candidate.name} (${candidate.email}) and email them their credentials. Nothing was actually created or sent.` };
+        }
 
         const tempPassword = generateTempPassword();
 
@@ -336,9 +403,11 @@ export async function uploadOnboardingDocument(fellowId: string, docType: Onboar
             );
         if (upsertErr) throw upsertErr;
 
+        await recomputeFellowOnboardingStatus(fellowId);
         await logAction("ONBOARDING_DOC_UPLOADED", fellowId, "fellow", { doc_type: docType });
 
         revalidatePath("/program/fellow");
+        revalidatePath("/program/batches");
         return { success: true, publicUrl };
     } catch (error: any) {
         console.error("uploadOnboardingDocument error:", error);
@@ -346,17 +415,38 @@ export async function uploadOnboardingDocument(fellowId: string, docType: Onboar
     }
 }
 
+// Recomputes the Fellow's overall onboarding_status from their individual
+// documents — without this, the field never advances past its default
+// 'Pending' no matter how many documents get verified.
+async function recomputeFellowOnboardingStatus(fellowId: string) {
+    const { data: docs } = await supabaseAdmin
+        .from("onboarding_documents")
+        .select("doc_type, verified_at, rejected_reason")
+        .eq("fellow_id", fellowId);
+
+    const allVerified = ONBOARDING_DOC_TYPES.every(t => docs?.some(d => d.doc_type === t.key && d.verified_at));
+    const anyRejected = (docs ?? []).some(d => d.rejected_reason);
+
+    const onboarding_status = allVerified ? "Verified" : anyRejected ? "Rejected" : "Pending";
+    await supabaseAdmin.from("fellows").update({ onboarding_status }).eq("id", fellowId);
+    return onboarding_status;
+}
+
 export async function verifyOnboardingDocument(documentId: string) {
     try {
         await requireProgramAdmin();
-        const { error } = await supabaseAdmin
+        const { data: doc, error: fetchErr } = await supabaseAdmin
             .from("onboarding_documents")
             .update({ verified_at: new Date().toISOString(), rejected_reason: null })
-            .eq("id", documentId);
-        if (error) throw error;
+            .eq("id", documentId)
+            .select("fellow_id")
+            .single();
+        if (fetchErr) throw fetchErr;
 
+        await recomputeFellowOnboardingStatus(doc.fellow_id);
         await logAction("ONBOARDING_DOC_VERIFIED", documentId, "onboarding_document", {});
         revalidatePath("/program/batches");
+        revalidatePath("/program/fellow");
         return { success: true };
     } catch (error: any) {
         console.error("verifyOnboardingDocument error:", error);
@@ -367,14 +457,18 @@ export async function verifyOnboardingDocument(documentId: string) {
 export async function rejectOnboardingDocument(documentId: string, reason: string) {
     try {
         await requireProgramAdmin();
-        const { error } = await supabaseAdmin
+        const { data: doc, error: fetchErr } = await supabaseAdmin
             .from("onboarding_documents")
             .update({ verified_at: null, rejected_reason: reason })
-            .eq("id", documentId);
-        if (error) throw error;
+            .eq("id", documentId)
+            .select("fellow_id")
+            .single();
+        if (fetchErr) throw fetchErr;
 
+        await recomputeFellowOnboardingStatus(doc.fellow_id);
         await logAction("ONBOARDING_DOC_REJECTED", documentId, "onboarding_document", { reason });
         revalidatePath("/program/batches");
+        revalidatePath("/program/fellow");
         return { success: true };
     } catch (error: any) {
         console.error("rejectOnboardingDocument error:", error);

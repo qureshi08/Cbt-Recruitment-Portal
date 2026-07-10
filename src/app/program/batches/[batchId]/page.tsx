@@ -65,6 +65,7 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ ba
 
             <BatchDetail
                 batchId={batchId}
+                initialStatus={batch.status}
                 initialChecklist={checklist as any}
                 initialFellows={fellows}
                 initialAvailableCandidates={candidatesResult.success ? candidatesResult.candidates ?? [] : []}

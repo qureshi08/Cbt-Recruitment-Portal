@@ -10,16 +10,20 @@ import { Check, Upload, RotateCcw } from "lucide-react";
 interface FellowOnboardingProps {
     fellowId: string;
     initialDocuments: OnboardingDocument[];
+    onboardingStatus?: string;
 }
 
-export default function FellowOnboarding({ fellowId, initialDocuments }: FellowOnboardingProps) {
+export default function FellowOnboarding({ fellowId, initialDocuments, onboardingStatus }: FellowOnboardingProps) {
     const [documents, setDocuments] = useState(initialDocuments);
     const [uploadingType, setUploadingType] = useState<OnboardingDocType | null>(null);
     const [error, setError] = useState<string | null>(null);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
     const docFor = (type: OnboardingDocType) => documents.find(d => d.doc_type === type);
-    const allDone = ONBOARDING_DOC_TYPES.every(t => docFor(t.key)?.verified_at || docFor(t.key)?.uploaded_at);
+    const allUploaded = ONBOARDING_DOC_TYPES.every(t => docFor(t.key)?.verified_at || docFor(t.key)?.uploaded_at);
+    // The page-level completion card already covers the fully-Verified case —
+    // this banner is only for "still uploading," not "still awaiting review."
+    const showIncompleteBanner = !allUploaded && onboardingStatus !== "Verified";
 
     const handleFileChange = async (docType: OnboardingDocType, file: File | null) => {
         if (!file) return;
@@ -52,9 +56,9 @@ export default function FellowOnboarding({ fellowId, initialDocuments }: FellowO
 
     return (
         <div className="bg-white border border-border rounded-[12px] shadow-soft overflow-hidden">
-            {!allDone && (
+            {showIncompleteBanner && (
                 <div className="mx-5 mt-5 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-sm px-3 py-2">
-                    Complete all {ONBOARDING_DOC_TYPES.length} documents to unlock the rest of the portal.
+                    Upload all {ONBOARDING_DOC_TYPES.length} documents — your Program Admin will review and verify them.
                 </div>
             )}
             {error && (
