@@ -34,13 +34,10 @@ export async function middleware(request: NextRequest) {
     // IMPORTANT: Use getUser() instead of getSession() for security
     const { data: { user } } = await supabase.auth.getUser()
 
-    // '/program/*' is the Academy section (Program Admin/Mentor/Fellow) —
-    // protected the same way as '/admin/*'. Role-specific gating happens in
-    // each section's own layout.tsx, same pattern as today.
-    const isProtected = request.nextUrl.pathname.startsWith('/admin') || request.nextUrl.pathname.startsWith('/program')
+    const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
 
-    // If trying to access a protected section without login -> Redirect to login
-    if (isProtected && !user) {
+    // If trying to access admin without login -> Redirect to login
+    if (isAdminPage && !user) {
         return NextResponse.redirect(new URL('/login', request.url))
     }
 
