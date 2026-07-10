@@ -1,6 +1,6 @@
 import ProgramSidebar from "@/components/program/ProgramSidebar";
 import { getCurrentUser } from "@/lib/auth-utils";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { ensureBuckets } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
@@ -12,16 +12,6 @@ export default async function ProgramLayout({
 }: {
     children: React.ReactNode;
 }) {
-    // Hard kill-switch — the Academy is still in development and nobody
-    // (including other Master accounts) should be able to stumble onto it
-    // by guessing the URL. Renders a plain 404, indistinguishable from a
-    // nonexistent route, unless ACADEMY_ENABLED=true is explicitly set.
-    // Set that env var (and redeploy) only when you're ready to test or
-    // launch this section.
-    if (process.env.ACADEMY_ENABLED !== "true") {
-        notFound();
-    }
-
     const user = await getCurrentUser();
 
     if (!user || !user.roles || user.roles.length === 0) {
