@@ -31,17 +31,6 @@ function generateTempPassword(): string {
     return `Cgap@${crypto.randomBytes(9).toString("base64url")}`;
 }
 
-// Hard safeguard after a real candidate was accidentally provisioned and
-// emailed during testing. Defaults to dry-run (safe) whenever this env var
-// is unset — provisioning a Fellow or assigning a Mentor does NOT create a
-// real account, insert a real row, or send a real email unless someone
-// explicitly sets ACADEMY_DRY_RUN=false and redeploys. Requires a deliberate
-// second switch beyond ACADEMY_ENABLED before anything real-world-facing
-// can happen.
-function isDryRun(): boolean {
-    return process.env.ACADEMY_DRY_RUN !== "false";
-}
-
 // ─── Batches ────────────────────────────────────────────────────────────────
 
 export async function createBatch(data: {
@@ -164,10 +153,6 @@ export async function assignMentorToBatch(mentorUserId: string, batchId: string)
             .eq("mentor_user_id", mentorUserId);
         if ((currentLoad ?? 0) >= MENTOR_CAPACITY) {
             throw new Error(`${mentor.full_name} is already at capacity (${MENTOR_CAPACITY} batches).`);
-        }
-
-        if (isDryRun()) {
-            return { success: true, dryRun: true, message: `DRY RUN — would assign ${mentor.full_name} to Batch #${batch.batch_number} and email them. Nothing was actually saved or sent.` };
         }
 
         const { error: insertErr } = await supabaseAdmin
@@ -303,10 +288,6 @@ export async function provisionFellowAccount(candidateId: string, batchId: strin
             .eq("id", batchId)
             .single();
         if (batchErr || !batch) throw new Error("Batch not found.");
-
-        if (isDryRun()) {
-            return { success: true, dryRun: true, message: `DRY RUN — would create a real login for ${candidate.name} (${candidate.email}) and email them their credentials. Nothing was actually created or sent.` };
-        }
 
         const tempPassword = generateTempPassword();
 

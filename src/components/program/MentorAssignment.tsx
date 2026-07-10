@@ -38,11 +38,6 @@ export default function MentorAssignment({ initialMentors, loadError, batches }:
             setError(result.error);
             return;
         }
-        if (result.dryRun) {
-            // Nothing was actually saved or emailed — don't reflect a fake assignment.
-            window.alert(result.message);
-            return;
-        }
         setMentors(prev => prev.map(m => m.id === mentor.id
             ? { ...m, batches: [...m.batches, batch?.batch_number ?? batchId] }
             : m

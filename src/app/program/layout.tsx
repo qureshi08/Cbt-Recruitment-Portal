@@ -41,18 +41,12 @@ export default async function ProgramLayout({
     await ensureBuckets();
 
     const roles = user.roles;
-    const dryRun = process.env.ACADEMY_DRY_RUN !== "false";
 
     return (
         <div className="flex h-screen bg-surface overflow-hidden">
             <ProgramSidebar userRoles={roles} />
 
             <div className="flex-1 ml-0 md:ml-[230px] flex flex-col min-w-0 h-full overflow-hidden">
-                {dryRun && (
-                    <div className="bg-amber-400 text-amber-950 text-center text-[11px] font-bold uppercase tracking-widest py-1.5 shrink-0">
-                        Dry Run Mode — provisioning a Fellow or assigning a Mentor will not create real accounts or send real emails
-                    </div>
-                )}
                 <header className="h-[52px] bg-white border-b border-border sticky top-0 z-20 flex items-center justify-between px-5 shrink-0 backdrop-blur-sm bg-white/95">
                     <div className="flex items-center gap-3 min-w-0 ml-12 md:ml-0" />
 
