@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CHECKLIST_ITEMS, ChecklistItem, ChecklistItemKey, Fellow, ONBOARDING_DOC_TYPES, OnboardingDocument } from "@/types/academy";
-import { updateChecklistItem, provisionFellowAccount, verifyOnboardingDocument, rejectOnboardingDocument, launchBatch } from "@/app/program/actions";
+import { updateChecklistItem, provisionFellowAccount, verifyOnboardingDocument, rejectOnboardingDocument } from "@/app/program/actions";
 import { withLoading } from "@/lib/loading";
 import { cn } from "@/lib/utils";
 import { Check, UserPlus, ChevronDown } from "lucide-react";
@@ -20,7 +20,6 @@ interface FellowWithDocs extends Fellow {
 
 interface BatchDetailProps {
     batchId: string;
-    initialStatus: string;
     initialChecklist: ChecklistItem[];
     initialFellows: FellowWithDocs[];
     initialAvailableCandidates: AvailableCandidate[];
@@ -97,30 +96,15 @@ function FellowDocuments({ fellow, onChange }: { fellow: FellowWithDocs; onChang
     );
 }
 
-export default function BatchDetail({ batchId, initialStatus, initialChecklist, initialFellows, initialAvailableCandidates }: BatchDetailProps) {
-    const [status, setStatus] = useState(initialStatus);
+export default function BatchDetail({ batchId, initialChecklist, initialFellows, initialAvailableCandidates }: BatchDetailProps) {
     const [checklist, setChecklist] = useState(initialChecklist);
     const [fellows, setFellows] = useState(initialFellows);
     const [availableCandidates, setAvailableCandidates] = useState(initialAvailableCandidates);
     const [provisioningId, setProvisioningId] = useState<string | null>(null);
     const [expandedFellowId, setExpandedFellowId] = useState<string | null>(null);
-    const [isLaunching, setIsLaunching] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const doneCount = checklist.filter(c => c.done_at).length;
-    const allChecklistDone = doneCount === CHECKLIST_ITEMS.length;
-
-    const handleLaunch = async () => {
-        if (!window.confirm("Launch this batch? Its status moves to Active.")) return;
-        setIsLaunching(true);
-        const result = await withLoading(() => launchBatch(batchId));
-        setIsLaunching(false);
-        if (result.error) {
-            setError(result.error);
-            return;
-        }
-        setStatus("Active");
-    };
 
     const handleToggleChecklist = async (itemKey: ChecklistItemKey, currentlyDone: boolean) => {
         const result = await withLoading(() => updateChecklistItem(batchId, itemKey, !currentlyDone));
@@ -166,19 +150,10 @@ export default function BatchDetail({ batchId, initialStatus, initialChecklist, 
                 <div className="px-5 py-4 border-b border-border bg-surface flex items-center justify-between">
                     <div>
                         <h2 className="text-sm font-bold text-heading tracking-tight italic">Pre-Orientation Checklist</h2>
-                        <p className="text-[11px] text-muted mt-0.5">{doneCount} of {CHECKLIST_ITEMS.length} complete · Batch status: {status}</p>
+                        <p className="text-[11px] text-muted mt-0.5">{doneCount} of {CHECKLIST_ITEMS.length} complete</p>
                     </div>
-                    {status === "Pending Orientation" && allChecklistDone && (
-                        <button
-                            onClick={handleLaunch}
-                            disabled={isLaunching}
-                            className="px-3.5 py-2 bg-primary text-white text-[10.5px] font-bold rounded-sm shadow-soft hover:bg-primary/90 transition-colors disabled:opacity-60"
-                        >
-                            {isLaunching ? "Launching…" : "Launch Batch →"}
-                        </button>
-                    )}
                 </div>
-                {status === "Pending Orientation" && !allChecklistDone && (
+                {doneCount < CHECKLIST_ITEMS.length && (
                     <div className="mx-5 mt-4 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-sm px-3 py-2">
                         Batch can&apos;t move to Orientation until all items are done.
                     </div>

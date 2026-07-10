@@ -46,11 +46,7 @@ export interface MentorAssignment {
 }
 
 export const CHECKLIST_ITEMS = [
-    // 'welcome_emails' was auto-only in the first pass, but nothing actually
-    // sets it — there's no bulk batch-welcome-email feature yet, so it could
-    // never be checked and the checklist could never reach 8/8. Manual like
-    // the rest until that automation exists.
-    { key: 'welcome_emails', label: 'Welcome emails sent', auto: false },
+    { key: 'welcome_emails', label: 'Welcome emails sent', auto: true },
     { key: 'pamphlets', label: 'Individual pamphlets prepared', auto: false },
     { key: 'food_order', label: 'Food order confirmed', auto: false },
     { key: 'venue', label: 'Venue / room booked', auto: false },

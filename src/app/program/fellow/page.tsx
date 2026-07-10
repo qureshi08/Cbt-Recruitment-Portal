@@ -43,23 +43,11 @@ export default async function FellowHomePage() {
                     Welcome, <span className="italic-accent">{fellow.candidates?.name?.split(" ")[0]}</span>
                 </h1>
                 <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
-                    {fellow.onboarding_status === "Verified"
-                        ? "You're fully onboarded — the recruitment team will reach out with orientation details."
-                        : `Complete all ${ONBOARDING_DOC_TYPES.length} documents to finish enrolment.`}
+                    Complete all {ONBOARDING_DOC_TYPES.length} documents to finish enrolment.
                 </p>
             </div>
 
-            {fellow.onboarding_status === "Verified" && (
-                <div className="bg-primary/5 border border-primary/20 rounded-[12px] p-5 flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">✓</span>
-                    <div>
-                        <p className="text-[13px] font-bold text-heading">Onboarding complete</p>
-                        <p className="text-[11.5px] text-muted mt-0.5">All 4 documents are verified. Nothing else to do here yet — you'll hear from your mentor before orientation.</p>
-                    </div>
-                </div>
-            )}
-
-            <FellowOnboarding fellowId={fellow.id} initialDocuments={documents ?? []} onboardingStatus={fellow.onboarding_status} />
+            <FellowOnboarding fellowId={fellow.id} initialDocuments={documents ?? []} />
         </div>
     );
 }
