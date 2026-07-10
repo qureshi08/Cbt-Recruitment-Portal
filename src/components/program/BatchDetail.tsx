@@ -137,7 +137,7 @@ export default function BatchDetail({ batchId, initialStatus, initialChecklist, 
     const handleProvision = async (candidate: AvailableCandidate) => {
         if (!window.confirm(
             `Provision ${candidate.name} as a Fellow in Batch #${batchId}?\n\n` +
-            "This creates a real login account for them and emails their credentials immediately."
+            "This creates a real login account for them and emails their credentials immediately (unless dry-run mode is on)."
         )) return;
 
         setProvisioningId(candidate.id);
@@ -146,6 +146,12 @@ export default function BatchDetail({ batchId, initialStatus, initialChecklist, 
 
         if (result.error) {
             setError(result.error);
+            return;
+        }
+        if (result.dryRun) {
+            // Nothing was actually created — the candidate stays in the
+            // available list, not moved into Fellows.
+            window.alert(result.message);
             return;
         }
         setAvailableCandidates(prev => prev.filter(c => c.id !== candidate.id));
