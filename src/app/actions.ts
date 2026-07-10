@@ -25,13 +25,10 @@ import pdf from 'pdf-parse/lib/pdf-parse.js';
 import { createTeamsMeeting } from "@/lib/microsoft";
 import { CHATBOT_PROMPT_KEY, CGAP_SUPPORT_SYSTEM_PROMPT_DEFAULT } from "@/lib/chatbot-prompt";
 
-export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer' | 'Program_Admin' | 'Mentor' | 'Fellow';
+export type UserRole = 'Master' | 'Approver' | 'HR' | 'L1_Interviewer' | 'L2_Interviewer';
 
 // --- Audit Logging Helper ---
-// Exported so src/app/program/actions.ts (the deliberately separate Academy
-// backend) can log its own events into the same audit_logs table without
-// duplicating this logic. Behavior for existing callers is unchanged.
-export async function logAction(action: string, entityId: string, entityType: string, details: any) {
+async function logAction(action: string, entityId: string, entityType: string, details: any) {
     try {
         const user = await getCurrentUser();
         // Unauthenticated requests come from the candidate self-service flow
@@ -78,24 +75,13 @@ export async function login(formData: FormData) {
         // Already signed out — fine.
     }
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
+    const { error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
     });
 
     if (error) {
         return { error: error.message };
-    }
-
-    // Academy-only accounts (Mentor/Fellow) land in /program/*, not /admin —
-    // every existing role (Master/Approver/HR/Interviewer) is unaffected and
-    // still goes to /admin exactly as before.
-    const roles = await getUserRoles(data.user.id);
-    const isAcademyOnly = roles.length > 0 && roles.every(r => r === "Mentor" || r === "Fellow");
-    if (isAcademyOnly) {
-        const landingPath = roles.includes("Mentor") ? "/program/mentor" : "/program/fellow";
-        revalidatePath("/program", "layout");
-        redirect(landingPath);
     }
 
     revalidatePath("/admin", "layout");
@@ -1986,7 +1972,7 @@ export async function updateCandidate(candidateId: string, updates: Partial<any>
 export async function ensureBuckets() {
     try {
         // 1. Ensure Storage Buckets exist and are configured correctly
-        const buckets = ['resumes', 'assessment-scores', 'fellow-documents'];
+        const buckets = ['resumes', 'assessment-scores'];
         const { data: existingBuckets } = await supabaseAdmin.storage.listBuckets();
         const existingBucketIds = existingBuckets?.map(b => b.id) || [];
 
