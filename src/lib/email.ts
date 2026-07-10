@@ -213,6 +213,68 @@ export const sendNotRecommendedEmail = async (candidateEmail: string, candidateN
   return sendMail(mailOptions);
 };
 
+// ─── Academy (post-selection) emails ───────────────────────────────────────
+// Deliberately separate from the recruiting emails above — these are sent by
+// src/app/program/actions.ts, never by the recruiting actions.ts.
+
+export const sendFellowCredentialsEmail = async (
+  fellowEmail: string,
+  fellowName: string,
+  tempPassword: string,
+  loginUrl: string,
+  batchNumber: string
+) => {
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
+    to: fellowEmail,
+    subject: `Welcome to CGAP Batch #${batchNumber} — Your Portal Login`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7; color: #1f2937;">
+        <p>Dear ${fellowName},</p>
+        <p>Welcome to <strong>CGAP Batch #${batchNumber}</strong>! You now have your own login to the CGAP portal, where you'll upload your onboarding documents and, later, your coursework.</p>
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 18px 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${fellowEmail}</p>
+          <p style="margin: 0;"><strong>Temporary Password:</strong> ${tempPassword}</p>
+        </div>
+        <div style="text-align: center; margin: 26px 0;">
+          <a href="${loginUrl}" style="background-color: #009245; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Log In to the Portal</a>
+        </div>
+        <p style="font-weight: bold; color: #b45309;">Please change your password as soon as you log in, from the account menu.</p>
+        <p>Once logged in, please upload the four onboarding documents (degree transcript, PSEB profile screenshot, PSEB confirmation email, and your signed undertaking) to complete your enrolment.</p>
+        <p>If you have any trouble logging in, just reply to this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+        <p style="font-size: 12px; color: #666;">Convergent Business Technologies &mdash; Recruitment Team</p>
+      </div>
+    `,
+  };
+
+  return sendMail(mailOptions);
+};
+
+export const sendMentorAssignedEmail = async (
+  mentorEmail: string,
+  mentorName: string,
+  batchNumber: string,
+  orientationDate: string
+) => {
+  const mailOptions = {
+    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
+    to: mentorEmail,
+    subject: `You've Been Assigned to CGAP Batch #${batchNumber}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 28px; border: 1px solid #eee; border-radius: 10px; line-height: 1.7; color: #1f2937;">
+        <p>Hello ${mentorName},</p>
+        <p>You've been assigned as the mentor for <strong>CGAP Batch #${batchNumber}</strong>. Orientation is scheduled for <strong>${orientationDate}</strong>.</p>
+        <p>Please log in to the portal to see the batch's pre-orientation checklist and fellow roster as they're added.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+        <p style="font-size: 12px; color: #666;">Convergent Business Technologies &mdash; Recruitment Team</p>
+      </div>
+    `,
+  };
+
+  return sendMail(mailOptions);
+};
+
 export const sendTeamNotification = async (recipients: string[], subject: string, html: string) => {
   if (!recipients || recipients.length === 0) return null;
 
