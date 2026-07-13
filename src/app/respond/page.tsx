@@ -7,6 +7,17 @@ import { submitInterviewerAvailability, getCandidateBasic, getInterviewerNameByE
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 
+// Pakistan is fixed at UTC+5 year-round (no DST). <input type="datetime-local">
+// has no timezone info — plain `new Date(value)` would interpret it in
+// whatever timezone the interviewer's OWN browser/device happens to be set
+// to, silently producing the wrong instant if that's not PKT. Anchoring
+// explicitly to PKT here matches the same fix already used for slot times in
+// SlotManager.tsx's buildPktInstant().
+const PKT_OFFSET = "+05:00";
+function toPktIso(datetimeLocal: string): string {
+    return new Date(`${datetimeLocal}:00${PKT_OFFSET}`).toISOString();
+}
+
 function AvailabilityForm() {
     const searchParams = useSearchParams();
     const candidateId = searchParams.get('id') as string;
@@ -67,7 +78,7 @@ function AvailabilityForm() {
             candidateId,
             email || "unknown",
             isAvailable,
-            preferredDateTime ? new Date(preferredDateTime).toISOString() : undefined,
+            preferredDateTime ? toPktIso(preferredDateTime) : undefined,
             interviewerName || "Interviewer"
         );
 
