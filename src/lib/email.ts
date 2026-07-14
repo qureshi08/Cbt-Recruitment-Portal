@@ -24,12 +24,23 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Every outbound email from this app must CC the shared recruitment mailbox,
-// regardless of which function sends it. Routing every send through this
-// wrapper (instead of calling transporter.sendMail directly) means new email
+// Every outbound email from this app must CC these individuals, regardless
+// of which function sends it. Routing every send through this wrapper
+// (instead of calling transporter.sendMail directly) means new email
 // functions get this for free and nothing can accidentally skip it. Merges
 // with any cc the caller already set rather than clobbering it.
-const MANDATORY_CC = 'cgaprecruitment@NETORGFT5251991.onmicrosoft.com';
+//
+// Previously this CC'd a single shared mailbox
+// (cgaprecruitment@NETORGFT5251991.onmicrosoft.com), but delegate access to
+// that shared mailbox meant every email surfaced in one person's own inbox
+// regardless of who it was actually for. Named individuals here instead —
+// explicit and easy to audit/change.
+const MANDATORY_CC_LIST = [
+  'ghasif.tariq@convergentbt.com',
+  'saad.sarmad@convergentbt.com',
+  'muhammad.anas.quershi@convergentbt.com',
+  'hamza.altaf@convergentbt.com',
+];
 
 function sendMail(mailOptions: Record<string, any>) {
   const existingCc: string[] = !mailOptions.cc
@@ -37,7 +48,7 @@ function sendMail(mailOptions: Record<string, any>) {
     : Array.isArray(mailOptions.cc)
       ? mailOptions.cc
       : String(mailOptions.cc).split(',').map((s: string) => s.trim()).filter(Boolean);
-  const cc = Array.from(new Set([...existingCc, MANDATORY_CC]));
+  const cc = Array.from(new Set([...existingCc, ...MANDATORY_CC_LIST]));
   return transporter.sendMail({ ...mailOptions, cc: cc.join(', ') });
 }
 
