@@ -5,6 +5,7 @@ import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus } from "@/types/database";
 import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail, setCandidateStatusManually } from "@/app/actions";
 import { calcAvg, ScoreBar, InterviewFeedbackModal } from "@/components/InterviewScorecard";
+import CandidateProfileModal from "@/components/CandidateProfileModal";
 import { withLoading } from "@/lib/loading";
 import { exportCandidatesToExcel } from "@/lib/excelExport";
 import {
@@ -78,6 +79,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [analysisStatus, setAnalysisStatus] = useState<{ id: string, status: 'success' | 'error', message?: string } | null>(null);
     const [selectedAiReasoning, setSelectedAiReasoning] = useState<Candidate | null>(null);
     const [selectedInterviewScores, setSelectedInterviewScores] = useState<Candidate | null>(null);
+    const [selectedProfile, setSelectedProfile] = useState<Candidate | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [openActionId, setOpenActionId] = useState<string | null>(null);
     const [sendingInviteId, setSendingInviteId] = useState<string | null>(null);
@@ -425,7 +427,14 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </td>
                                         <td className="px-3 py-2.5 overflow-hidden">
                                             <div className="flex flex-col gap-0.5 min-w-0">
-                                                <span className="text-sm font-bold text-heading leading-tight truncate" title={candidate.name}>{candidate.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedProfile(candidate)}
+                                                    className="text-sm font-bold text-heading leading-tight truncate text-left hover:text-primary hover:underline underline-offset-2 transition-colors w-fit"
+                                                    title={`View ${candidate.name}'s profile`}
+                                                >
+                                                    {candidate.name}
+                                                </button>
                                                 <span className="text-[11px] text-muted font-medium truncate" title={candidate.email}>{candidate.email}</span>
                                                 {candidate.phone && (
                                                     <span className="text-[10px] text-primary font-bold flex items-center gap-1.5 mt-0.5">
@@ -1122,6 +1131,18 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                 <InterviewFeedbackModal
                     candidate={selectedInterviewScores}
                     onClose={() => setSelectedInterviewScores(null)}
+                />
+            )}
+
+            {/* Candidate Profile Modal — click a candidate's name for the consolidated view */}
+            {selectedProfile && (
+                <CandidateProfileModal
+                    candidate={selectedProfile}
+                    statusColors={statusColors}
+                    formatCNIC={formatCNIC}
+                    onClose={() => setSelectedProfile(null)}
+                    onViewAiAnalysis={(c) => { setSelectedProfile(null); setSelectedAiReasoning(c); }}
+                    onViewInterviewScores={(c) => { setSelectedProfile(null); setSelectedInterviewScores(c); }}
                 />
             )}
         </div>
