@@ -353,7 +353,19 @@ export async function submitApplication(formData: FormData) {
     const resume = formData.get("resume") as File;
     const position = formData.get("position") as string || "General Application";
 
+    // "Other" holds whatever the candidate actually typed rather than the
+    // literal word "Other" — same pattern the AI-analysis criteria fields
+    // already use for free-text overrides.
+    const sourceRaw = formData.get("source") as string;
+    const sourceOther = (formData.get("source_other") as string || "").trim();
+    const source = sourceRaw === "Other" && sourceOther ? sourceOther : sourceRaw;
+    const referral_name = sourceRaw === "Referral" ? (formData.get("referral_name") as string || "").trim() : null;
+
     try {
+        if (sourceRaw === "Referral" && !referral_name) {
+            throw new Error("Please provide the name of the person who referred you.");
+        }
+
         // Master kill-switch — if applications are closed, reject the submit
         // server-side regardless of what the client sent. The button on the
         // landing page is also disabled, but this guard means a direct POST
@@ -492,6 +504,8 @@ export async function submitApplication(formData: FormData) {
                 status: "Applied",
                 ai_status: "pending",
                 batch_number: currentBatch, // <--- Assigned automatically
+                source: source || null,
+                referral_name: referral_name || null,
                 updated_at: new Date().toISOString()
             })
             .select()

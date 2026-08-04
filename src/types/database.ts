@@ -47,6 +47,12 @@ export interface Candidate {
     university?: string;
     cnic?: string;
     batch_number?: string;
+    // How the candidate found out about CGAP. Free-text so "Other" can hold
+    // whatever the candidate actually typed (e.g. "Instagram", "University
+    // notice board") rather than being forced into a fixed enum.
+    source?: string | null;
+    // Only meaningful when source is a referral — who referred them.
+    referral_name?: string | null;
     assessment_score_url?: string;
     ai_status?: 'pending' | 'processing' | 'completed' | 'failed';
     ai_score?: number;

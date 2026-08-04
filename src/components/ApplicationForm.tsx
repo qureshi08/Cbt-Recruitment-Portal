@@ -11,6 +11,7 @@ export default function ApplicationForm() {
     const [error, setError] = useState<string | null>(null);
     const [emailError, setEmailError] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
+    const [source, setSource] = useState("");
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -180,6 +181,40 @@ export default function ApplicationForm() {
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted w-3.5 h-3.5" strokeWidth={1.5} />
                     </div>
                 </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-border">
+                <div>
+                    <Label>How did you hear about CGAP?</Label>
+                    <div className="relative">
+                        <select
+                            name="source"
+                            required
+                            value={source}
+                            onChange={(e) => setSource(e.target.value)}
+                            className="input-field appearance-none pr-9 cursor-pointer !py-2"
+                        >
+                            <option value="">Select an option</option>
+                            <option value="Referral">Referral from a CBT employee</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Job Fair">Job Fair</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted w-3.5 h-3.5" strokeWidth={1.5} />
+                    </div>
+                </div>
+                {source === "Referral" && (
+                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                        <Label>Who referred you?</Label>
+                        <input type="text" name="referral_name" required className="input-field !py-2" placeholder="Full name of the CBT employee" />
+                    </div>
+                )}
+                {source === "Other" && (
+                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                        <Label>Please specify</Label>
+                        <input type="text" name="source_other" required className="input-field !py-2" placeholder="e.g. Instagram, university notice board" />
+                    </div>
+                )}
             </div>
 
             <div className="pt-1">
