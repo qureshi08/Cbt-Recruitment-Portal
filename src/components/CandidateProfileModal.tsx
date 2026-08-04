@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Phone, Mail, MapPin, GraduationCap, ExternalLink, Sparkles, ClipboardList, Calendar } from "lucide-react";
+import { X, Phone, Mail, MapPin, GraduationCap, ExternalLink, Sparkles, ClipboardList, Calendar, FileText, Users, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Candidate, CandidateStatus } from "@/types/database";
 import { calcAvg } from "@/components/InterviewScorecard";
@@ -36,6 +36,7 @@ export default function CandidateProfileModal({
     const l1Avg = s?.l1_feedback_json ? calcAvg(s.l1_feedback_json) : null;
     const l2Avg = s?.l2_feedback_json ? calcAvg(s.l2_feedback_json) : null;
     const hasInterviewScores = l1Avg !== null || l2Avg !== null;
+    const hasMeritInfo = candidate.status === 'Recommended' || candidate.status === 'Selected';
 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -86,6 +87,19 @@ export default function CandidateProfileModal({
                         </div>
                     </div>
 
+                    {/* How they applied */}
+                    {candidate.source && (
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5" strokeWidth={1.5} /> How They Applied
+                            </p>
+                            <div className="grid grid-cols-2 gap-4 bg-surface border border-border rounded-sm p-4">
+                                <Field label="Source" value={candidate.source} />
+                                {candidate.referral_name && <Field label="Referred By" value={candidate.referral_name} />}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Academic profile */}
                     <div className="space-y-3">
                         <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
@@ -99,6 +113,32 @@ export default function CandidateProfileModal({
                             <Field label="Position Applied" value={candidate.position} />
                         </div>
                     </div>
+
+                    {/* Documents */}
+                    {(candidate.resume_url || candidate.cover_letter) && (
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5" strokeWidth={1.5} /> Documents
+                            </p>
+                            {candidate.resume_url && (
+                                <a
+                                    href={candidate.resume_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 bg-surface border border-border rounded-sm p-4 text-primary font-bold text-[12.5px] hover:border-primary/40 transition-colors w-fit"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    View Resume
+                                </a>
+                            )}
+                            {candidate.cover_letter && (
+                                <div className="bg-surface border border-border rounded-sm p-4">
+                                    <p className="text-[9px] font-bold text-muted uppercase tracking-[0.16em] mb-2">Cover Letter</p>
+                                    <p className="text-[12px] text-body leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">{candidate.cover_letter}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* AI screening */}
                     {(candidate.ai_score !== null && candidate.ai_score !== undefined) && (
@@ -126,6 +166,15 @@ export default function CandidateProfileModal({
                                 </div>
                                 <span className="text-[10px] font-bold text-primary shrink-0">View Full →</span>
                             </button>
+                            {candidate.ai_analysis_json?.extracted_skills && candidate.ai_analysis_json.extracted_skills.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {candidate.ai_analysis_json.extracted_skills.map((skill, i) => (
+                                        <span key={i} className="text-[10px] font-semibold text-heading bg-white border border-border px-2 py-1 rounded-sm">
+                                            {skill}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -139,13 +188,18 @@ export default function CandidateProfileModal({
                                 href={candidate.assessment_score_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 bg-surface border border-border rounded-sm p-4 text-primary font-bold text-[12.5px] hover:border-primary/40 transition-colors"
+                                className="flex items-center gap-2 bg-surface border border-border rounded-sm p-4 text-primary font-bold text-[12.5px] hover:border-primary/40 transition-colors w-fit"
                             >
                                 <ExternalLink className="w-4 h-4" />
                                 View Score Sheet
                             </a>
                         ) : (
                             <p className="text-[11.5px] text-muted italic">No assessment score sheet uploaded yet.</p>
+                        )}
+                        {candidate.assessment_slot?.start_time && (
+                            <p className="text-[11px] text-muted">
+                                Slot: {new Date(candidate.assessment_slot.start_time).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            </p>
                         )}
                     </div>
 
@@ -184,11 +238,37 @@ export default function CandidateProfileModal({
                                     </div>
                                     <span className="text-[10px] font-bold text-primary shrink-0">View Full →</span>
                                 </div>
+                                {(s?.l1_interviewer_name || s?.l2_interviewer_name) && (
+                                    <p className="text-[10px] text-muted mt-2">
+                                        {s?.l1_interviewer_name && `L1: ${s.l1_interviewer_name}`}
+                                        {s?.l1_interviewer_name && s?.l2_interviewer_name && ' · '}
+                                        {s?.l2_interviewer_name && `L2: ${s.l2_interviewer_name}`}
+                                    </p>
+                                )}
                             </button>
                         ) : (
                             <p className="text-[11.5px] text-muted italic">No interview scores recorded yet.</p>
                         )}
                     </div>
+
+                    {/* Merit List — only meaningful once a candidate has been recommended */}
+                    {hasMeritInfo && (candidate.merit_rank != null || candidate.remarks || candidate.joining_status) && (
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-1.5">
+                                <Award className="w-3.5 h-3.5" strokeWidth={1.5} /> Merit List
+                            </p>
+                            <div className="grid grid-cols-2 gap-4 bg-surface border border-border rounded-sm p-4">
+                                {candidate.merit_rank != null && <Field label="Rank" value={String(candidate.merit_rank)} />}
+                                {candidate.joining_status && <Field label="Joining Status" value={candidate.joining_status} />}
+                                {candidate.remarks && (
+                                    <div className="col-span-2">
+                                        <p className="text-[9px] font-bold text-muted uppercase tracking-[0.16em] mb-1">Remarks</p>
+                                        <p className="text-[12.5px] font-semibold text-heading">{candidate.remarks}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Meta */}
                     <div className="pt-5 border-t border-border flex items-center justify-between text-[10.5px] text-muted">
