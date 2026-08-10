@@ -1,28 +1,39 @@
-import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
+import { ConfidentialClientApplication } from '@azure/msal-node';
 
 /**
- * Microsoft 365 SMTP transporter.
+ * Microsoft Graph (application permissions) mail sender.
  * Requires the following environment variables:
- *   EMAIL_USER     – e.g. muhammad.anas.quershi@convergentbt.com
- *   EMAIL_PASSWORD – Microsoft account password (or app password if MFA is enabled)
+ *   MAIL_MS_CLIENT_ID     – app registration's Application (client) ID
+ *   MAIL_MS_TENANT_ID     – app registration's Directory (tenant) ID
+ *   MAIL_MS_CLIENT_SECRET – app registration's client secret value
+ *   MAIL_MS_USER_ID       – mailbox to send as, e.g. muhammad.anas.quershi@convergentbt.com
+ *                           (the app's Mail.Send permission should be scoped to this
+ *                           mailbox via an Exchange Online Application Access Policy)
+ *
+ * Switched from Office 365 SMTP because the org's Security Defaults policy
+ * blocks basic/SMTP AUTH tenant-wide (535 5.7.139). Graph's application-permission
+ * flow uses OAuth2 client-credentials auth instead, which Security Defaults doesn't
+ * touch, and needs a Global/Exchange admin to grant consent once, not per-send.
  */
-const transporter = nodemailer.createTransport({
-  host: 'smtp.office365.com',
-  port: 587,
-  secure: false,          // STARTTLS – Office 365 upgrades the connection after EHLO
-  pool: true,             // Enable connection pooling
-  maxConnections: 3,      // Limit concurrent connections to avoid Office 365 throttling
-  maxMessages: 100,
+const msalClient = new ConfidentialClientApplication({
   auth: {
-    user: process.env.EMAIL_USER!,
-    pass: process.env.EMAIL_PASSWORD!,
-  },
-  tls: {
-    ciphers: 'SSLv3',     // Required by Office 365 in some environments
+    clientId: process.env.MAIL_MS_CLIENT_ID!,
+    authority: `https://login.microsoftonline.com/${process.env.MAIL_MS_TENANT_ID}`,
+    clientSecret: process.env.MAIL_MS_CLIENT_SECRET!,
   },
 });
+
+async function getGraphToken(): Promise<string> {
+  const result = await msalClient.acquireTokenByClientCredential({
+    scopes: ['https://graph.microsoft.com/.default'],
+  });
+  if (!result?.accessToken) throw new Error('Failed to acquire Microsoft Graph access token');
+  return result.accessToken;
+}
+
+const toRecipient = (address: string) => ({ emailAddress: { address: address.trim() } });
 
 // Every outbound email from this app must CC these individuals, regardless
 // of which function sends it. Routing every send through this wrapper
@@ -42,14 +53,42 @@ const MANDATORY_CC_LIST = [
   'hamza.altaf@convergentbt.com',
 ];
 
-function sendMail(mailOptions: Record<string, any>) {
+async function sendMail(mailOptions: Record<string, any>) {
   const existingCc: string[] = !mailOptions.cc
     ? []
     : Array.isArray(mailOptions.cc)
       ? mailOptions.cc
       : String(mailOptions.cc).split(',').map((s: string) => s.trim()).filter(Boolean);
   const cc = Array.from(new Set([...existingCc, ...MANDATORY_CC_LIST]));
-  return transporter.sendMail({ ...mailOptions, cc: cc.join(', ') });
+  const to = Array.isArray(mailOptions.to) ? mailOptions.to : String(mailOptions.to).split(',');
+
+  const message: Record<string, any> = {
+    subject: mailOptions.subject,
+    body: { contentType: 'HTML', content: mailOptions.html },
+    toRecipients: to.map(toRecipient),
+    ccRecipients: cc.map(toRecipient),
+  };
+
+  if (mailOptions.attachments?.length) {
+    message.attachments = mailOptions.attachments.map((att: any) => ({
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: att.filename,
+      contentType: att.contentType || 'application/octet-stream',
+      contentBytes: (Buffer.isBuffer(att.content) ? att.content : Buffer.from(att.content)).toString('base64'),
+    }));
+  }
+
+  const token = await getGraphToken();
+  const sender = process.env.MAIL_MS_USER_ID!;
+  const res = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, saveToSentItems: true }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Graph sendMail failed (${res.status}): ${await res.text()}`);
+  }
 }
 
 function generateICS(title: string, start: Date, end: Date, location: string, description: string) {
@@ -85,7 +124,6 @@ function generateICS(title: string, start: Date, end: Date, location: string, de
 
 export const sendAssessmentEmail = async (candidateEmail: string, candidateName: string, bookingLink: string) => {
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
     subject: 'Action Required: Schedule Your CBT Assessment',
     html: `
@@ -108,7 +146,6 @@ export const sendAssessmentEmail = async (candidateEmail: string, candidateName:
 
 export const sendRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
     subject: 'Application Update - Convergent Graduate Academy Program',
     html: `
@@ -152,7 +189,6 @@ export const sendSelectedEmail = async (candidateEmail: string, candidateName: s
   }
 
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
     subject: 'Application Update - Welcome to CGAP!',
     html: `
@@ -205,7 +241,6 @@ export const sendSelectedEmail = async (candidateEmail: string, candidateName: s
 
 export const sendNotRecommendedEmail = async (candidateEmail: string, candidateName: string) => {
   const mailOptions = {
-    from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
     to: candidateEmail,
     subject: 'Update Regarding Your Application - Convergent Graduate Academy Program',
     html: `
@@ -231,7 +266,6 @@ export const sendTeamNotification = async (recipients: string[], subject: string
 
   for (const email of recipients) {
     const mailOptions = {
-      from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: subject,
       html: `
@@ -265,8 +299,7 @@ function bodyToHtml(plain: string): string {
 
 // Recruitment-team-authored custom email. Sent to a single candidate at a
 // time so each recipient sees only their own address in the To field.
-// Optional CC is applied per-message. Returns nodemailer's info object on
-// success or throws on failure.
+// Optional CC is applied per-message. Resolves on success or throws on failure.
 export const sendCustomCandidateEmail = async (params: {
     to: string;
     cc?: string[];
@@ -276,7 +309,6 @@ export const sendCustomCandidateEmail = async (params: {
 }) => {
     const { to, cc, subject, bodyPlain, senderName } = params;
     const mailOptions: any = {
-        from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
         to,
         subject,
         html: `
@@ -303,7 +335,6 @@ export const notifyRole = async (emails: string[], subject: string, title: strin
     const personalizedBody = body.replace(/\[INTERVIEWER_EMAIL\]/g, encodeURIComponent(email));
 
     const mailOptions: any = {
-      from: `"CBT Recruitment" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: subject,
       html: `
