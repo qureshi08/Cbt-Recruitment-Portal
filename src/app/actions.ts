@@ -1596,6 +1596,96 @@ export async function rejectForLowAssessmentScore(interviewId: string, candidate
     }
 }
 
+// --- Interviewer assignment (Evaluation Center "Interviewer" column) ---
+
+export interface AssignableInterviewer {
+    id: string;
+    full_name: string;
+    // True for users who can actually conduct interviews (L1/L2 interviewer
+    // or Master). Everyone else is returned too so an existing assignment
+    // still resolves to a name even if that person's roles changed later.
+    canInterview: boolean;
+}
+
+const INTERVIEWER_ROLES: UserRole[] = ['L1_Interviewer', 'L2_Interviewer', 'Master'];
+const INTERVIEWER_ASSIGNERS: UserRole[] = ['HR', 'Master'];
+
+export async function getAssignableInterviewers(): Promise<AssignableInterviewer[]> {
+    const { data, error } = await supabaseAdmin
+        .from('users')
+        .select(`
+            id,
+            full_name,
+            email,
+            user_roles (
+                roles ( name )
+            )
+        `);
+    if (error || !data) {
+        console.error('getAssignableInterviewers error:', error);
+        return [];
+    }
+
+    return data
+        .map((u: any) => {
+            const roleNames: string[] = (u.user_roles ?? [])
+                .map((ur: any) => ur.roles?.name)
+                .filter(Boolean);
+            return {
+                id: u.id as string,
+                full_name: (u.full_name as string) || (u.email as string) || 'Unnamed user',
+                canInterview: roleNames.some(r => (INTERVIEWER_ROLES as string[]).includes(r)),
+            };
+        })
+        .sort((a, b) => a.full_name.localeCompare(b.full_name));
+}
+
+// Sets (or clears, with null) the interviewer responsible for an interview
+// row. Restricted to the recruitment team (HR) and Master users.
+export async function assignInterviewer(interviewId: string, interviewerId: string | null) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'You must be signed in.' };
+        if (!user.roles.some(r => INTERVIEWER_ASSIGNERS.includes(r))) {
+            return { error: 'Only the recruitment team or a Master user can change the interviewer.' };
+        }
+
+        let interviewerName: string | null = null;
+        if (interviewerId) {
+            const { data: target, error: targetErr } = await supabaseAdmin
+                .from('users')
+                .select('id, full_name, email')
+                .eq('id', interviewerId)
+                .maybeSingle();
+            if (targetErr) throw targetErr;
+            if (!target) return { error: 'That user no longer exists.' };
+            interviewerName = target.full_name || target.email;
+        }
+
+        const { data: updated, error: updateErr } = await supabaseAdmin
+            .from('interviews')
+            .update({ interviewer_id: interviewerId })
+            .eq('id', interviewId)
+            .select('candidate_id')
+            .maybeSingle();
+        if (updateErr) throw updateErr;
+        if (!updated) return { error: 'Interview not found.' };
+
+        await logAction('INTERVIEWER_ASSIGNED', updated.candidate_id, 'candidate', {
+            interview_id: interviewId,
+            interviewer_id: interviewerId,
+            interviewer_name: interviewerName,
+            assigned_by: user.full_name,
+        });
+
+        revalidatePath('/admin/interviews');
+        return { success: true, interviewerName };
+    } catch (error: any) {
+        console.error('assignInterviewer error:', error);
+        return { error: error.message ?? 'Failed to assign interviewer.' };
+    }
+}
+
 export async function submitFinalInterviewFeedback(
     interviewId: string,
     candidateId: string,
