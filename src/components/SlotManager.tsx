@@ -161,7 +161,16 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         setIsSubmitting(true);
         try {
             const result = await withLoading(() => completeAssessment(candidateId));
-            if (result.success) {
+            if (result.success && result.alreadyCompleted) {
+                // The server only flips 'Assessment Scheduled' candidates. Anyone
+                // else (already completed, rejected, absent…) is a no-op, so say
+                // so instead of pretending something changed.
+                alert(
+                    `Nothing to update — this candidate is already '${result.currentStatus ?? "processed"}'.\n\n` +
+                    `Mark Evaluation Complete only applies to candidates in 'Assessment Scheduled'.`
+                );
+                router.refresh();
+            } else if (result.success) {
                 alert("Assessment marked as completed!");
                 router.refresh();
             } else {
@@ -248,6 +257,7 @@ export default function SlotManager({ initialSlots }: SlotManagerProps) {
         'Not Recommended',
         'Selected',
         'Rejected',
+        'Assessment Failed',
     ]);
 
     const isPendingSlot = (slot: Slot) => {

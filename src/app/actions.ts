@@ -1212,7 +1212,14 @@ export async function completeAssessment(candidateId: string) {
         if (!flipped || flipped.length === 0) {
             // Either already complete, or candidate is in a non-eligible
             // status. Idempotent success: don't create a duplicate row.
-            return { success: true, alreadyCompleted: true };
+            // Report the current status so the UI can explain why nothing
+            // changed instead of showing a misleading "completed" message.
+            const { data: current } = await supabaseAdmin
+                .from('candidates')
+                .select('status')
+                .eq('id', candidateId)
+                .maybeSingle();
+            return { success: true, alreadyCompleted: true, currentStatus: current?.status ?? null };
         }
         const candidate = flipped[0];
 
@@ -1580,6 +1587,7 @@ export async function rejectForLowAssessmentScore(interviewId: string, candidate
 
         revalidatePath('/admin/interviews');
         revalidatePath('/admin/applications');
+        revalidatePath('/admin/slots');
         revalidatePath('/admin');
         return { success: true };
     } catch (error: any) {
