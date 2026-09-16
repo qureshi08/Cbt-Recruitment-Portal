@@ -3,6 +3,14 @@ import { Candidate } from "@/types/database";
 import CandidateTable from "@/components/CandidateTable";
 import { getCurrentUser } from "@/lib/auth-utils";
 
+// This page calls analyzeCandidateWithAi (src/app/actions.ts), whose model
+// fallback chain can legitimately take longer than the platform's default
+// Server Action duration. A "use server" file can only export async
+// functions, so this has to live on the invoking page instead of actions.ts.
+// 60s is the ceiling on Vercel's Hobby tier and comfortably covers the
+// tightened per-model timeouts in analyzeCandidateWithAi.
+export const maxDuration = 60;
+
 export default async function ApplicationsPage() {
     const user = await getCurrentUser();
     const roles = user?.roles || [];
