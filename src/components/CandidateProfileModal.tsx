@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Phone, Mail, MapPin, GraduationCap, ExternalLink, Sparkles, ClipboardList, Calendar, FileText, Users, Award } from "lucide-react";
+import { X, Phone, Mail, MapPin, GraduationCap, ExternalLink, Sparkles, ClipboardList, Calendar, FileText, Users, Award, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Candidate, CandidateStatus } from "@/types/database";
 import { calcAvg } from "@/components/InterviewScorecard";
@@ -161,6 +161,15 @@ export default function CandidateProfileModal({
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-[12px] font-bold text-heading">{candidate.ai_analysis_json?.verdict || 'Processed'}</span>
                                         <Sparkles className="w-3 h-3 text-primary" />
+                                        {candidate.ai_analysis_json?._meta?.used_fallback && (
+                                            <span
+                                                title="This score came from a fallback model, not the primary one — re-analyzing may give a different score even though nothing about the resume changed."
+                                                className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-sm text-[8px] font-bold uppercase tracking-wider"
+                                            >
+                                                <AlertTriangle className="w-2.5 h-2.5" />
+                                                Fallback
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="text-[11px] text-muted truncate">{candidate.ai_reasoning}</p>
                                 </div>
