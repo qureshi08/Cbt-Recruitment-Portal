@@ -84,6 +84,14 @@ export interface Candidate {
         education_match: boolean;
         flags: string[];
         verdict: string;
+        // Which model actually produced this analysis, and whether it was
+        // reached via the fallback chain. Absent on analyses run before this
+        // field was added. See analyzeCandidateWithAi in src/app/actions.ts.
+        _meta?: {
+            model: string | null;
+            used_fallback: boolean;
+            analyzed_at: string;
+        };
     };
     created_at: string;
     updated_at: string;

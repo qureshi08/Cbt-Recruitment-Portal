@@ -500,6 +500,11 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                                                         {candidate.ai_analysis_json?.verdict || 'Processed'}
                                                                     </span>
                                                                     <Sparkles className="w-2.5 h-2.5 text-primary" />
+                                                                    {candidate.ai_analysis_json?._meta?.used_fallback && (
+                                                                        <span title="Fallback model — re-analyzing may give a different score.">
+                                                                            <AlertTriangle className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <p className="text-[9px] text-gray-400 truncate max-w-[120px]">
                                                                     {candidate.ai_reasoning}
@@ -975,11 +980,30 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                 <div>
                                     <h3 className="font-bold text-lg text-heading tracking-tight italic">{selectedAiReasoning.name}</h3>
                                     <p className="text-muted font-bold text-[10px] mt-0.5 uppercase tracking-widest">{selectedAiReasoning.position || 'Software Engineer'}</p>
-                                    <div className="flex items-center gap-2 mt-2">
+                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                                         <div className="px-2 py-0.5 bg-white border border-primary/20 text-primary rounded-sm text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5">
                                             <Sparkles className="w-2.5 h-2.5" />
                                             AI VERDICT: {selectedAiReasoning.ai_analysis_json?.verdict || 'ANALYSIS PROCESSED'}
                                         </div>
+                                        {selectedAiReasoning.ai_analysis_json?._meta?.model && (
+                                            <div
+                                                title={
+                                                    selectedAiReasoning.ai_analysis_json._meta.used_fallback
+                                                        ? "The primary model was unavailable when this ran, so a fallback model with different calibration answered instead. Re-analyzing may produce a different score even with no resume change."
+                                                        : "Model that produced this score."
+                                                }
+                                                className={cn(
+                                                    "px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 border",
+                                                    selectedAiReasoning.ai_analysis_json._meta.used_fallback
+                                                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                        : "bg-white text-muted border-border"
+                                                )}
+                                            >
+                                                {selectedAiReasoning.ai_analysis_json._meta.used_fallback && <AlertTriangle className="w-2.5 h-2.5" />}
+                                                {selectedAiReasoning.ai_analysis_json._meta.used_fallback ? "Fallback Model: " : "Model: "}
+                                                {selectedAiReasoning.ai_analysis_json._meta.model.replace(/^openrouter:/, "")}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

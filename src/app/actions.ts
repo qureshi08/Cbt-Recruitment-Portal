@@ -2353,6 +2353,14 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             }
         `;
         let analysis;
+        // Which model actually produced this analysis, and whether it was
+        // the first choice or a fallback. Recorded on the result so two
+        // scores for the same resume can be explained instead of looking
+        // like unexplained randomness — a fallback model has different
+        // calibration than the primary one, and that's the #1 cause of a
+        // candidate scoring very differently across re-analyses.
+        let modelUsed: string | null = null;
+        let usedFallback = false;
 
         if (isOpenRouter) {
             const visionImages = (candidate as any)._vision_images || [];
@@ -2396,6 +2404,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             if (!responseContent) throw new Error("AI returned an empty response");
             const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
             analysis = JSON.parse((jsonMatch ? jsonMatch[0] : responseContent).replace(/```json/gi, "").replace(/```/g, "").trim());
+            modelUsed = "openrouter:google/gemini-2.0-flash-001";
         } else {
             // Direct REST Implementation — model IDs verified against v1beta/models endpoint.
             //
@@ -2414,7 +2423,7 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             ];
             let lastErr = null;
 
-            for (const { model: modelName, apiVersion, timeoutMs } of modelsToTry) {
+            for (const [attemptIndex, { model: modelName, apiVersion, timeoutMs }] of modelsToTry.entries()) {
                 try {
                     const visionImages = (candidate as any)._vision_images || [];
                     const parts: any[] = [{ text: `${prompt}\n\nSTRICT JSON ONLY.` }];
@@ -2470,7 +2479,9 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
                     const cleanedResponse = jsonMatch ? jsonMatch[0] : responseText;
                     analysis = JSON.parse(cleanedResponse.replace(/```json/gi, "").replace(/```/g, "").trim());
-                    console.log(`[REST] Success with ${apiVersion}/${modelName}`);
+                    modelUsed = modelName;
+                    usedFallback = attemptIndex > 0;
+                    console.log(`[REST] Success with ${apiVersion}/${modelName}${usedFallback ? " (fallback)" : ""}`);
 
                     if (analysis) break;
                 } catch (err: any) {
@@ -2505,12 +2516,25 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     const orMatch = orContent?.match(/\{[\s\S]*\}/);
                     if (orMatch) {
                         analysis = JSON.parse(orMatch[0].replace(/```json/gi, "").replace(/```/g, "").trim());
+                        modelUsed = "openrouter:google/gemini-2.0-flash-001";
+                        usedFallback = true;
                     }
                 }
             }
 
             if (!analysis) throw lastErr || new Error("AI analysis failed on all models.");
         }
+
+        // Stamp which model actually produced this result. Two analyses of
+        // the same resume can land on materially different scores because
+        // the fallback chain above can silently hand the job to a different
+        // model with different calibration — this makes that visible in the
+        // record instead of looking like unexplained inconsistency.
+        analysis._meta = {
+            model: modelUsed,
+            used_fallback: usedFallback,
+            analyzed_at: new Date().toISOString(),
+        };
 
         const { error: updateError } = await supabaseAdmin
             .from('candidates')
@@ -2525,7 +2549,11 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
         if (updateError) throw updateError;
 
-        await logAction('AI_ANALYSIS_COMPLETED', candidateId, 'candidate', { score: analysis.score });
+        await logAction('AI_ANALYSIS_COMPLETED', candidateId, 'candidate', {
+            score: analysis.score,
+            model: modelUsed,
+            used_fallback: usedFallback,
+        });
 
         revalidatePath('/admin/applications');
         return {
