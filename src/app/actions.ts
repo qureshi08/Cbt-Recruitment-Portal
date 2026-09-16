@@ -2382,7 +2382,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                     "max_tokens": 1200,
                     "response_format": { "type": "json_object" },
                     "temperature": 0.1
-                })
+                }),
+                signal: AbortSignal.timeout(20000),
             });
 
             if (!response.ok) {
@@ -2396,17 +2397,24 @@ export async function analyzeCandidateWithAi(candidateId: string) {
             const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
             analysis = JSON.parse((jsonMatch ? jsonMatch[0] : responseContent).replace(/```json/gi, "").replace(/```/g, "").trim());
         } else {
-            // Direct REST Implementation — model IDs verified against v1beta/models endpoint
-            const modelsToTry: { model: string; apiVersion: string }[] = [
-                { model: "gemini-2.0-flash", apiVersion: "v1beta" }, // confirmed available
-                { model: "gemini-2.0-flash-lite", apiVersion: "v1beta" }, // confirmed available
-                { model: "gemini-2.0-flash-001", apiVersion: "v1beta" }, // confirmed available
-                { model: "gemini-flash-latest", apiVersion: "v1beta" }, // confirmed available
-                { model: "gemini-2.5-flash", apiVersion: "v1beta" }, // confirmed available (thinking)
+            // Direct REST Implementation — model IDs verified against v1beta/models endpoint.
+            //
+            // PERFORMANCE: this used to try 5 near-duplicate model names in
+            // series (two of which — "gemini-2.0-flash-001" and
+            // "gemini-flash-latest" — are just aliases of the two above them)
+            // with no per-call timeout, so a single slow/hanging attempt could
+            // stall the whole analysis for minutes with no fallback kicking
+            // in. Trimmed to the two genuinely distinct fast models plus one
+            // higher-capability last resort, each bounded by its own timeout
+            // so a stuck call moves on instead of hanging.
+            const modelsToTry: { model: string; apiVersion: string; timeoutMs: number }[] = [
+                { model: "gemini-2.0-flash-lite", apiVersion: "v1beta", timeoutMs: 12000 }, // fastest — try first
+                { model: "gemini-2.0-flash", apiVersion: "v1beta", timeoutMs: 15000 },
+                { model: "gemini-2.5-flash", apiVersion: "v1beta", timeoutMs: 15000 }, // last resort; thinking disabled below to keep it fast
             ];
             let lastErr = null;
 
-            for (const { model: modelName, apiVersion } of modelsToTry) {
+            for (const { model: modelName, apiVersion, timeoutMs } of modelsToTry) {
                 try {
                     const visionImages = (candidate as any)._vision_images || [];
                     const parts: any[] = [{ text: `${prompt}\n\nSTRICT JSON ONLY.` }];
@@ -2417,16 +2425,35 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                         });
                     }
 
+                    const generationConfig: Record<string, any> = {
+                        temperature: 0.1,
+                        maxOutputTokens: 1500,
+                        // Ask for raw JSON directly instead of relying on the
+                        // prompt + regex/backtick stripping — cuts generated
+                        // tokens (no markdown fencing/commentary) and is one
+                        // less place a slow model can waste time.
+                        responseMimeType: "application/json",
+                    };
+                    // gemini-2.5-flash reasons before answering by default,
+                    // which is what made it the slowest link in the old
+                    // fallback chain. This is a pure extraction task, so
+                    // disable thinking to keep it in "flash" territory.
+                    if (modelName.startsWith("gemini-2.5")) {
+                        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+                    }
+
                     const endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
                     const response = await fetch(endpoint, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             contents: [{ parts }],
-                            generationConfig: {
-                                temperature: 0.1
-                            }
-                        })
+                            generationConfig,
+                        }),
+                        // Bound each attempt so one slow/hanging model can't
+                        // stall the whole analysis — move to the next
+                        // fallback instead of waiting indefinitely.
+                        signal: AbortSignal.timeout(timeoutMs),
                     });
 
                     if (!response.ok) {
@@ -2447,7 +2474,10 @@ export async function analyzeCandidateWithAi(candidateId: string) {
 
                     if (analysis) break;
                 } catch (err: any) {
-                    console.warn(`[REST] ${apiVersion}/${modelName} failed: ${err.message}`);
+                    const reason = err?.name === "TimeoutError" || err?.name === "AbortError"
+                        ? `timed out after ${timeoutMs}ms`
+                        : err.message;
+                    console.warn(`[REST] ${apiVersion}/${modelName} failed: ${reason}`);
                     lastErr = err;
                 }
             }
@@ -2466,7 +2496,8 @@ export async function analyzeCandidateWithAi(candidateId: string) {
                         "messages": [{ "role": "user", "content": prompt }],
                         "max_tokens": 2000,
                         "response_format": { "type": "json_object" }
-                    })
+                    }),
+                    signal: AbortSignal.timeout(15000),
                 });
                 if (orResponse.ok) {
                     const orData = await orResponse.json();
