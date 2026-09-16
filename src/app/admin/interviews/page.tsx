@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import InterviewList from "@/components/InterviewList";
 import { getCurrentUser } from "@/lib/auth-utils";
+import { getAssignableInterviewers } from "@/app/actions";
 
 export default async function InterviewsPage() {
     const user = await getCurrentUser();
@@ -8,9 +9,12 @@ export default async function InterviewsPage() {
 
     // Default to newest-first so today's interviews and the most recently
     // added ones appear at the top of the table without having to scroll.
-    const { data: interviews, error } = await supabase
-        .from("interviews")
-        .select(`
+    // The portal user list (for the Interviewer column) is independent, so
+    // fetch it in parallel.
+    const [{ data: interviews, error }, interviewers] = await Promise.all([
+        supabase
+            .from("interviews")
+            .select(`
       *,
       candidates (
         name,
@@ -19,7 +23,9 @@ export default async function InterviewsPage() {
         assessment_score_url
       )
     `)
-        .order("scheduled_at", { ascending: false });
+            .order("scheduled_at", { ascending: false }),
+        getAssignableInterviewers(),
+    ]);
 
     if (error) {
         return <div>Error loading interviews: {error.message}</div>;
@@ -48,7 +54,7 @@ export default async function InterviewsPage() {
             </div>
 
             <div className="bg-white border border-border rounded-[12px] shadow-soft overflow-hidden">
-                <InterviewList initialInterviews={interviews || []} userRoles={roles} />
+                <InterviewList initialInterviews={interviews || []} userRoles={roles} interviewers={interviewers} />
             </div>
         </div>
     );
