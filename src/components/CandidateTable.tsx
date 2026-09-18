@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, Fragment } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail, setCandidateStatusManually } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail, setCandidateStatusManually, createCandidateManually, getCurrentBatchNumber } from "@/app/actions";
 import { calcAvg, ScoreBar, InterviewFeedbackModal } from "@/components/InterviewScorecard";
 import CandidateProfileModal from "@/components/CandidateProfileModal";
 import { withLoading } from "@/lib/loading";
@@ -29,6 +29,7 @@ import {
     Download,
     ChevronDown,
     Send,
+    UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -88,6 +89,10 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [newManualStatus, setNewManualStatus] = useState<string>('');
     const [manualStatusReason, setManualStatusReason] = useState<string>('');
     const [isChangingStatus, setIsChangingStatus] = useState(false);
+    const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+    const [addCandidateDefaultBatch, setAddCandidateDefaultBatch] = useState<string>('');
+    const [isAddingCandidate, setIsAddingCandidate] = useState(false);
+    const [addCandidateError, setAddCandidateError] = useState<string | null>(null);
 
     const isMaster = userRoles.includes('Master');
     const isApprover = userRoles.includes('Approver');
@@ -97,6 +102,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const canApprove = isMaster || isApprover;
     const canDelete = isMaster;
     const canViewOnly = isHR || isInterviewer;
+    const canAddCandidate = isMaster || isHR;
 
     const handleAiAnalysis = async (candidateId: string) => {
         setAnalyzingId(candidateId);
@@ -283,6 +289,42 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
         }
     };
 
+    const openAddCandidateModal = async () => {
+        setAddCandidateError(null);
+        setShowAddCandidateModal(true);
+        try {
+            const result = await getCurrentBatchNumber();
+            setAddCandidateDefaultBatch(result.value || '');
+        } catch {
+            // Non-fatal — the batch field just starts blank if this fails.
+        }
+    };
+
+    const handleAddCandidate = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setAddCandidateError(null);
+        setIsAddingCandidate(true);
+        try {
+            const formData = new FormData(e.currentTarget);
+            const result = await withLoading(() => createCandidateManually(formData));
+            if (result.success && result.candidate) {
+                setCandidates(prev => [result.candidate as Candidate, ...prev]);
+                setShowAddCandidateModal(false);
+                if (result.warning) {
+                    alert(result.warning);
+                } else {
+                    alert(`${(result.candidate as Candidate).name} was added to the pipeline.`);
+                }
+            } else {
+                setAddCandidateError(result.error || "Failed to add candidate.");
+            }
+        } catch (err: any) {
+            setAddCandidateError(err.message || "Failed to add candidate.");
+        } finally {
+            setIsAddingCandidate(false);
+        }
+    };
+
     const candidateStatusIsInitial = (status: string) => {
         return status === 'Approved' || status === 'Rejected';
     };
@@ -365,6 +407,17 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                             ))}
                         </select>
                     </div>
+                    {canAddCandidate && (
+                        <button
+                            type="button"
+                            onClick={openAddCandidateModal}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-primary text-primary text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-primary/5 transition-colors"
+                            title="Add a candidate directly — for people already sourced/vetted outside the portal (a spreadsheet, Notion, a referral list, etc.)"
+                        >
+                            <UserPlus className="w-3 h-3" strokeWidth={2} />
+                            <span>Add Candidate</span>
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => exportCandidatesToExcel(filteredCandidates)}
@@ -829,6 +882,103 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                     </table>
                 </div>
             </div>
+
+            {/* Add Candidate Modal (manual entry, off the public form) */}
+            {showAddCandidateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isAddingCandidate && setShowAddCandidateModal(false)} />
+                    <div className="bg-white rounded-sm shadow-premium w-full max-w-lg relative z-10 animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+                        <div className="p-5 border-b border-border flex justify-between items-center bg-surface shrink-0">
+                            <div>
+                                <h3 className="font-bold text-heading text-sm uppercase tracking-tight italic">Add Candidate</h3>
+                                <p className="text-[10px] text-muted font-medium mt-0.5">For candidates already sourced or vetted outside the portal.</p>
+                            </div>
+                            <button onClick={() => !isAddingCandidate && setShowAddCandidateModal(false)} className="text-muted hover:text-heading transition-colors">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAddCandidate} className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+                            {addCandidateError && (
+                                <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-sm">
+                                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" strokeWidth={1.6} />
+                                    <p className="text-[11px] text-red-700 leading-relaxed">{addCandidateError}</p>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1 col-span-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Full Name *</label>
+                                    <input name="name" required className="input-field" placeholder="e.g. Hamza Sabih" />
+                                </div>
+                                <div className="space-y-1 col-span-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Email *</label>
+                                    <input name="email" type="email" required className="input-field" placeholder="candidate@example.com" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
+                                    <input name="phone" className="input-field" placeholder="03XXXXXXXXX" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">CNIC</label>
+                                    <input name="cnic" className="input-field" placeholder="e.g. 61101-XXXXXXX-X" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Batch Number</label>
+                                    <input name="batch_number" defaultValue={addCandidateDefaultBatch} className="input-field" placeholder="e.g. 32" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Location</label>
+                                    <input name="location" className="input-field" placeholder="e.g. Islamabad" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Education Status</label>
+                                    <select name="education_status" className="input-field cursor-pointer">
+                                        <option value="">Select phase</option>
+                                        <option value="Graduated">Graduated / Alumni</option>
+                                        <option value="Currently Enrolled">In-Progress / Student</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Graduation Year</label>
+                                    <input name="graduation_year" className="input-field" placeholder="e.g. 2026" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Degree / Field</label>
+                                    <input name="degree_field" className="input-field" placeholder="e.g. Computer Science" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">University</label>
+                                    <input name="university" className="input-field" placeholder="e.g. NUST" />
+                                </div>
+                                <div className="space-y-1 col-span-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Resume (optional)</label>
+                                    <input name="resume" type="file" accept=".pdf,.doc,.docx" className="input-field file:mr-3 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-[10px] file:font-bold file:bg-surface file:text-heading" />
+                                </div>
+                                <div className="space-y-1 col-span-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Starting Status</label>
+                                    <select name="status" defaultValue="Applied" className="input-field cursor-pointer">
+                                        {(['Applied', 'Approved', 'Invite Sent', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Not Recommended', 'Selected', 'Absent', 'Rejected'] as const).map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-muted font-medium leading-relaxed">
+                                        Leave as "Applied" for a normal application. Pick a later status (e.g. "Recommended") if this candidate's evaluation already happened outside the portal — the same side effects fire as a manual status change (interview row / decision email, where applicable).
+                                    </p>
+                                </div>
+                                <div className="space-y-1 col-span-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Note (optional)</label>
+                                    <textarea name="note" rows={2} className="input-field resize-none" placeholder="e.g. Sourced from the Notion tracker, already reviewed by the recruitment team." />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => setShowAddCandidateModal(false)} disabled={isAddingCandidate} className="btn-secondary flex-1">Cancel</button>
+                                <button type="submit" disabled={isAddingCandidate} className="btn-primary flex-1 disabled:opacity-60">
+                                    {isAddingCandidate ? 'Adding…' : 'Add Candidate'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Candidate Modal */}
             {
