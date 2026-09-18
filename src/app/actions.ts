@@ -556,6 +556,159 @@ export async function submitApplication(formData: FormData) {
     }
 }
 
+// --- Manual candidate entry (recruitment-team-initiated, off the public form) ---
+//
+// Covers the case where a candidate was already sourced/vetted somewhere
+// outside the portal (a spreadsheet, Notion tracker, referral list, etc.)
+// and just needs to exist in the pipeline — e.g. "this person is already
+// Recommended, assign them to batch 32."
+const MANUAL_ADD_ALLOWED_ROLES: UserRole[] = ['HR', 'Master'];
+
+export async function createCandidateManually(formData: FormData) {
+    try {
+        const actingUser = await getCurrentUser();
+        if (!actingUser) return { error: 'You must be signed in.' };
+        if (!actingUser.roles.some(r => MANUAL_ADD_ALLOWED_ROLES.includes(r))) {
+            return { error: 'Only the recruitment team or a Master user can manually add a candidate.' };
+        }
+
+        const name = ((formData.get('name') as string) || '').trim();
+        const emailRaw = ((formData.get('email') as string) || '').trim();
+        if (!name) return { error: 'Full name is required.' };
+        if (!emailRaw) return { error: 'Email is required.' };
+        const email = emailRaw.toLowerCase();
+
+        // Unlike the public application form, everything past name/email is
+        // optional here — the recruiter may be entering this from a source
+        // (Notion, a spreadsheet) that doesn't have every field, and they're
+        // a trusted internal user, not an anonymous applicant. Best-effort
+        // normalize what's given rather than rejecting an incomplete record.
+        const phoneRaw = ((formData.get('phone') as string) || '').trim();
+        let phone: string | null = null;
+        if (phoneRaw) {
+            let normalized = phoneRaw.replace(/\D/g, '');
+            if (normalized.startsWith('0092')) normalized = '0' + normalized.slice(4);
+            else if (normalized.startsWith('92') && normalized.length > 10) normalized = '0' + normalized.slice(2);
+            phone = normalized;
+        }
+
+        const cnicRaw = ((formData.get('cnic') as string) || '').trim();
+        const cnic = cnicRaw ? cnicRaw.replace(/\D/g, '') : null;
+
+        const location = ((formData.get('location') as string) || '').trim() || null;
+        const education_status = ((formData.get('education_status') as string) || '').trim() || null;
+        const graduation_year = ((formData.get('graduation_year') as string) || '').trim() || null;
+        const degree_field = ((formData.get('degree_field') as string) || '').trim() || null;
+        const university = ((formData.get('university') as string) || '').trim() || null;
+        const position = ((formData.get('position') as string) || '').trim() || 'CGAP — Convergent Graduate Academy Program';
+        const batch_number = ((formData.get('batch_number') as string) || '').trim() || null;
+        const requestedStatus = ((formData.get('status') as string) || 'Applied').trim();
+        const note = ((formData.get('note') as string) || '').trim();
+
+        // Same duplicate guard the public form uses, but surfaced as a plain
+        // error rather than a reapply-cooldown message — this is an internal
+        // user adding a record, so "edit the existing one instead" is the
+        // right instruction, not "wait N months."
+        const { data: existing } = await supabaseAdmin
+            .from('candidates')
+            .select('id, name, status')
+            .ilike('email', email)
+            .limit(1);
+        if (existing && existing.length > 0) {
+            return {
+                error: `A candidate with this email already exists (${existing[0].name}, status: "${existing[0].status}"). Edit that record instead of creating a duplicate.`,
+            };
+        }
+
+        // Resume is optional here — it may live elsewhere (Notion, a shared
+        // drive) and get attached later via Edit Profile, or never at all if
+        // the candidate's evaluation already happened off-system.
+        let resume_url: string | null = null;
+        const resumeFile = formData.get('resume') as File | null;
+        if (resumeFile && resumeFile.size > 0) {
+            const fileExt = resumeFile.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const { error: uploadError } = await supabaseAdmin.storage.from('resumes').upload(fileName, resumeFile);
+            if (uploadError) throw new Error(`Resume upload failed: ${uploadError.message}`);
+            const { data: { publicUrl } } = supabaseAdmin.storage.from('resumes').getPublicUrl(fileName);
+            resume_url = publicUrl;
+        }
+
+        // Always insert as 'Applied' first, then transition via
+        // setCandidateStatusManually below if a different starting status
+        // was requested — that reuses the exact same side effects (interview
+        // row creation, decision emails queued) as changing an existing
+        // candidate's status by hand, instead of duplicating that logic here.
+        const { data: candidate, error: insertError } = await supabaseAdmin
+            .from('candidates')
+            .insert({
+                name,
+                email,
+                phone,
+                cnic,
+                location,
+                education_status,
+                graduation_year,
+                degree_field,
+                university,
+                position,
+                resume_url,
+                batch_number,
+                status: 'Applied',
+                ai_status: resume_url ? 'pending' : null,
+                source: 'Manually Added',
+                updated_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (insertError) {
+            if ((insertError as any).code === '23505') {
+                return { error: 'A candidate with this email already exists.' };
+            }
+            throw insertError;
+        }
+
+        await logAction('CANDIDATE_MANUALLY_ADDED', candidate.id, 'candidate', {
+            added_by: actingUser.full_name,
+            requested_status: requestedStatus,
+            note: note || null,
+        });
+
+        let warning: string | undefined;
+        if (requestedStatus && requestedStatus !== 'Applied') {
+            const transition = await setCandidateStatusManually(
+                candidate.id,
+                requestedStatus,
+                note || `Added directly at '${requestedStatus}' by ${actingUser.full_name}.`,
+            );
+            if (!transition.success) {
+                warning = `Candidate was created, but the status could not be set to "${requestedStatus}": ${transition.error}. It was left as "Applied" — use Change Status to retry.`;
+            }
+        }
+
+        // If a resume came in, run screening in the background the same way
+        // the public form does, so the recruiter doesn't have to click
+        // "Run AI Screening" separately right after adding the candidate.
+        if (resume_url) {
+            after(async () => {
+                try {
+                    await analyzeCandidateWithAi(candidate.id);
+                } catch (err) {
+                    console.error(`[Manual Add] Background analysis failed for candidate ${candidate.id}:`, err);
+                }
+            });
+        }
+
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin');
+        return { success: true, candidate, warning };
+    } catch (error: any) {
+        console.error('createCandidateManually error:', error);
+        return { error: error.message ?? 'Failed to add candidate.' };
+    }
+}
+
 export async function updateCandidateStatus(candidateId: string, status: string) {
     try {
         const actingUser = await getCurrentUser();
