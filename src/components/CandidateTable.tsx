@@ -913,6 +913,17 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                     <label className="text-xs font-bold text-gray-500 uppercase">Email *</label>
                                     <input name="email" type="email" required className="input-field" placeholder="candidate@example.com" />
                                 </div>
+                                <div className="space-y-1 col-span-2 bg-surface border border-border rounded-sm p-3">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Starting Status</label>
+                                    <select name="status" defaultValue="Applied" className="input-field cursor-pointer">
+                                        {(['Applied', 'Approved', 'Invite Sent', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Not Recommended', 'Selected', 'Absent', 'Rejected'] as const).map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-muted font-medium leading-relaxed">
+                                        Leave as "Applied" if this is a brand-new candidate entering the normal process. Pick a later status (e.g. "Recommended") if they were already sourced and evaluated outside the portal — the same side effects fire as a manual status change (interview row / decision email, where applicable).
+                                    </p>
+                                </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Phone</label>
                                     <input name="phone" className="input-field" placeholder="03XXXXXXXXX" />
@@ -952,17 +963,6 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                 <div className="space-y-1 col-span-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Resume (optional)</label>
                                     <input name="resume" type="file" accept=".pdf,.doc,.docx" className="input-field file:mr-3 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-[10px] file:font-bold file:bg-surface file:text-heading" />
-                                </div>
-                                <div className="space-y-1 col-span-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Starting Status</label>
-                                    <select name="status" defaultValue="Applied" className="input-field cursor-pointer">
-                                        {(['Applied', 'Approved', 'Invite Sent', 'Assessment Scheduled', 'Confirmed', 'Rescheduled', 'Assessment Completed', 'To Be Interviewed', 'Interview Scheduled', 'L2 Interview Required', 'Recommended', 'Not Recommended', 'Selected', 'Absent', 'Rejected'] as const).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                    <p className="text-[10px] text-muted font-medium leading-relaxed">
-                                        Leave as "Applied" for a normal application. Pick a later status (e.g. "Recommended") if this candidate's evaluation already happened outside the portal — the same side effects fire as a manual status change (interview row / decision email, where applicable).
-                                    </p>
                                 </div>
                                 <div className="space-y-1 col-span-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Note (optional)</label>
