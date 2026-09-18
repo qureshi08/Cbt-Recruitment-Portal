@@ -676,6 +676,14 @@ export async function createCandidateManually(formData: FormData) {
         });
 
         let warning: string | undefined;
+        // The row returned to the caller — starts as the just-inserted
+        // 'Applied' row, and gets replaced with a fresh read after a status
+        // transition below so the caller (and the table's optimistic local
+        // state) doesn't display stale data. Without this, the candidate
+        // could be correctly set to e.g. 'Recommended' in the database while
+        // still showing 'Applied' in the UI, because the object captured
+        // right after insert predates that transition.
+        let finalCandidate = candidate;
         if (requestedStatus && requestedStatus !== 'Applied') {
             const transition = await setCandidateStatusManually(
                 candidate.id,
@@ -684,6 +692,13 @@ export async function createCandidateManually(formData: FormData) {
             );
             if (!transition.success) {
                 warning = `Candidate was created, but the status could not be set to "${requestedStatus}": ${transition.error}. It was left as "Applied" — use Change Status to retry.`;
+            } else {
+                const { data: refreshed } = await supabaseAdmin
+                    .from('candidates')
+                    .select('*')
+                    .eq('id', candidate.id)
+                    .single();
+                if (refreshed) finalCandidate = refreshed;
             }
         }
 
@@ -702,7 +717,7 @@ export async function createCandidateManually(formData: FormData) {
 
         revalidatePath('/admin/applications');
         revalidatePath('/admin');
-        return { success: true, candidate, warning };
+        return { success: true, candidate: finalCandidate, warning };
     } catch (error: any) {
         console.error('createCandidateManually error:', error);
         return { error: error.message ?? 'Failed to add candidate.' };
