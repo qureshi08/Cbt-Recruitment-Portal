@@ -2206,6 +2206,14 @@ export async function uploadAssessmentScore(formData: FormData) {
             .from('assessment-scores')
             .getPublicUrl(finalFileName);
 
+        // Remember the previous sheet (if any) so a replacement doesn't leave
+        // the old file orphaned in storage.
+        const { data: previous } = await supabaseAdmin
+            .from('candidates')
+            .select('assessment_score_url')
+            .eq('id', candidateId)
+            .maybeSingle();
+
         // Update candidate record
         const { error: updateError } = await supabaseAdmin
             .from('candidates')
@@ -2214,13 +2222,79 @@ export async function uploadAssessmentScore(formData: FormData) {
 
         if (updateError) throw new Error(`Database update failed: ${updateError.message}`);
 
-        const actingUserName = await logAction('SCORE_UPLOADED', candidateId, 'candidate', { url: publicUrl });
+        if (previous?.assessment_score_url) {
+            await deleteScoreSheetFile(previous.assessment_score_url);
+        }
+
+        const actingUserName = await logAction('SCORE_UPLOADED', candidateId, 'candidate', {
+            url: publicUrl,
+            replaced_url: previous?.assessment_score_url ?? null,
+        });
 
         revalidatePath('/admin/applications');
+        revalidatePath('/admin/interviews');
         return { success: true, publicUrl, last_action_by: actingUserName };
     } catch (error: any) {
         console.error("uploadAssessmentScore error:", error.message);
         return { error: error.message };
+    }
+}
+
+// Best-effort removal of a score sheet from the 'assessment-scores' bucket.
+// Never throws: a stale file in storage must not block clearing the DB link.
+async function deleteScoreSheetFile(publicUrl: string) {
+    try {
+        const marker = '/assessment-scores/';
+        const idx = publicUrl.indexOf(marker);
+        if (idx === -1) return;
+        const path = decodeURIComponent(publicUrl.slice(idx + marker.length).split('?')[0]);
+        if (!path) return;
+        const { error } = await supabaseAdmin.storage.from('assessment-scores').remove([path]);
+        if (error) console.error('deleteScoreSheetFile error:', error.message);
+    } catch (err) {
+        console.error('deleteScoreSheetFile failed:', err);
+    }
+}
+
+// Clears an uploaded assessment score sheet (e.g. wrong file, or uploaded to
+// the wrong candidate). HR and Master only; the removed URL is kept in the
+// audit log so the action is traceable.
+export async function removeAssessmentScore(candidateId: string) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: 'You must be signed in.' };
+        if (!user.roles.some(r => r === 'HR' || r === 'Master')) {
+            return { error: 'Only the recruitment team or a Master user can remove a score sheet.' };
+        }
+
+        const { data: candidate, error: fetchError } = await supabaseAdmin
+            .from('candidates')
+            .select('assessment_score_url')
+            .eq('id', candidateId)
+            .maybeSingle();
+        if (fetchError) throw fetchError;
+        if (!candidate) return { error: 'Candidate not found.' };
+        if (!candidate.assessment_score_url) return { error: 'This candidate has no score sheet to remove.' };
+
+        const { error: updateError } = await supabaseAdmin
+            .from('candidates')
+            .update({ assessment_score_url: null, updated_at: new Date().toISOString() })
+            .eq('id', candidateId);
+        if (updateError) throw updateError;
+
+        await deleteScoreSheetFile(candidate.assessment_score_url);
+
+        const actingUserName = await logAction('SCORE_REMOVED', candidateId, 'candidate', {
+            removed_url: candidate.assessment_score_url,
+            removed_by: user.full_name,
+        });
+
+        revalidatePath('/admin/applications');
+        revalidatePath('/admin/interviews');
+        return { success: true, last_action_by: actingUserName };
+    } catch (error: any) {
+        console.error('removeAssessmentScore error:', error);
+        return { error: error.message ?? 'Failed to remove score sheet.' };
     }
 }
 

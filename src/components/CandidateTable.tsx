@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, Fragment } from "react";
 import { useReactToPrint } from 'react-to-print';
 import { Candidate, CandidateStatus } from "@/types/database";
-import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail, setCandidateStatusManually, createCandidateManually, getCurrentBatchNumber } from "@/app/actions";
+import { updateCandidateStatus, deleteCandidate, UserRole, updateCandidate, uploadAssessmentScore, analyzeCandidateWithAi, sendAssessmentInvite, sendCandidateSelectionEmail, setCandidateStatusManually, createCandidateManually, getCurrentBatchNumber, removeAssessmentScore } from "@/app/actions";
 import { calcAvg, ScoreBar, InterviewFeedbackModal } from "@/components/InterviewScorecard";
 import CandidateProfileModal from "@/components/CandidateProfileModal";
 import { withLoading } from "@/lib/loading";
@@ -75,6 +75,7 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
     const [statusFilter, setStatusFilter] = useState<string>("All");
     const [batchFilter, setBatchFilter] = useState<string>("All");
     const [uploadingScore, setUploadingScore] = useState<string | null>(null);
+    const [removingScoreId, setRemovingScoreId] = useState<string | null>(null);
     const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [analysisStatus, setAnalysisStatus] = useState<{ id: string, status: 'success' | 'error', message?: string } | null>(null);
@@ -286,6 +287,33 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
             alert("Application updated successfully!");
         } else {
             alert("Failed to update: " + result.error);
+        }
+    };
+
+    const handleScoreRemove = async (candidate: Candidate) => {
+        if (!window.confirm(
+            `Remove the uploaded score sheet for ${candidate.name}?\n\n` +
+            `The file will be deleted. You can upload a corrected one afterwards.`
+        )) return;
+
+        setRemovingScoreId(candidate.id);
+        try {
+            const result = await removeAssessmentScore(candidate.id);
+            if (result.success) {
+                setCandidates(prev => prev.map(c =>
+                    c.id === candidate.id ? {
+                        ...c,
+                        assessment_score_url: undefined,
+                        last_action_by: result.last_action_by
+                    } : c
+                ));
+            } else {
+                alert("Failed to remove score sheet: " + (result.error || "Unknown error"));
+            }
+        } catch (err: any) {
+            alert("Failed to remove score sheet: " + err.message);
+        } finally {
+            setRemovingScoreId(null);
         }
     };
 
@@ -608,15 +636,50 @@ export default function CandidateTable({ initialCandidates, userRoles }: Candida
                                         </td>
                                         <td className="px-3 py-2.5">
                                             {candidate.assessment_score_url ? (
-                                                <a
-                                                    href={candidate.assessment_score_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
-                                                >
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                    View Score Sheet
-                                                </a>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <a
+                                                        href={candidate.assessment_score_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 text-xs text-primary font-bold hover:underline"
+                                                    >
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                        View Score Sheet
+                                                    </a>
+                                                    {(isMaster || isHR) && (
+                                                        <div className="flex items-center gap-3">
+                                                            <label className="cursor-pointer text-[10px] font-bold text-muted hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors">
+                                                                {uploadingScore === candidate.id ? (
+                                                                    <span className="w-2.5 h-2.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                                ) : <Upload className="w-2.5 h-2.5" />}
+                                                                Replace
+                                                                <input
+                                                                    type="file"
+                                                                    className="hidden"
+                                                                    accept="image/*"
+                                                                    disabled={uploadingScore === candidate.id || removingScoreId === candidate.id}
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        e.target.value = "";
+                                                                        if (file) handleScoreUpload(candidate.id, file);
+                                                                    }}
+                                                                />
+                                                            </label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleScoreRemove(candidate)}
+                                                                disabled={removingScoreId === candidate.id || uploadingScore === candidate.id}
+                                                                className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-wider flex items-center gap-1 transition-colors disabled:opacity-40"
+                                                                title="Remove this score sheet (e.g. wrong file or wrong candidate)"
+                                                            >
+                                                                {removingScoreId === candidate.id ? (
+                                                                    <span className="w-2.5 h-2.5 border-2 border-red-200 border-t-red-500 rounded-full animate-spin" />
+                                                                ) : <Trash2 className="w-2.5 h-2.5" />}
+                                                                Remove
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : (isMaster || isHR) ? (
                                                 <div className="flex items-center gap-2">
                                                     <label className="cursor-pointer bg-surface border border-border hover:border-primary px-3 py-1 rounded-sm text-[11px] font-bold text-heading flex items-center gap-2 transition-all">
